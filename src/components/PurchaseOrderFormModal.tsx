@@ -564,6 +564,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
                             ) : (
                               <button
                                 type="button"
+                                onClick={() => handleAddProduct(prod)}
                                 className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold rounded-lg transition-colors flex items-center gap-1"
                               >
                                 <Plus className="w-3 h-3" /> Add

@@ -1,3 +1,4 @@
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import React, { useState, useMemo } from 'react';
 import { 
   Customer, 
@@ -248,6 +249,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
 
   // Handle Save Machine (with automatic inventory cross-ref and machine sync)
   const handleSaveMachine = (machine: CompanyMachine) => {
+    if (!isOnline) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
     const result = saveCompanyMachineAndSyncInventory(
       currentCustomer.id,
       machine,
@@ -259,6 +261,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
   };
 
   const handleDeleteMachine = (machineId: string) => {
+    if (!isOnline) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
     if (window.confirm('Are you sure you want to delete this machine?')) {
       const updated = deleteCompanyMachine(currentCustomer.id, machineId, allCustomers);
       onUpdateCustomers(updated);
@@ -271,6 +274,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
     entryData: Omit<CustomerLedgerEntry, 'id' | 'createdAt'>,
     entryId?: string
   ) => {
+    if (!isOnline) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
     if (entryId) {
       const result = updateCustomerPaymentAndUpdateAll(entryId, entryData, customerLedger, allCustomers);
       onUpdateLedger(result.updatedLedgerEntries);
@@ -283,6 +287,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
   };
 
   const handleDeletePaymentEntry = (entryId: string) => {
+    if (!isOnline) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
     if (window.confirm('Are you sure you want to remove this ledger entry?')) {
       const result = deleteCustomerPaymentAndUpdateAll(entryId, customerLedger, allCustomers);
       onUpdateLedger(result.updatedLedgerEntries);
@@ -292,6 +297,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
 
   // Handle Save Customer Profile
   const handleSaveCustomerProfile = (customerData: Partial<Customer>) => {
+    if (!isOnline) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
     const updated = saveCustomer({ ...customerData, id: currentCustomer.id }, allCustomers);
     onUpdateCustomers(updated);
   };

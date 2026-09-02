@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PWAInstallButton } from './PWAInstallButton';
 import { AuthState, DeviceInfo, EmployeeAccount, GlobalPricingSettings, SupabaseConfig } from '../types';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { isActionAllowed, isTabAllowed } from '../services/auth';
 import { 
   Box, 
@@ -144,6 +145,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [showAppMenu, setShowAppMenu] = useState<boolean>(false);
   const [showToolsMenu, setShowToolsMenu] = useState<boolean>(false);
   const [menuSearchQuery, setMenuSearchQuery] = useState<string>('');
+  const isOnline = useOnlineStatus();
 
   // Close menus on Escape key
   useEffect(() => {
@@ -379,6 +381,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </button>
 
+              {/* Offline Badge */}
+              {!isOnline && (
+                <div className="flex items-center gap-1.5 px-1.5 sm:px-2 py-1 bg-amber-500 text-amber-950 rounded-xl text-[10px] sm:text-[11px] font-black shadow-inner shrink-0 border border-amber-400" title="Offline Mode: Read-Only Access (Writes Disabled)">
+                  <span className="w-2 h-2 rounded-full bg-amber-950 animate-pulse shrink-0" />
+                  <span className="hidden sm:inline">OFFLINE: Read-Only</span>
+                  <span className="sm:hidden">OFFLINE</span>
+                </div>
+              )}
+
               {/* Single Dedicated Menu Button on Top Bar */}
               <button
                 type="button"
@@ -404,7 +415,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Top-Right Action Buttons */}
-            <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap overflow-x-auto overflow-y-hidden shrink-0 w-full sm:w-auto pb-0.5 sm:pb-0 mask-fade-edges" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="flex items-center justify-end gap-1 sm:gap-1.5 shrink-0 w-full sm:w-auto">
+              <div className="flex items-center justify-end gap-1 sm:gap-1.5 flex-nowrap overflow-x-auto overflow-y-hidden shrink-0 flex-1 sm:flex-none pb-0.5 sm:pb-0 mask-fade-edges" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               
               {/* PWA Install Button */}
               <PWAInstallButton />
@@ -495,6 +507,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               )}
 
+              </div>
+              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
               {/* Active Operator / Employee Badge & Quick Switch */}
               {currentEmployee && (
                 <button
@@ -673,6 +687,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
               </div>
 
+              </div>
               {/* Direct Lock Button */}
               <button
                 type="button"
