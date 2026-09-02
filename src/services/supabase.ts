@@ -3,11 +3,13 @@ import {
   Brand,
   Customer, 
   CustomerLedgerEntry, 
+  CustomerReturn,
   Demand, 
   DimensionLabelConfig, 
   DimensionUnit, 
   EmployeeAccount, 
   Expense, 
+  GlobalPricingSettings,
   LocationItem, 
   Product, 
   ProductDimensions, 
@@ -17,28 +19,30 @@ import {
   PurchaseOrder, 
   Quotation, 
   RegisteredDevice, 
+  Sale,
   StockLog, 
   SupabaseConfig, 
   Vendor, 
-  VendorLedgerEntry 
+  VendorLedgerEntry,
+  VendorReturn
 } from '../types';
 
 let supabaseInstance: SupabaseClient | null = null;
 let currentClientKey = '';
 
 /**
- * Reads Supabase Project URL and Anon API Key strictly from environment variables (.env / process.env).
- * Credentials are not stored or inputted via the client-side UI.
+ * Reads Supabase Project URL and Anon API Key from environment variables (.env / process.env)
+ * or saved configuration in local storage.
  */
 export function getEnvSupabaseConfig(): { 
   url: string; 
   anonKey: string; 
   isConfigured: boolean; 
-  source: 'env' | 'none';
+  source: 'env' | 'localStorage' | 'none';
 } {
   let url = '';
   let anonKey = '';
-  let source: 'env' | 'none' = 'none';
+  let source: 'env' | 'localStorage' | 'none' = 'none';
 
   // 1. Check Vite import.meta.env (.env file)
   try {
@@ -63,6 +67,23 @@ export function getEnvSupabaseConfig(): {
       url = pUrl;
       anonKey = pKey;
       source = 'env';
+    }
+  }
+
+  // 3. Fallback to localStorage if configured via Settings
+  if (!url) {
+    try {
+      const stored = localStorage.getItem('kfh_inventory_supabase_config_v1');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.url && parsed?.anonKey) {
+          url = parsed.url.trim();
+          anonKey = parsed.anonKey.trim();
+          source = 'localStorage';
+        }
+      }
+    } catch {
+      // Graceful fallback
     }
   }
 
@@ -207,7 +228,11 @@ export async function testSupabaseConnection(
     { name: 'inventory_locations', label: 'Shop Aisles & Locations' },
     { name: 'customers', label: 'Customer Directory' },
     { name: 'customer_ledger', label: 'Customer Financial Ledger' },
+    { name: 'sales', label: 'POS Sales & Invoices' },
+    { name: 'customer_returns', label: 'Customer Sales Returns' },
     { name: 'vendors', label: 'Vendor Directory' },
+    { name: 'vendor_ledger', label: 'Vendor Financial Ledger' },
+    { name: 'vendor_returns', label: 'Vendor Purchase Returns' },
     { name: 'purchase_orders', label: 'Purchase Orders' },
     { name: 'purchases', label: 'Purchase Bills' },
     { name: 'quotations', label: 'Quotations & Estimates' },
@@ -216,6 +241,7 @@ export async function testSupabaseConnection(
     { name: 'employee_accounts', label: 'Staff Accounts & Roles' },
     { name: 'registered_devices', label: 'Registered Workstations' },
     { name: 'stock_logs', label: 'Stock Movement Audit Logs' },
+    { name: 'pricing_settings', label: 'Global Pricing Settings' },
   ];
 
   if (!url || !anonKey) {
@@ -461,6 +487,54 @@ CREATE TABLE IF NOT EXISTS customer_ledger (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 3B. POS SALES & CUSTOMER RETURNS
+CREATE TABLE IF NOT EXISTS sales (
+  id TEXT PRIMARY KEY,
+  date TEXT NOT NULL,
+  customer_id TEXT,
+  customer_name TEXT NOT NULL,
+  customer_phone TEXT,
+  vendor_id TEXT,
+  vendor_name TEXT,
+  is_vendor_sale BOOLEAN DEFAULT FALSE,
+  items JSONB NOT NULL,
+  subtotal NUMERIC DEFAULT 0,
+  discount_type TEXT DEFAULT 'amount',
+  discount_value NUMERIC DEFAULT 0,
+  discount_amount NUMERIC DEFAULT 0,
+  total_amount NUMERIC DEFAULT 0,
+  total_cost NUMERIC DEFAULT 0,
+  total_profit NUMERIC DEFAULT 0,
+  amount_received NUMERIC DEFAULT 0,
+  change_returned NUMERIC DEFAULT 0,
+  balance_due NUMERIC DEFAULT 0,
+  payment_type TEXT DEFAULT 'cash',
+  status TEXT DEFAULT 'completed',
+  return_status TEXT DEFAULT 'none',
+  total_refund_amount NUMERIC DEFAULT 0,
+  net_sale_amount NUMERIC DEFAULT 0,
+  return_summaries JSONB,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS customer_returns (
+  id TEXT PRIMARY KEY,
+  return_number TEXT NOT NULL,
+  credit_note_number TEXT,
+  sale_id TEXT NOT NULL,
+  customer_id TEXT,
+  customer_name TEXT NOT NULL,
+  date TEXT NOT NULL,
+  items JSONB NOT NULL,
+  total_refund_amount NUMERIC DEFAULT 0,
+  refund_method TEXT DEFAULT 'cash',
+  reason TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 4. VENDORS & PURCHASING
 CREATE TABLE IF NOT EXISTS vendors (
   id TEXT PRIMARY KEY,
@@ -476,6 +550,39 @@ CREATE TABLE IF NOT EXISTS vendors (
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS vendor_ledger (
+  id TEXT PRIMARY KEY,
+  vendor_id TEXT NOT NULL,
+  vendor_name TEXT,
+  date TEXT NOT NULL,
+  type TEXT NOT NULL,
+  entry_code TEXT,
+  bill_number TEXT,
+  reference_id TEXT,
+  description TEXT,
+  debit NUMERIC DEFAULT 0,
+  credit NUMERIC DEFAULT 0,
+  amount NUMERIC DEFAULT 0,
+  payment_method TEXT,
+  receipt_number TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS vendor_returns (
+  id TEXT PRIMARY KEY,
+  return_number TEXT NOT NULL,
+  purchase_id TEXT NOT NULL,
+  vendor_id TEXT NOT NULL,
+  vendor_name TEXT NOT NULL,
+  date TEXT NOT NULL,
+  items JSONB NOT NULL,
+  total_refund_amount NUMERIC DEFAULT 0,
+  settlement_type TEXT DEFAULT 'cash',
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS purchase_orders (
@@ -654,10 +761,21 @@ CREATE TABLE IF NOT EXISTS stock_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 10. GLOBAL PRICING & ERP SETTINGS
+CREATE TABLE IF NOT EXISTS pricing_settings (
+  id TEXT PRIMARY KEY,
+  settings JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- INDEXES FOR INSTANT QUERIES
 CREATE INDEX IF NOT EXISTS idx_products_internal_id ON inventory_products(internal_id);
 CREATE INDEX IF NOT EXISTS idx_products_name ON inventory_products(name);
 CREATE INDEX IF NOT EXISTS idx_customer_ledger_cid ON customer_ledger(customer_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_ledger_vid ON vendor_ledger(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date);
+CREATE INDEX IF NOT EXISTS idx_sales_cid ON sales(customer_id);
+CREATE INDEX IF NOT EXISTS idx_customer_returns_sale_id ON customer_returns(sale_id);
 CREATE INDEX IF NOT EXISTS idx_quotations_qno ON quotations(quotation_number);
 CREATE INDEX IF NOT EXISTS idx_po_number ON purchase_orders(po_number);
 CREATE INDEX IF NOT EXISTS idx_purchases_bill ON purchases(bill_number);
@@ -687,9 +805,25 @@ ALTER TABLE customer_ledger ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public full access customer_ledger" ON customer_ledger;
 CREATE POLICY "Public full access customer_ledger" ON customer_ledger FOR ALL USING (true);
 
+ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access sales" ON sales;
+CREATE POLICY "Public full access sales" ON sales FOR ALL USING (true);
+
+ALTER TABLE customer_returns ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access customer_returns" ON customer_returns;
+CREATE POLICY "Public full access customer_returns" ON customer_returns FOR ALL USING (true);
+
 ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public full access vendors" ON vendors;
 CREATE POLICY "Public full access vendors" ON vendors FOR ALL USING (true);
+
+ALTER TABLE vendor_ledger ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access vendor_ledger" ON vendor_ledger;
+CREATE POLICY "Public full access vendor_ledger" ON vendor_ledger FOR ALL USING (true);
+
+ALTER TABLE vendor_returns ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access vendor_returns" ON vendor_returns;
+CREATE POLICY "Public full access vendor_returns" ON vendor_returns FOR ALL USING (true);
 
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public full access purchase_orders" ON purchase_orders;
@@ -722,6 +856,10 @@ CREATE POLICY "Public full access registered_devices" ON registered_devices FOR 
 ALTER TABLE stock_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public full access stock_logs" ON stock_logs;
 CREATE POLICY "Public full access stock_logs" ON stock_logs FOR ALL USING (true);
+
+ALTER TABLE pricing_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access pricing_settings" ON pricing_settings;
+CREATE POLICY "Public full access pricing_settings" ON pricing_settings FOR ALL USING (true);
 `;
 
 export const SUPABASE_SQL_SCHEMA = SCHEMA_FULL_DATABASE;
@@ -1722,6 +1860,791 @@ export async function syncMasterDataToSupabase(
   }
 }
 
+export async function syncSalesToSupabase(
+  client: SupabaseClient,
+  sales: Sale[]
+): Promise<{ success: boolean; count: number; error?: string }> {
+  try {
+    if (sales.length === 0) return { success: true, count: 0 };
+    const rows = sales.map(s => ({
+      id: s.id,
+      date: s.date,
+      customer_id: s.customerId || null,
+      customer_name: s.customerName,
+      customer_phone: s.customerPhone || null,
+      vendor_id: s.vendorId || null,
+      vendor_name: s.vendorName || null,
+      is_vendor_sale: s.isVendorSale || false,
+      items: s.items || [],
+      subtotal: Number(s.subtotal) || 0,
+      discount_type: s.discountType || 'amount',
+      discount_value: Number(s.discountValue) || 0,
+      discount_amount: Number(s.discountAmount) || 0,
+      total_amount: Number(s.totalAmount) || 0,
+      total_cost: Number(s.totalCost) || 0,
+      total_profit: Number(s.totalProfit) || 0,
+      amount_received: Number(s.amountReceived) || 0,
+      change_given: Number(s.changeGiven) || 0,
+      balance_due: Number(s.balanceDue) || 0,
+      payment_type: s.paymentType || 'cash',
+      payment_status: s.paymentStatus || 'paid',
+      has_returns: s.hasReturns || false,
+      total_returned_amount: Number(s.totalReturnedAmount) || 0,
+      net_amount: Number(s.netAmount ?? s.totalAmount) || 0,
+      net_balance_due: Number(s.netBalanceDue) || 0,
+      returned_items_count: Number(s.returnedItemsCount) || 0,
+      returns_list: s.returnsList || [],
+      invoice_naming_preference: s.invoiceNamingPreference || 'product_name',
+      notes: s.notes || null,
+      created_at: s.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+
+    const chunkSize = 100;
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      const chunk = rows.slice(i, i + chunkSize);
+      const { error } = await client.from('sales').upsert(chunk, { onConflict: 'id' });
+      if (error) return { success: false, count: i, error: error.message };
+    }
+    return { success: true, count: rows.length };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, count: 0, error: errorMsg };
+  }
+}
+
+export async function fetchSalesFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; sales: Sale[]; error?: string }> {
+  try {
+    const { data, error } = await client.from('sales').select('*').order('date', { ascending: false });
+    if (error) return { success: false, sales: [], error: error.message };
+    const sales: Sale[] = (data || []).map(r => ({
+      id: r.id,
+      date: r.date,
+      customerId: r.customer_id || undefined,
+      customerName: r.customer_name || 'Walk-in Customer',
+      customerPhone: r.customer_phone || undefined,
+      vendorId: r.vendor_id || undefined,
+      vendorName: r.vendor_name || undefined,
+      isVendorSale: r.is_vendor_sale || false,
+      items: Array.isArray(r.items) ? r.items : [],
+      subtotal: Number(r.subtotal) || 0,
+      discountType: r.discount_type || 'amount',
+      discountValue: Number(r.discount_value) || 0,
+      discountAmount: Number(r.discount_amount) || 0,
+      totalAmount: Number(r.total_amount) || 0,
+      totalCost: Number(r.total_cost) || 0,
+      totalProfit: Number(r.total_profit) || 0,
+      amountReceived: Number(r.amount_received) || 0,
+      changeGiven: Number(r.change_given) || 0,
+      balanceDue: Number(r.balance_due) || 0,
+      paymentType: r.payment_type || 'cash',
+      paymentStatus: r.payment_status || 'paid',
+      hasReturns: r.has_returns || false,
+      totalReturnedAmount: Number(r.total_returned_amount) || 0,
+      netAmount: Number(r.net_amount ?? r.total_amount) || 0,
+      netBalanceDue: Number(r.net_balance_due) || 0,
+      returnedItemsCount: Number(r.returned_items_count) || 0,
+      returnsList: Array.isArray(r.returns_list) ? r.returns_list : undefined,
+      invoiceNamingPreference: r.invoice_naming_preference || 'product_name',
+      notes: r.notes || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+      updatedAt: r.updated_at || undefined,
+    }));
+    return { success: true, sales };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, sales: [], error: errorMsg };
+  }
+}
+
+export async function syncCustomerReturnsToSupabase(
+  client: SupabaseClient,
+  returns: CustomerReturn[]
+): Promise<{ success: boolean; count: number; error?: string }> {
+  try {
+    if (returns.length === 0) return { success: true, count: 0 };
+    const rows = returns.map(r => ({
+      id: r.id,
+      return_number: r.returnNumber,
+      credit_note_number: r.creditNoteNumber || null,
+      sale_id: r.saleId,
+      customer_id: r.customerId || null,
+      customer_name: r.customerName,
+      date: r.date,
+      items: r.items || [],
+      subtotal: Number(r.subtotal) || 0,
+      deduction_or_restock_fee: Number(r.deductionOrRestockFee) || 0,
+      total_refund_amount: Number(r.totalRefundAmount) || 0,
+      refund_method: r.refundMethod || 'cash_refund',
+      refund_status: r.refundStatus || 'completed',
+      notes: r.notes || null,
+      created_at: r.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+    const { error } = await client.from('customer_returns').upsert(rows, { onConflict: 'id' });
+    if (error) return { success: false, count: 0, error: error.message };
+    return { success: true, count: rows.length };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, count: 0, error: errorMsg };
+  }
+}
+
+export async function fetchCustomerReturnsFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; returns: CustomerReturn[]; error?: string }> {
+  try {
+    const { data, error } = await client.from('customer_returns').select('*').order('date', { ascending: false });
+    if (error) return { success: false, returns: [], error: error.message };
+    const returns: CustomerReturn[] = (data || []).map(r => ({
+      id: r.id,
+      returnNumber: r.return_number,
+      creditNoteNumber: r.credit_note_number || undefined,
+      saleId: r.sale_id,
+      customerId: r.customer_id || undefined,
+      customerName: r.customer_name,
+      customerPhone: r.customer_phone || undefined,
+      date: r.date,
+      items: Array.isArray(r.items) ? r.items : [],
+      subtotal: Number(r.subtotal) || 0,
+      deductionOrRestockFee: Number(r.deduction_or_restock_fee) || 0,
+      totalRefundAmount: Number(r.total_refund_amount) || 0,
+      refundMethod: r.refund_method || 'cash_refund',
+      refundStatus: r.refund_status || 'completed',
+      notes: r.notes || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+      updatedAt: r.updated_at || undefined,
+    }));
+    return { success: true, returns };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, returns: [], error: errorMsg };
+  }
+}
+
+export async function syncVendorLedgerToSupabase(
+  client: SupabaseClient,
+  ledger: VendorLedgerEntry[]
+): Promise<{ success: boolean; count: number; error?: string }> {
+  try {
+    if (ledger.length === 0) return { success: true, count: 0 };
+    const rows = ledger.map(v => ({
+      id: v.id,
+      vendor_id: v.vendorId,
+      vendor_name: v.vendorName || null,
+      date: v.date,
+      type: v.type,
+      entry_code: v.entryCode || null,
+      bill_number: v.billNumber || null,
+      reference_id: v.referenceId || null,
+      description: v.description || '',
+      debit: Number(v.debit) || 0,
+      credit: Number(v.credit) || 0,
+      amount: Number(v.amount) || 0,
+      payment_method: v.paymentMethod || null,
+      receipt_number: v.receiptNumber || null,
+      notes: v.notes || null,
+    }));
+    const { error } = await client.from('vendor_ledger').upsert(rows, { onConflict: 'id' });
+    if (error) return { success: false, count: 0, error: error.message };
+    return { success: true, count: rows.length };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, count: 0, error: errorMsg };
+  }
+}
+
+export async function fetchVendorLedgerFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; ledger: VendorLedgerEntry[]; error?: string }> {
+  try {
+    const { data, error } = await client.from('vendor_ledger').select('*').order('date', { ascending: false });
+    if (error) return { success: false, ledger: [], error: error.message };
+    const ledger: VendorLedgerEntry[] = (data || []).map(r => ({
+      id: r.id,
+      vendorId: r.vendor_id,
+      vendorName: r.vendor_name || undefined,
+      date: r.date,
+      type: r.type,
+      entryCode: r.entry_code || '',
+      billNumber: r.bill_number || undefined,
+      referenceId: r.reference_id || undefined,
+      description: r.description || '',
+      debit: Number(r.debit) || 0,
+      credit: Number(r.credit) || 0,
+      amount: Number(r.amount) || 0,
+      paymentMethod: r.payment_method || undefined,
+      receiptNumber: r.receipt_number || undefined,
+      notes: r.notes || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+    }));
+    return { success: true, ledger };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, ledger: [], error: errorMsg };
+  }
+}
+
+export async function syncVendorReturnsToSupabase(
+  client: SupabaseClient,
+  returns: VendorReturn[]
+): Promise<{ success: boolean; count: number; error?: string }> {
+  try {
+    if (returns.length === 0) return { success: true, count: 0 };
+    const rows = returns.map(r => ({
+      id: r.id,
+      return_number: r.returnNumber,
+      purchase_id: r.purchaseId,
+      vendor_id: r.vendorId,
+      vendor_name: r.vendorName,
+      date: r.date,
+      items: r.items || [],
+      subtotal: Number(r.subtotal) || 0,
+      total_amount: Number(r.totalAmount) || 0,
+      settlement_method: r.settlementMethod || 'cash_refund',
+      settlement_status: r.settlementStatus || 'completed',
+      notes: r.notes || null,
+      created_at: r.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+    const { error } = await client.from('vendor_returns').upsert(rows, { onConflict: 'id' });
+    if (error) return { success: false, count: 0, error: error.message };
+    return { success: true, count: rows.length };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, count: 0, error: errorMsg };
+  }
+}
+
+export async function fetchVendorReturnsFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; returns: VendorReturn[]; error?: string }> {
+  try {
+    const { data, error } = await client.from('vendor_returns').select('*').order('date', { ascending: false });
+    if (error) return { success: false, returns: [], error: error.message };
+    const returns: VendorReturn[] = (data || []).map(r => ({
+      id: r.id,
+      returnNumber: r.return_number,
+      debitNoteNumber: r.debit_note_number || undefined,
+      purchaseId: r.purchase_id || undefined,
+      vendorId: r.vendor_id,
+      vendorName: r.vendor_name,
+      date: r.date,
+      items: Array.isArray(r.items) ? r.items : [],
+      subtotal: Number(r.subtotal) || 0,
+      totalAmount: Number(r.total_amount) || 0,
+      settlementMethod: r.settlement_method || 'cash_refund',
+      settlementStatus: r.settlement_status || 'completed',
+      notes: r.notes || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+      updatedAt: r.updated_at || undefined,
+    }));
+    return { success: true, returns };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, returns: [], error: errorMsg };
+  }
+}
+
+export async function syncPricingSettingsToSupabase(
+  client: SupabaseClient,
+  settings: GlobalPricingSettings
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await client.from('pricing_settings').upsert({
+      id: 'default',
+      settings,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
+export async function fetchPricingSettingsFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; settings?: GlobalPricingSettings; error?: string }> {
+  try {
+    const { data, error } = await client.from('pricing_settings').select('*').eq('id', 'default').single();
+    if (error) return { success: false, error: error.message };
+    if (data?.settings) return { success: true, settings: data.settings as GlobalPricingSettings };
+    return { success: false, error: 'Settings not found' };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
+export async function syncStockLogsToSupabase(
+  client: SupabaseClient,
+  logs: StockLog[]
+): Promise<{ success: boolean; count: number; error?: string }> {
+  try {
+    if (logs.length === 0) return { success: true, count: 0 };
+    const rows = logs.map(l => ({
+      id: l.id,
+      product_id: l.productId,
+      product_name: l.productName,
+      internal_id: l.internalId,
+      brand_name: l.brandName || null,
+      type_name: l.typeName || null,
+      unit: l.unit || null,
+      change: Number(l.change) || 0,
+      previous_stock: Number(l.previousStock) || 0,
+      new_stock: Number(l.newStock) || 0,
+      reason: l.reason || null,
+      movement_type: l.movementType || null,
+      reference_id: l.referenceId || null,
+      reference_number: l.referenceNumber || null,
+      entity_name: l.entityName || null,
+      unit_rate: l.unitRate || null,
+      total_movement_value: l.totalMovementValue || null,
+      location_name: l.locationName || null,
+      cabin_number: l.cabinNumber || null,
+      timestamp: l.timestamp,
+      notes: l.notes || null,
+    }));
+    const { error } = await client.from('stock_logs').upsert(rows, { onConflict: 'id' });
+    if (error) return { success: false, count: 0, error: error.message };
+    return { success: true, count: rows.length };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, count: 0, error: errorMsg };
+  }
+}
+
+export async function fetchStockLogsFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; logs: StockLog[]; error?: string }> {
+  try {
+    const { data, error } = await client.from('stock_logs').select('*').order('timestamp', { ascending: false });
+    if (error) return { success: false, logs: [], error: error.message };
+    const logs: StockLog[] = (data || []).map(r => ({
+      id: r.id,
+      productId: r.product_id,
+      productName: r.product_name,
+      internalId: r.internal_id,
+      brandName: r.brand_name || undefined,
+      typeName: r.type_name || undefined,
+      unit: r.unit || undefined,
+      change: Number(r.change) || 0,
+      previousStock: Number(r.previous_stock) || 0,
+      newStock: Number(r.new_stock) || 0,
+      reason: r.reason,
+      movementType: r.movement_type || undefined,
+      referenceId: r.reference_id || undefined,
+      referenceNumber: r.reference_number || undefined,
+      entityName: r.entity_name || undefined,
+      unitRate: r.unit_rate ? Number(r.unit_rate) : undefined,
+      totalMovementValue: r.total_movement_value ? Number(r.total_movement_value) : undefined,
+      locationName: r.location_name || undefined,
+      cabinNumber: r.cabin_number || undefined,
+      timestamp: r.timestamp || r.created_at || new Date().toISOString(),
+      notes: r.notes || undefined,
+    }));
+    return { success: true, logs };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, logs: [], error: errorMsg };
+  }
+}
+
+export async function fetchVendorsAndPurchasesFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; vendors: Vendor[]; purchases: Purchase[]; purchaseOrders: PurchaseOrder[]; error?: string }> {
+  try {
+    const [vRes, pRes, poRes] = await Promise.all([
+      client.from('vendors').select('*').order('business_name', { ascending: true }),
+      client.from('purchases').select('*').order('date', { ascending: false }),
+      client.from('purchase_orders').select('*').order('order_date', { ascending: false }),
+    ]);
+
+    const vendors: Vendor[] = (vRes.data || []).map(r => ({
+      id: r.id,
+      businessName: r.business_name,
+      contactPerson: r.contact_person || undefined,
+      phone: r.phone || undefined,
+      secondaryPhone: r.secondary_phone || undefined,
+      email: r.email || undefined,
+      address: r.address || undefined,
+      city: r.city || undefined,
+      openingBalance: Number(r.opening_balance) || 0,
+      linkedProductIds: Array.isArray(r.linked_product_ids) ? r.linked_product_ids : [],
+      notes: r.notes || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+      updatedAt: r.updated_at || undefined,
+    }));
+
+    const purchases: Purchase[] = (pRes.data || []).map(r => ({
+      id: r.id,
+      billNumber: r.bill_number,
+      poNumber: r.po_number || undefined,
+      vendorId: r.vendor_id,
+      vendorName: r.vendor_name,
+      date: r.date,
+      items: Array.isArray(r.items) ? r.items : [],
+      subtotal: Number(r.subtotal) || 0,
+      discountAmount: Number(r.discount_amount) || 0,
+      totalAmount: Number(r.total_amount) || 0,
+      amountPaid: Number(r.amount_paid) || 0,
+      balanceDue: Number(r.balance_due) || 0,
+      paymentStatus: r.payment_status || 'unpaid',
+      biltyNumber: r.bilty_number || undefined,
+      transporterName: r.transporter_name || undefined,
+      cargoCost: Number(r.cargo_cost) || 0,
+      notes: r.notes || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+    }));
+
+    const purchaseOrders: PurchaseOrder[] = (poRes.data || []).map(r => ({
+      id: r.id,
+      poNumber: r.po_number,
+      vendorId: r.vendor_id,
+      vendorName: r.vendor_name,
+      vendorPhone: r.vendor_phone || undefined,
+      vendorAddress: r.vendor_address || undefined,
+      orderDate: r.order_date,
+      expectedDeliveryDate: r.expected_delivery_date || undefined,
+      receivingDate: r.receiving_date || undefined,
+      costsFinalizedDate: r.costs_finalized_date || undefined,
+      status: r.status || 'draft',
+      items: Array.isArray(r.items) ? r.items : [],
+      totalOrderedQty: Number(r.total_ordered_qty) || 0,
+      totalReceivedQty: Number(r.total_received_qty) || 0,
+      cargoCost: Number(r.cargo_cost) || 0,
+      cargoCostPerUnit: Number(r.cargo_cost_per_unit) || 0,
+      subtotalBaseCost: Number(r.subtotal_base_cost) || 0,
+      totalLandedCost: Number(r.total_landed_cost) || 0,
+      billNumber: r.bill_number || undefined,
+      biltyNumber: r.bilty_number || undefined,
+      transporterName: r.transporter_name || undefined,
+      amountPaid: Number(r.amount_paid) || 0,
+      paymentStatus: r.payment_status || 'unpaid',
+      isStockReceived: r.is_stock_received || false,
+      isBilled: r.is_billed || false,
+      notes: r.notes || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+      updatedAt: r.updated_at || undefined,
+    }));
+
+    return { success: true, vendors, purchases, purchaseOrders };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, vendors: [], purchases: [], purchaseOrders: [], error: errorMsg };
+  }
+}
+
+export async function fetchQuotationsFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; quotations: Quotation[]; error?: string }> {
+  try {
+    const { data, error } = await client.from('quotations').select('*').order('date', { ascending: false });
+    if (error) return { success: false, quotations: [], error: error.message };
+    const quotations: Quotation[] = (data || []).map(r => ({
+      id: r.id,
+      quotationNumber: r.quotation_number,
+      customerId: r.customer_id || undefined,
+      customerType: r.customer_type || 'customer',
+      customerName: r.customer_name,
+      contactPerson: r.contact_person || undefined,
+      customerPhone: r.customer_phone || undefined,
+      customerEmail: r.customer_email || undefined,
+      customerAddress: r.customer_address || undefined,
+      customerCity: r.customer_city || undefined,
+      customerNtn: r.customer_ntn || undefined,
+      customerStrn: r.customer_strn || undefined,
+      date: r.date,
+      validUntil: r.valid_until,
+      validityDays: Number(r.validity_days) || 7,
+      items: Array.isArray(r.items) ? r.items : [],
+      subtotal: Number(r.subtotal) || 0,
+      discountType: r.discount_type || 'amount',
+      discountValue: Number(r.discount_value) || 0,
+      discountAmount: Number(r.discount_amount) || 0,
+      taxPercent: Number(r.tax_percent) || 0,
+      taxAmount: Number(r.tax_amount) || 0,
+      totalAmount: Number(r.total_amount) || 0,
+      status: r.status || 'active',
+      termsAndConditions: r.terms_and_conditions || undefined,
+      notes: r.notes || undefined,
+      convertedSaleId: r.converted_sale_id || undefined,
+      convertedAt: r.converted_at || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+      updatedAt: r.updated_at || undefined,
+    }));
+    return { success: true, quotations };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, quotations: [], error: errorMsg };
+  }
+}
+
+export async function fetchDemandsFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; demands: Demand[]; error?: string }> {
+  try {
+    const { data, error } = await client.from('demands').select('*').order('created_at', { ascending: false });
+    if (error) return { success: false, demands: [], error: error.message };
+    const demands: Demand[] = (data || []).map(r => ({
+      id: r.id,
+      demandNumber: r.demand_number,
+      customerId: r.customer_id || undefined,
+      customerName: r.customer_name,
+      customerPhone: r.customer_phone || undefined,
+      location: r.location || undefined,
+      itemName: r.item_name,
+      productId: r.product_id || undefined,
+      itemDetails: r.item_details || undefined,
+      quantity: Number(r.quantity) || 1,
+      unit: r.unit || 'Pcs',
+      targetPrice: r.target_price !== null ? Number(r.target_price) : undefined,
+      requiredDate: r.required_date || undefined,
+      status: r.status || 'pending',
+      unfulfillableReason: r.unfulfillable_reason || undefined,
+      cancellationReason: r.cancellation_reason || undefined,
+      fulfilledSaleId: r.fulfilled_sale_id || undefined,
+      fulfilledAt: r.fulfilled_at || undefined,
+      notes: r.notes || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+      updatedAt: r.updated_at || undefined,
+    }));
+    return { success: true, demands };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, demands: [], error: errorMsg };
+  }
+}
+
+export async function fetchExpensesFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; expenses: Expense[]; error?: string }> {
+  try {
+    const { data, error } = await client.from('expenses').select('*').order('date', { ascending: false });
+    if (error) return { success: false, expenses: [], error: error.message };
+    const expenses: Expense[] = (data || []).map(r => ({
+      id: r.id,
+      expenseNumber: r.expense_number,
+      title: r.title,
+      category: r.category,
+      amount: Number(r.amount) || 0,
+      date: r.date,
+      paymentMethod: r.payment_method || 'Cash',
+      paidTo: r.paid_to || undefined,
+      receiptNumber: r.receipt_number || undefined,
+      notes: r.notes || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+      updatedAt: r.updated_at || undefined,
+    }));
+    return { success: true, expenses };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, expenses: [], error: errorMsg };
+  }
+}
+
+export async function fetchStaffAndDevicesFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; employees: EmployeeAccount[]; devices: RegisteredDevice[]; error?: string }> {
+  try {
+    const [empRes, devRes] = await Promise.all([
+      client.from('employee_accounts').select('*').order('name', { ascending: true }),
+      client.from('registered_devices').select('*').order('registered_at', { ascending: false }),
+    ]);
+
+    const employees: EmployeeAccount[] = (empRes.data || []).map(r => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      phone: r.phone || undefined,
+      pin: r.pin,
+      password: r.password || undefined,
+      role: r.role,
+      designation: r.designation,
+      status: r.status || 'active',
+      permissions: r.permissions || {
+        allowedTabs: ['sales', 'inventory'],
+        isEditor: true,
+        canCreateSales: true,
+        canEditSales: false,
+        canDeleteSales: false,
+        canApplySaleDiscount: false,
+        canViewCostPrices: false,
+        canViewProfitMargins: false,
+        canCreatePurchases: false,
+        canEditPurchases: false,
+        canDeletePurchases: false,
+        canCreatePurchaseOrders: false,
+        canReceivePurchaseOrders: false,
+        canManageVendors: false,
+        canCreateProducts: false,
+        canEditProducts: false,
+        canDeleteProducts: false,
+        canAdjustStock: false,
+        canManageExpenses: false,
+        canViewFinancialReports: false,
+        canManageCustomers: true,
+        canManageCustomerLedger: false,
+        canCreateQuotations: true,
+        canManageQuotations: true,
+        canCreateDemands: true,
+        canManageDemands: true,
+        canProcessCustomerReturns: true,
+        canProcessVendorReturns: false,
+        canManageSettings: false,
+        canManageEmployees: false,
+        canManageDevices: false,
+        canExportData: false,
+        canImportData: false,
+        canPerformInventoryAudit: false,
+      },
+      restrictToDevices: r.restrict_to_devices || false,
+      allowedDeviceIds: Array.isArray(r.allowed_device_ids) ? r.allowed_device_ids : [],
+      avatarColor: r.avatar_color || undefined,
+      lastLoginAt: r.last_login_at || undefined,
+      lastLoginDeviceId: r.last_login_device_id || undefined,
+      notes: r.notes || undefined,
+      createdAt: r.created_at || new Date().toISOString(),
+    }));
+
+    const devices: RegisteredDevice[] = (devRes.data || []).map(r => ({
+      id: r.id,
+      name: r.name,
+      os: r.os,
+      deviceType: r.device_type,
+      browser: r.browser || '',
+      userAgent: r.user_agent || '',
+      registeredAt: r.registered_at || new Date().toISOString(),
+      lastSeenAt: r.last_seen_at || new Date().toISOString(),
+      isTrusted: r.is_trusted ?? true,
+      notes: r.notes || undefined,
+    }));
+
+    return { success: true, employees, devices };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, employees: [], devices: [], error: errorMsg };
+  }
+}
+
+export async function fetchMasterDataFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; brands: Brand[]; types: ProductType[]; locations: LocationItem[]; error?: string }> {
+  try {
+    const [bRes, tRes, lRes] = await Promise.all([
+      client.from('inventory_brands').select('*'),
+      client.from('inventory_categories').select('*'),
+      client.from('inventory_locations').select('*'),
+    ]);
+
+    const brands: Brand[] = (bRes.data || []).map(r => ({ id: r.id, name: r.name, itemCount: r.item_count || 0 }));
+    const types: ProductType[] = (tRes.data || []).map(r => ({ id: r.id, name: r.name, itemCount: r.item_count || 0 }));
+    const locations: LocationItem[] = (lRes.data || []).map(r => ({ id: r.id, name: r.name, cabins: Array.isArray(r.cabins) ? r.cabins : [] }));
+
+    return { success: true, brands, types, locations };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, brands: [], types: [], locations: [], error: errorMsg };
+  }
+}
+
+/**
+ * Downloads all data records from Supabase in parallel to populate the app state.
+ */
+export async function fetchAllFromSupabase(client: SupabaseClient): Promise<{
+  success: boolean;
+  data?: {
+    products: Product[];
+    brands: Brand[];
+    types: ProductType[];
+    locations: LocationItem[];
+    customers: Customer[];
+    customerLedger: CustomerLedgerEntry[];
+    sales: Sale[];
+    customerReturns: CustomerReturn[];
+    vendors: Vendor[];
+    vendorLedger: VendorLedgerEntry[];
+    vendorReturns: VendorReturn[];
+    purchases: Purchase[];
+    purchaseOrders: PurchaseOrder[];
+    quotations: Quotation[];
+    demands: Demand[];
+    expenses: Expense[];
+    employees: EmployeeAccount[];
+    registeredDevices: RegisteredDevice[];
+    stockLogs: StockLog[];
+    pricingSettings?: GlobalPricingSettings;
+  };
+  error?: string;
+}> {
+  try {
+    const [
+      prodRes,
+      masterRes,
+      custRes,
+      salesRes,
+      custRetRes,
+      vendRes,
+      vendLedgerRes,
+      vendRetRes,
+      quoteRes,
+      demRes,
+      expRes,
+      staffRes,
+      stockLogRes,
+      pricingRes,
+    ] = await Promise.all([
+      fetchProductsFromSupabase(client),
+      fetchMasterDataFromSupabase(client),
+      fetchCustomersFromSupabase(client),
+      fetchSalesFromSupabase(client),
+      fetchCustomerReturnsFromSupabase(client),
+      fetchVendorsAndPurchasesFromSupabase(client),
+      fetchVendorLedgerFromSupabase(client),
+      fetchVendorReturnsFromSupabase(client),
+      fetchQuotationsFromSupabase(client),
+      fetchDemandsFromSupabase(client),
+      fetchExpensesFromSupabase(client),
+      fetchStaffAndDevicesFromSupabase(client),
+      fetchStockLogsFromSupabase(client),
+      fetchPricingSettingsFromSupabase(client),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        products: prodRes.products,
+        brands: masterRes.brands,
+        types: masterRes.types,
+        locations: masterRes.locations,
+        customers: custRes.customers,
+        customerLedger: custRes.ledger,
+        sales: salesRes.sales,
+        customerReturns: custRetRes.returns,
+        vendors: vendRes.vendors,
+        vendorLedger: vendLedgerRes.ledger,
+        vendorReturns: vendRetRes.returns,
+        purchases: vendRes.purchases,
+        purchaseOrders: vendRes.purchaseOrders,
+        quotations: quoteRes.quotations,
+        demands: demRes.demands,
+        expenses: expRes.expenses,
+        employees: staffRes.employees,
+        registeredDevices: staffRes.devices,
+        stockLogs: stockLogRes.logs,
+        pricingSettings: pricingRes.settings,
+      }
+    };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
 export interface FullSyncDataBundle {
   products: Product[];
   brands: Brand[];
@@ -1729,7 +2652,11 @@ export interface FullSyncDataBundle {
   locations: LocationItem[];
   customers: Customer[];
   customerLedger: CustomerLedgerEntry[];
+  sales?: Sale[];
+  customerReturns?: CustomerReturn[];
   vendors: Vendor[];
+  vendorLedger?: VendorLedgerEntry[];
+  vendorReturns?: VendorReturn[];
   purchases: Purchase[];
   purchaseOrders: PurchaseOrder[];
   quotations: Quotation[];
@@ -1738,6 +2665,7 @@ export interface FullSyncDataBundle {
   employees: EmployeeAccount[];
   registeredDevices: RegisteredDevice[];
   stockLogs: StockLog[];
+  pricingSettings?: GlobalPricingSettings;
 }
 
 export interface FullSyncResult {
@@ -1747,7 +2675,11 @@ export interface FullSyncResult {
     products: number;
     customers: number;
     customerLedger: number;
+    sales: number;
+    customerReturns: number;
     vendors: number;
+    vendorLedger: number;
+    vendorReturns: number;
     purchases: number;
     purchaseOrders: number;
     quotations: number;
@@ -1755,6 +2687,7 @@ export interface FullSyncResult {
     expenses: number;
     employees: number;
     devices: number;
+    stockLogs: number;
     masterData: number;
   };
   errors: string[];
@@ -1772,7 +2705,11 @@ export async function syncAllModulesToSupabase(
     products: 0,
     customers: 0,
     customerLedger: 0,
+    sales: 0,
+    customerReturns: 0,
     vendors: 0,
+    vendorLedger: 0,
+    vendorReturns: 0,
     purchases: 0,
     purchaseOrders: 0,
     quotations: 0,
@@ -1780,6 +2717,7 @@ export async function syncAllModulesToSupabase(
     expenses: 0,
     employees: 0,
     devices: 0,
+    stockLogs: 0,
     masterData: 0,
   };
 
@@ -1812,7 +2750,28 @@ export async function syncAllModulesToSupabase(
     errors.push(`Customers: ${e.message}`);
   }
 
-  // 4. Vendors & Purchases
+  // 4. Sales & Customer Returns
+  if (bundle.sales && bundle.sales.length > 0) {
+    try {
+      const salesRes = await syncSalesToSupabase(client, bundle.sales);
+      if (salesRes.success) syncedCounts.sales = salesRes.count;
+      else if (salesRes.error) errors.push(`Sales: ${salesRes.error}`);
+    } catch (e: any) {
+      errors.push(`Sales: ${e.message}`);
+    }
+  }
+
+  if (bundle.customerReturns && bundle.customerReturns.length > 0) {
+    try {
+      const crRes = await syncCustomerReturnsToSupabase(client, bundle.customerReturns);
+      if (crRes.success) syncedCounts.customerReturns = crRes.count;
+      else if (crRes.error) errors.push(`Customer Returns: ${crRes.error}`);
+    } catch (e: any) {
+      errors.push(`Customer Returns: ${e.message}`);
+    }
+  }
+
+  // 5. Vendors & Purchases
   try {
     const vendRes = await syncVendorsAndPurchasesToSupabase(client, bundle.vendors, bundle.purchases, bundle.purchaseOrders);
     if (vendRes.success) {
@@ -1824,7 +2783,28 @@ export async function syncAllModulesToSupabase(
     errors.push(`Vendors & Purchases: ${e.message}`);
   }
 
-  // 5. Quotations
+  // 6. Vendor Ledger & Vendor Returns
+  if (bundle.vendorLedger && bundle.vendorLedger.length > 0) {
+    try {
+      const vlRes = await syncVendorLedgerToSupabase(client, bundle.vendorLedger);
+      if (vlRes.success) syncedCounts.vendorLedger = vlRes.count;
+      else if (vlRes.error) errors.push(`Vendor Ledger: ${vlRes.error}`);
+    } catch (e: any) {
+      errors.push(`Vendor Ledger: ${e.message}`);
+    }
+  }
+
+  if (bundle.vendorReturns && bundle.vendorReturns.length > 0) {
+    try {
+      const vrRes = await syncVendorReturnsToSupabase(client, bundle.vendorReturns);
+      if (vrRes.success) syncedCounts.vendorReturns = vrRes.count;
+      else if (vrRes.error) errors.push(`Vendor Returns: ${vrRes.error}`);
+    } catch (e: any) {
+      errors.push(`Vendor Returns: ${e.message}`);
+    }
+  }
+
+  // 7. Quotations
   try {
     const quoteRes = await syncQuotationsToSupabase(client, bundle.quotations);
     if (quoteRes.success) syncedCounts.quotations = quoteRes.count;
@@ -1833,7 +2813,7 @@ export async function syncAllModulesToSupabase(
     errors.push(`Quotations: ${e.message}`);
   }
 
-  // 6. Demands
+  // 8. Demands
   try {
     const demRes = await syncDemandsToSupabase(client, bundle.demands);
     if (demRes.success) syncedCounts.demands = demRes.count;
@@ -1842,7 +2822,7 @@ export async function syncAllModulesToSupabase(
     errors.push(`Demands: ${e.message}`);
   }
 
-  // 7. Expenses
+  // 9. Expenses
   try {
     const expRes = await syncExpensesToSupabase(client, bundle.expenses);
     if (expRes.success) syncedCounts.expenses = expRes.count;
@@ -1851,7 +2831,7 @@ export async function syncAllModulesToSupabase(
     errors.push(`Expenses: ${e.message}`);
   }
 
-  // 8. Staff & Devices
+  // 10. Staff & Devices
   try {
     const staffRes = await syncStaffAndDevicesToSupabase(client, bundle.employees, bundle.registeredDevices);
     if (staffRes.success) {
@@ -1860,6 +2840,26 @@ export async function syncAllModulesToSupabase(
     } else if (staffRes.error) errors.push(`Staff & Devices: ${staffRes.error}`);
   } catch (e: any) {
     errors.push(`Staff & Devices: ${e.message}`);
+  }
+
+  // 11. Stock Logs
+  if (bundle.stockLogs && bundle.stockLogs.length > 0) {
+    try {
+      const slRes = await syncStockLogsToSupabase(client, bundle.stockLogs);
+      if (slRes.success) syncedCounts.stockLogs = slRes.count;
+      else if (slRes.error) errors.push(`Stock Logs: ${slRes.error}`);
+    } catch (e: any) {
+      errors.push(`Stock Logs: ${e.message}`);
+    }
+  }
+
+  // 12. Pricing Settings
+  if (bundle.pricingSettings) {
+    try {
+      await syncPricingSettingsToSupabase(client, bundle.pricingSettings);
+    } catch (e: any) {
+      errors.push(`Pricing Settings: ${e.message}`);
+    }
   }
 
   const isFullSuccess = errors.length === 0;

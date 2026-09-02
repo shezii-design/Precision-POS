@@ -650,7 +650,7 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[700px] text-left text-xs">
                   <thead className="bg-neutral-100 text-neutral-700 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
                       <th className="px-4 py-3">Date</th>
@@ -924,7 +924,7 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full min-w-[700px] text-left text-xs">
                     <thead className="bg-neutral-100 text-neutral-700 font-bold uppercase tracking-wider text-[10px]">
                       <tr>
                         <th className="px-4 py-3">Date</th>
@@ -1026,7 +1026,7 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full min-w-[700px] text-left text-xs">
                     <thead className="bg-neutral-100 text-neutral-700 font-bold uppercase tracking-wider text-[10px]">
                       <tr>
                         <th className="px-4 py-3">Date</th>
@@ -1145,7 +1145,7 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full min-w-[700px] text-left text-xs">
                     <thead className="bg-neutral-100 text-neutral-700 font-bold uppercase tracking-wider text-[10px]">
                       <tr>
                         <th className="px-4 py-3">Date</th>

@@ -624,7 +624,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
       </section>
 
       {/* 2. EXECUTIVE HIGHLIGHT CARDS (P&L Snapshot) */}
-      <section className="grid grid-cols-2 lg:grid-cols-5 gap-3 print:hidden">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 print:hidden">
         
         {/* Net Sales */}
         <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs">

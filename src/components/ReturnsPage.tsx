@@ -345,7 +345,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
         
         {/* KPI Metrics Banner */}
         {activeTab === 'customer' ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Card 1: Total Customer Returns */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
               <div className="flex items-center justify-between text-slate-500">
@@ -403,7 +403,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Card 1: Total Vendor Returns */}
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
               <div className="flex items-center justify-between text-slate-500">
@@ -609,7 +609,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full min-w-[700px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-100/70 border-b border-slate-200 text-slate-700 font-black">
                       <th className="py-3 px-4">Date & Return #</th>
@@ -790,7 +790,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full min-w-[700px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-100/70 border-b border-slate-200 text-slate-700 font-black">
                       <th className="py-3 px-4">Date & Return #</th>

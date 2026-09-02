@@ -3,9 +3,11 @@ import {
   Brand,
   Customer, 
   CustomerLedgerEntry, 
+  CustomerReturn,
   Demand, 
   EmployeeAccount, 
   Expense, 
+  GlobalPricingSettings,
   LocationItem, 
   Product, 
   ProductType, 
@@ -13,9 +15,12 @@ import {
   PurchaseOrder, 
   Quotation, 
   RegisteredDevice, 
+  Sale,
   StockLog, 
   SupabaseConfig,
-  Vendor
+  Vendor,
+  VendorLedgerEntry,
+  VendorReturn
 } from '../types';
 import { 
   getSupabaseClient, 
@@ -26,12 +31,19 @@ import {
   fetchProductsFromSupabase,
   syncCustomersToSupabase,
   fetchCustomersFromSupabase,
+  syncSalesToSupabase,
+  syncCustomerReturnsToSupabase,
   syncVendorsAndPurchasesToSupabase,
+  syncVendorLedgerToSupabase,
+  syncVendorReturnsToSupabase,
   syncQuotationsToSupabase,
   syncDemandsToSupabase,
   syncExpensesToSupabase,
   syncStaffAndDevicesToSupabase,
+  syncStockLogsToSupabase,
+  syncPricingSettingsToSupabase,
   syncAllModulesToSupabase,
+  fetchAllFromSupabase,
   SCHEMA_FULL_DATABASE,
   SCHEMA_PRODUCTS_ONLY,
   SCHEMA_CUSTOMERS_LEDGER,
@@ -70,7 +82,12 @@ import {
   HelpCircle,
   Sparkles,
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  ShoppingCart,
+  RotateCcw,
+  Receipt,
+  Sliders,
+  History
 } from 'lucide-react';
 
 interface SupabaseConfigModalProps {
@@ -85,7 +102,11 @@ interface SupabaseConfigModalProps {
   locations?: LocationItem[];
   customers?: Customer[];
   customerLedger?: CustomerLedgerEntry[];
+  sales?: Sale[];
+  customerReturns?: CustomerReturn[];
   vendors?: Vendor[];
+  vendorLedger?: VendorLedgerEntry[];
+  vendorReturns?: VendorReturn[];
   purchases?: Purchase[];
   purchaseOrders?: PurchaseOrder[];
   quotations?: Quotation[];
@@ -94,6 +115,7 @@ interface SupabaseConfigModalProps {
   employees?: EmployeeAccount[];
   registeredDevices?: RegisteredDevice[];
   stockLogs?: StockLog[];
+  pricingSettings?: GlobalPricingSettings;
   onImportFullBackup?: (data: any) => void;
 }
 
@@ -109,7 +131,11 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
   locations = [],
   customers = [],
   customerLedger = [],
+  sales = [],
+  customerReturns = [],
   vendors = [],
+  vendorLedger = [],
+  vendorReturns = [],
   purchases = [],
   purchaseOrders = [],
   quotations = [],
@@ -118,9 +144,16 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
   employees = [],
   registeredDevices = [],
   stockLogs = [],
+  pricingSettings,
+  onImportFullBackup,
 }) => {
   const envConfig = getEnvSupabaseConfig();
-  const isCloudConfigured = envConfig.isConfigured;
+  const isCloudConfigured = envConfig.isConfigured || Boolean(config.url && config.anonKey);
+
+  // Manual Credentials Input State
+  const [manualUrl, setManualUrl] = useState<string>(() => config.url || envConfig.url || '');
+  const [manualKey, setManualKey] = useState<string>(() => config.anonKey || envConfig.anonKey || '');
+  const [showManualForm, setShowManualForm] = useState<boolean>(!envConfig.isConfigured);
 
   // Health and Testing state
   const [isTesting, setIsTesting] = useState<boolean>(false);
@@ -128,6 +161,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
 
   // Sync state
   const [isSyncingAll, setIsSyncingAll] = useState<boolean>(false);
+  const [isPullingAll, setIsPullingAll] = useState<boolean>(false);
   const [syncModuleStatus, setSyncModuleStatus] = useState<Record<string, 'idle' | 'syncing' | 'success' | 'error'>>({});
   const [syncFeedback, setSyncFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -138,10 +172,10 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
 
   // On initial open, run a quiet connection test if credentials exist
   useEffect(() => {
-    if (isOpen && envConfig.isConfigured && !testResult) {
-      handleTestConnection(envConfig.url, envConfig.anonKey);
+    if (isOpen && (envConfig.isConfigured || (config.url && config.anonKey)) && !testResult) {
+      handleTestConnection(manualUrl || envConfig.url, manualKey || envConfig.anonKey);
     }
-  }, [isOpen, envConfig.isConfigured]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -150,29 +184,60 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     setTestResult(null);
     setSyncFeedback(null);
 
-    const targetUrl = urlToTest || envConfig.url;
-    const targetKey = keyToTest || envConfig.anonKey;
+    const targetUrl = urlToTest || manualUrl || envConfig.url || config.url;
+    const targetKey = keyToTest || manualKey || envConfig.anonKey || config.anonKey;
+
+    if (!targetUrl || !targetKey) {
+      setIsTesting(false);
+      setSyncFeedback({ success: false, message: 'Please provide both Supabase URL and Anon Key.' });
+      return;
+    }
 
     const res = await testSupabaseConnection(targetUrl, targetKey);
     setIsTesting(false);
     setTestResult(res);
 
     if (res.success) {
-      onSaveConfig({
+      const updatedConfig: SupabaseConfig = {
         ...config,
         url: targetUrl,
         anonKey: targetKey,
         enabled: true,
         syncStatus: 'connected',
         lastSyncedAt: config.lastSyncedAt || new Date().toISOString(),
-      });
+      };
+      onSaveConfig(updatedConfig);
+      const totalRecords = res.tables ? res.tables.reduce((sum, t) => sum + (t.rowCount || 0), 0) : 0;
+      setSyncFeedback({ success: true, message: `Connected to Supabase! Latency: ${res.latencyMs}ms (${totalRecords} records found)` });
+    } else {
+      setSyncFeedback({ success: false, message: `Connection failed: ${res.message}` });
     }
   };
 
+  const handleSaveManualCredentials = () => {
+    if (!manualUrl.trim() || !manualKey.trim()) {
+      setSyncFeedback({ success: false, message: 'Please enter both Supabase Project URL and Anon Key.' });
+      return;
+    }
+    const cleanUrl = manualUrl.trim();
+    const cleanKey = manualKey.trim();
+    const newConfig: SupabaseConfig = {
+      ...config,
+      url: cleanUrl,
+      anonKey: cleanKey,
+      enabled: true,
+      syncStatus: 'connected',
+      lastSyncedAt: new Date().toISOString(),
+    };
+    onSaveConfig(newConfig);
+    resetSupabaseClient();
+    handleTestConnection(cleanUrl, cleanKey);
+  };
+
   const handlePushAllToCloud = async () => {
-    const client = getSupabaseClient();
+    const client = getSupabaseClient(config);
     if (!client) {
-      setSyncFeedback({ success: false, message: 'Supabase client could not be initialized. Check your .env file.' });
+      setSyncFeedback({ success: false, message: 'Supabase client could not be initialized. Please configure credentials.' });
       return;
     }
 
@@ -186,7 +251,11 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
       locations,
       customers,
       customerLedger,
+      sales,
+      customerReturns,
       vendors,
+      vendorLedger,
+      vendorReturns,
       purchases,
       purchaseOrders,
       quotations,
@@ -195,6 +264,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
       employees,
       registeredDevices,
       stockLogs,
+      pricingSettings,
     };
 
     const res = await syncAllModulesToSupabase(client, bundle);
@@ -204,14 +274,14 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
       setSyncFeedback({ success: true, message: res.message });
       onSaveConfig({
         ...config,
-        url: envConfig.url,
-        anonKey: envConfig.anonKey,
+        url: config.url || envConfig.url,
+        anonKey: config.anonKey || envConfig.anonKey,
         enabled: true,
         lastSyncedAt: new Date().toISOString(),
         syncStatus: 'connected',
       });
       // Re-run connection test to refresh table row counts
-      handleTestConnection(envConfig.url, envConfig.anonKey);
+      handleTestConnection(config.url || envConfig.url, config.anonKey || envConfig.anonKey);
     } else {
       setSyncFeedback({ 
         success: false, 
@@ -220,10 +290,39 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     }
   };
 
-  const handleSyncModule = async (module: string) => {
-    const client = getSupabaseClient();
+  const handlePullAllFromCloud = async () => {
+    const client = getSupabaseClient(config);
     if (!client) {
-      setSyncFeedback({ success: false, message: 'Please configure Supabase in your .env file first.' });
+      setSyncFeedback({ success: false, message: 'Supabase client could not be initialized. Please configure credentials.' });
+      return;
+    }
+
+    setIsPullingAll(true);
+    setSyncFeedback(null);
+
+    const res = await fetchAllFromSupabase(client);
+    setIsPullingAll(false);
+
+    if (res.success && res.data) {
+      if (onImportFullBackup) {
+        onImportFullBackup(res.data);
+      } else if (onImportBackup && res.data.products) {
+        onImportBackup(res.data.products);
+      }
+      setSyncFeedback({ 
+        success: true, 
+        message: `Successfully loaded all ERP data from Supabase! (${res.data.products?.length || 0} products, ${res.data.sales?.length || 0} sales, ${res.data.customers?.length || 0} customers, ${res.data.purchases?.length || 0} purchases)` 
+      });
+      handleTestConnection(config.url || envConfig.url, config.anonKey || envConfig.anonKey);
+    } else {
+      setSyncFeedback({ success: false, message: `Download failed: ${res.error}` });
+    }
+  };
+
+  const handleSyncModule = async (module: string) => {
+    const client = getSupabaseClient(config);
+    if (!client) {
+      setSyncFeedback({ success: false, message: 'Please configure Supabase credentials first.' });
       return;
     }
 
@@ -239,6 +338,15 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
           setSyncFeedback({ success: false, message: res.error || 'Failed to sync products' });
           setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
         }
+      } else if (module === 'sales') {
+        const res = await syncSalesToSupabase(client, sales);
+        if (res.success) {
+          setSyncFeedback({ success: true, message: `Synced ${res.count} sales & invoices to Supabase!` });
+          setSyncModuleStatus(prev => ({ ...prev, [module]: 'success' }));
+        } else {
+          setSyncFeedback({ success: false, message: res.error || 'Failed to sync sales' });
+          setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
+        }
       } else if (module === 'customers') {
         const res = await syncCustomersToSupabase(client, customers, customerLedger);
         if (res.success) {
@@ -248,13 +356,40 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
           setSyncFeedback({ success: false, message: res.error || 'Failed to sync customers' });
           setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
         }
+      } else if (module === 'customerReturns') {
+        const res = await syncCustomerReturnsToSupabase(client, customerReturns);
+        if (res.success) {
+          setSyncFeedback({ success: true, message: `Synced ${res.count} customer returns to Supabase!` });
+          setSyncModuleStatus(prev => ({ ...prev, [module]: 'success' }));
+        } else {
+          setSyncFeedback({ success: false, message: res.error || 'Failed to sync customer returns' });
+          setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
+        }
       } else if (module === 'vendors') {
         const res = await syncVendorsAndPurchasesToSupabase(client, vendors, purchases, purchaseOrders);
         if (res.success) {
-          setSyncFeedback({ success: true, message: `Synced ${res.vendorCount} vendors & ${res.purchaseCount} bills!` });
+          setSyncFeedback({ success: true, message: `Synced ${res.vendorCount} vendors, ${res.purchaseCount} bills & ${res.poCount} POs!` });
           setSyncModuleStatus(prev => ({ ...prev, [module]: 'success' }));
         } else {
           setSyncFeedback({ success: false, message: res.error || 'Failed to sync vendors' });
+          setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
+        }
+      } else if (module === 'vendorLedger') {
+        const res = await syncVendorLedgerToSupabase(client, vendorLedger);
+        if (res.success) {
+          setSyncFeedback({ success: true, message: `Synced ${res.count} vendor ledger entries!` });
+          setSyncModuleStatus(prev => ({ ...prev, [module]: 'success' }));
+        } else {
+          setSyncFeedback({ success: false, message: res.error || 'Failed to sync vendor ledger' });
+          setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
+        }
+      } else if (module === 'vendorReturns') {
+        const res = await syncVendorReturnsToSupabase(client, vendorReturns);
+        if (res.success) {
+          setSyncFeedback({ success: true, message: `Synced ${res.count} vendor returns & debit notes!` });
+          setSyncModuleStatus(prev => ({ ...prev, [module]: 'success' }));
+        } else {
+          setSyncFeedback({ success: false, message: res.error || 'Failed to sync vendor returns' });
           setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
         }
       } else if (module === 'quotations') {
@@ -284,6 +419,15 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
           setSyncFeedback({ success: false, message: res.error || 'Failed to sync expenses' });
           setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
         }
+      } else if (module === 'stockLogs') {
+        const res = await syncStockLogsToSupabase(client, stockLogs);
+        if (res.success) {
+          setSyncFeedback({ success: true, message: `Synced ${res.count} stock audit logs!` });
+          setSyncModuleStatus(prev => ({ ...prev, [module]: 'success' }));
+        } else {
+          setSyncFeedback({ success: false, message: res.error || 'Failed to sync stock logs' });
+          setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
+        }
       } else if (module === 'staff') {
         const res = await syncStaffAndDevicesToSupabase(client, employees, registeredDevices);
         if (res.success) {
@@ -294,7 +438,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
           setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
         }
       }
-      handleTestConnection(envConfig.url, envConfig.anonKey);
+      handleTestConnection(config.url || envConfig.url, config.anonKey || envConfig.anonKey);
     } catch (err: any) {
       setSyncFeedback({ success: false, message: err.message || 'Sync error' });
       setSyncModuleStatus(prev => ({ ...prev, [module]: 'error' }));
@@ -302,9 +446,9 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
   };
 
   const handlePullProducts = async () => {
-    const client = getSupabaseClient();
+    const client = getSupabaseClient(config);
     if (!client) {
-      setSyncFeedback({ success: false, message: 'Please configure Supabase in your .env file first.' });
+      setSyncFeedback({ success: false, message: 'Please configure Supabase credentials first.' });
       return;
     }
 
@@ -352,7 +496,11 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
       locations,
       customers,
       customerLedger,
+      sales,
+      customerReturns,
       vendors,
+      vendorLedger,
+      vendorReturns,
       purchases,
       purchaseOrders,
       quotations,
@@ -360,14 +508,17 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
       expenses,
       employees,
       registeredDevices,
+      stockLogs,
+      pricingSettings,
     };
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(fullBackup, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `erp_complete_backup_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
+
+    const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Precision_ERP_FullBackup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleImportJsonFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -547,126 +698,98 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
           {activeTab === 'connection' && (
             <div className="space-y-4">
               
-              {/* Environment-Driven Connection Card */}
+              {/* Credentials & Setup Card */}
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
                   <div>
                     <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                       <Key className="w-4 h-4 text-red-600" />
-                      <span>Supabase Cloud Credentials (.env)</span>
+                      <span>Supabase Cloud Credentials</span>
                     </h3>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Credentials are configured via your <code className="font-mono text-slate-700 bg-slate-200/80 px-1 py-0.5 rounded">.env</code> file for security.
+                      Enter your project URL and public Anon Key from your Supabase dashboard (or configure via <code className="font-mono text-slate-700 bg-slate-200/80 px-1 py-0.5 rounded">.env</code>).
                     </p>
                   </div>
 
-                  {envConfig.isConfigured ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-3 py-1 rounded-xl shrink-0">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>.env Configured</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-100 border border-amber-300 px-3 py-1 rounded-xl shrink-0">
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                      <span>Missing in .env</span>
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {isCloudConfigured ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-3 py-1 rounded-xl shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Connected / Configured</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-100 border border-amber-300 px-3 py-1 rounded-xl shrink-0">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        <span>Action Required</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {envConfig.isConfigured ? (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="p-3 bg-white rounded-xl border border-slate-200">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Project Endpoint (VITE_SUPABASE_URL)</span>
-                        <div className="font-mono text-xs font-bold text-slate-800 truncate mt-1">{envConfig.url}</div>
-                      </div>
-                      <div className="p-3 bg-white rounded-xl border border-slate-200">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Public Anon Key (VITE_SUPABASE_ANON_KEY)</span>
-                        <div className="font-mono text-xs font-bold text-slate-800 truncate mt-1">
-                          {envConfig.anonKey ? `${envConfig.anonKey.substring(0, 14)}••••••••••••${envConfig.anonKey.substring(envConfig.anonKey.length - 6)}` : 'Not Set'}
-                        </div>
-                      </div>
+                {/* Direct Credentials Input Form */}
+                <div className="space-y-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                        Supabase Project URL
+                      </label>
+                      <input
+                        type="text"
+                        value={manualUrl}
+                        onChange={(e) => setManualUrl(e.target.value)}
+                        placeholder="https://xyzcompany.supabase.co"
+                        className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-hidden bg-slate-50 focus:bg-white transition-colors"
+                      />
                     </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                        Supabase Public Anon Key
+                      </label>
+                      <input
+                        type="password"
+                        value={manualKey}
+                        onChange={(e) => setManualKey(e.target.value)}
+                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-hidden bg-slate-50 focus:bg-white transition-colors"
+                      />
+                    </div>
+                  </div>
 
-                    <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        id="btn-save-manual-supabase"
+                        onClick={handleSaveManualCredentials}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Save & Test Connection</span>
+                      </button>
+
                       <button
                         type="button"
                         id="btn-test-supabase-connection"
                         onClick={() => handleTestConnection()}
                         disabled={isTesting}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer border border-slate-200"
                       >
                         <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
-                        <span>{isTesting ? 'Testing Latency...' : 'Test Connection & Health'}</span>
+                        <span>{isTesting ? 'Testing Latency...' : 'Test Connection'}</span>
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('sync')}
-                        className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                      >
-                        <ArrowUpToLine className="w-3.5 h-3.5 text-red-600" />
-                        <span>Go to Cloud Sync Hub</span>
-                      </button>
-
-                      <a
-                        href="https://supabase.com/dashboard"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-xl transition-colors ml-auto flex items-center gap-1"
-                      >
-                        <span>Supabase Dashboard</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
                     </div>
+
+                    <a
+                      href="https://supabase.com/dashboard"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 hover:underline"
+                    >
+                      <span>Open Supabase Dashboard</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-2">
-                      <div className="font-bold flex items-center gap-1.5 text-amber-950">
-                        <Sparkles className="w-4 h-4 text-amber-700" />
-                        <span>To connect your Supabase database, set these variables in your <code className="font-mono bg-amber-100 px-1 py-0.5 rounded">.env</code> file:</span>
-                      </div>
-                      <pre className="p-3 bg-slate-900 text-amber-200 font-mono text-xs rounded-xl overflow-x-auto select-all">
-{`VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
-                      </pre>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(`VITE_SUPABASE_URL=https://your-project-id.supabase.co\nVITE_SUPABASE_ANON_KEY=your-anon-key-here`);
-                          setSyncFeedback({ success: true, message: '.env template snippet copied to clipboard!' });
-                        }}
-                        className="px-3.5 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy .env Template</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('schema')}
-                        className="px-3.5 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <FileCode2 className="w-3.5 h-3.5 text-red-600" />
-                        <span>View SQL Schema Code</span>
-                      </button>
-
-                      <a
-                        href="https://supabase.com/dashboard"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-xl transition-colors ml-auto flex items-center gap-1"
-                      >
-                        <span>Supabase Dashboard</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
 
               {/* Database Table Health Inspector */}
@@ -675,11 +798,11 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
                   <div className="flex items-center gap-2">
                     <Activity className="w-4 h-4 text-emerald-600" />
                     <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                      Relational Table Health Inspector
+                      Database Tables Health & Status
                     </span>
                   </div>
                   {testResult && (
-                    <span className="text-[11px] font-bold text-slate-600">
+                    <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
                       {testResult.readyTableCount} / {testResult.totalTableCount} Tables Active
                     </span>
                   )}
@@ -687,18 +810,22 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                   {(testResult?.tables || [
-                    { tableName: 'inventory_products', label: 'Inventory Products (Cell-by-Cell)', exists: false, rowCount: products.length, status: 'ready' },
+                    { tableName: 'inventory_products', label: 'Inventory Products', exists: false, rowCount: products.length, status: 'ready' },
+                    { tableName: 'sales', label: 'Sales & POS Invoices', exists: false, rowCount: sales.length, status: 'ready' },
+                    { tableName: 'customer_returns', label: 'Customer Returns & Credits', exists: false, rowCount: customerReturns.length, status: 'ready' },
                     { tableName: 'customers', label: 'Customers Directory', exists: false, rowCount: customers.length, status: 'ready' },
-                    { tableName: 'customer_ledger', label: 'Customer Ledger', exists: false, rowCount: customerLedger.length, status: 'ready' },
+                    { tableName: 'customer_ledger', label: 'Customer Ledger Entries', exists: false, rowCount: customerLedger.length, status: 'ready' },
                     { tableName: 'vendors', label: 'Vendors & Suppliers', exists: false, rowCount: vendors.length, status: 'ready' },
-                    { tableName: 'purchase_orders', label: 'Purchase Orders', exists: false, rowCount: purchaseOrders.length, status: 'ready' },
+                    { tableName: 'vendor_ledger', label: 'Vendor Ledgers', exists: false, rowCount: vendorLedger.length, status: 'ready' },
+                    { tableName: 'vendor_returns', label: 'Vendor Returns & Debits', exists: false, rowCount: vendorReturns.length, status: 'ready' },
                     { tableName: 'purchases', label: 'Purchase Bills', exists: false, rowCount: purchases.length, status: 'ready' },
+                    { tableName: 'purchase_orders', label: 'Purchase Orders', exists: false, rowCount: purchaseOrders.length, status: 'ready' },
                     { tableName: 'quotations', label: 'Quotations & Estimates', exists: false, rowCount: quotations.length, status: 'ready' },
                     { tableName: 'demands', label: 'Customer Demands', exists: false, rowCount: demands.length, status: 'ready' },
                     { tableName: 'expenses', label: 'Expenses Records', exists: false, rowCount: expenses.length, status: 'ready' },
+                    { tableName: 'stock_logs', label: 'Stock Movement Logs', exists: false, rowCount: stockLogs.length, status: 'ready' },
                     { tableName: 'employee_accounts', label: 'Staff Accounts', exists: false, rowCount: employees.length, status: 'ready' },
                     { tableName: 'registered_devices', label: 'Registered Terminals', exists: false, rowCount: registeredDevices.length, status: 'ready' },
-                    { tableName: 'stock_logs', label: 'Stock Movement Logs', exists: false, rowCount: stockLogs.length, status: 'ready' },
                   ]).map((t) => (
                     <div 
                       key={t.tableName}
@@ -747,7 +874,7 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
                     </h4>
                   </div>
                   <p className="text-xs text-slate-300">
-                    The complete PostgreSQL DDL schema with all 15 tables, relational columns (dimensions, prices, ledgers), indexes, and RLS policies is ready to copy or view.
+                    The complete PostgreSQL DDL schema with all 20 tables, relational columns (dimensions, prices, sales, ledgers), indexes, and RLS policies is ready to copy or view.
                   </p>
                 </div>
 
@@ -794,11 +921,11 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
                     <h3 className="text-sm font-bold text-white">Full Multi-Table Cloud Synchronization</h3>
                   </div>
                   <p className="text-xs text-slate-300">
-                    Push all inventory items, dimensions, price tiers, customer ledgers, vendor bills, quotations, and staff accounts to Supabase with one click.
+                    Push all ERP records (products, sales, ledgers, bills, returns, staff) to Supabase or pull everything down to restore your local database.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
                   <button
                     type="button"
                     id="btn-full-push-supabase"
@@ -807,7 +934,18 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
                     className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-md cursor-pointer"
                   >
                     <ArrowUpToLine className={`w-4 h-4 ${isSyncingAll ? 'animate-spin' : ''}`} />
-                    <span>{isSyncingAll ? 'Syncing All Tables...' : 'Sync All to Cloud'}</span>
+                    <span>{isSyncingAll ? 'Pushing All Tables...' : 'Push All to Cloud'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    id="btn-full-pull-supabase"
+                    onClick={handlePullAllFromCloud}
+                    disabled={isPullingAll || !isCloudConfigured}
+                    className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-md cursor-pointer"
+                  >
+                    <ArrowDownToLine className={`w-4 h-4 ${isPullingAll ? 'animate-spin' : ''}`} />
+                    <span>{isPullingAll ? 'Restoring All...' : 'Pull All from Cloud'}</span>
                   </button>
                 </div>
               </div>
@@ -851,7 +989,34 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
                   </div>
                 </div>
 
-                {/* 2. Customers & Ledgers */}
+                {/* 2. Sales & POS Invoices */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs">
+                        <ShoppingCart className="w-4 h-4" />
+                      </div>
+                      <span className="font-bold text-xs text-slate-900">Sales & Invoices</span>
+                    </div>
+                    <span className="font-mono text-xs font-bold text-slate-600">{sales.length} orders</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    POS receipts, itemized line items, totals
+                  </div>
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSyncModule('sales')}
+                      disabled={!isCloudConfigured}
+                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      <ArrowUpToLine className="w-3 h-3 text-emerald-600" />
+                      <span>Push Sales & Invoices</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Customers & Ledgers */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -878,7 +1043,34 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
                   </div>
                 </div>
 
-                {/* 3. Vendors & Purchases */}
+                {/* 4. Customer Returns */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs">
+                        <RotateCcw className="w-4 h-4" />
+                      </div>
+                      <span className="font-bold text-xs text-slate-900">Customer Returns</span>
+                    </div>
+                    <span className="font-mono text-xs font-bold text-slate-600">{customerReturns.length} returns</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Return entries, refund credit notes, stock re-entry
+                  </div>
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSyncModule('customerReturns')}
+                      disabled={!isCloudConfigured}
+                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      <ArrowUpToLine className="w-3 h-3 text-rose-600" />
+                      <span>Push Returns</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 5. Vendors & Purchases */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -905,7 +1097,34 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
                   </div>
                 </div>
 
-                {/* 4. Quotations */}
+                {/* 6. Vendor Ledger */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
+                        <Receipt className="w-4 h-4" />
+                      </div>
+                      <span className="font-bold text-xs text-slate-900">Vendor Ledger</span>
+                    </div>
+                    <span className="font-mono text-xs font-bold text-slate-600">{vendorLedger.length} entries</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Supplier debit/credit transactions & running balances
+                  </div>
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSyncModule('vendorLedger')}
+                      disabled={!isCloudConfigured}
+                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      <ArrowUpToLine className="w-3 h-3 text-indigo-600" />
+                      <span>Push Vendor Ledger</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 7. Quotations */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -932,11 +1151,11 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
                   </div>
                 </div>
 
-                {/* 5. Expenses */}
+                {/* 8. Expenses */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs">
+                      <div className="w-7 h-7 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center font-bold text-xs">
                         <DollarSign className="w-4 h-4" />
                       </div>
                       <span className="font-bold text-xs text-slate-900">Expenses</span>
@@ -953,13 +1172,40 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...`}
                       disabled={!isCloudConfigured}
                       className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
-                      <ArrowUpToLine className="w-3 h-3 text-emerald-600" />
+                      <ArrowUpToLine className="w-3 h-3 text-teal-600" />
                       <span>Push Expenses</span>
                     </button>
                   </div>
                 </div>
 
-                {/* 6. Staff & Hardware */}
+                {/* 9. Stock Audit Logs */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center font-bold text-xs">
+                        <History className="w-4 h-4" />
+                      </div>
+                      <span className="font-bold text-xs text-slate-900">Stock Logs</span>
+                    </div>
+                    <span className="font-mono text-xs font-bold text-slate-600">{stockLogs.length} logs</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Physical stock audit trails & adjustments
+                  </div>
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleSyncModule('stockLogs')}
+                      disabled={!isCloudConfigured}
+                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      <ArrowUpToLine className="w-3 h-3 text-cyan-700" />
+                      <span>Push Stock Logs</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 10. Staff & Hardware */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

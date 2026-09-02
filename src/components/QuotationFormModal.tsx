@@ -824,7 +824,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
 
             {/* Table Container */}
             <div className="border border-slate-200 rounded-2xl overflow-x-auto bg-white shadow-2xs">
-              <table className="w-full text-left text-xs">
+              <table className="w-full min-w-[700px] text-left text-xs">
                 <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                   <tr>
                     <th className="py-2.5 px-3 w-10">#</th>

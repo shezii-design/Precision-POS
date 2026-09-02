@@ -138,7 +138,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
       </div>
 
       {/* KPI Cards Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Total POs */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
           <div>

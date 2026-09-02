@@ -92,7 +92,8 @@ import {
   saveStoredVendorReturns,
   saveStoredQuotations,
   saveStoredPurchaseOrders,
-  saveStoredDemands
+  saveStoredDemands,
+  saveStoredStockLogs
 } from './services/storage';
 import { 
   getStoredAuthState, 
@@ -191,7 +192,11 @@ export default function App() {
   const [locations, setLocations] = useState<LocationItem[]>(() => getStoredLocations());
   const [pricingSettings, setPricingSettings] = useState<GlobalPricingSettings>(() => getStoredPricingSettings());
   const [supabaseConfig, setSupabaseConfig] = useState<SupabaseConfig>(() => getStoredSupabaseConfig());
-  const [authState, setAuthState] = useState<AuthState>(() => getStoredAuthState());
+  const [authState, setAuthState] = useState<AuthState>(() => {
+    const stored = getStoredAuthState();
+    // Always lock the app on startup for security
+    return { ...stored, isLocked: true };
+  });
   const [deviceInfo] = useState<DeviceInfo>(() => detectDeviceInfo());
 
   // Staff & RBAC Permissions State
@@ -1855,7 +1860,7 @@ export default function App() {
         ) : (
           <>
             {/* KPI Stats Bar */}
-            <section className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
               {/* Stat 1: Total Valuation in PKR */}
               <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between min-w-0">
                 <div className="min-w-0">
@@ -2386,7 +2391,11 @@ export default function App() {
         locations={locations}
         customers={customers}
         customerLedger={customerLedger}
+        sales={sales}
+        customerReturns={customerReturns}
         vendors={vendors}
+        vendorLedger={ledgerEntries}
+        vendorReturns={vendorReturns}
         purchases={purchases}
         purchaseOrders={purchaseOrders}
         quotations={quotations}
@@ -2395,6 +2404,85 @@ export default function App() {
         employees={employees}
         registeredDevices={getStoredRegisteredDevices()}
         stockLogs={stockLogs}
+        pricingSettings={pricingSettings}
+        onImportFullBackup={(data: any) => {
+          if (data.products && Array.isArray(data.products)) {
+            saveStoredProducts(data.products);
+            setProducts(data.products);
+          }
+          if (data.brands && Array.isArray(data.brands)) {
+            saveStoredBrands(data.brands);
+            setBrands(data.brands);
+          }
+          if (data.types && Array.isArray(data.types)) {
+            saveStoredTypes(data.types);
+            setTypes(data.types);
+          }
+          if (data.locations && Array.isArray(data.locations)) {
+            saveStoredLocations(data.locations);
+            setLocations(data.locations);
+          }
+          if (data.customers && Array.isArray(data.customers)) {
+            saveStoredCustomers(data.customers);
+            setCustomers(data.customers);
+          }
+          if (data.customerLedger && Array.isArray(data.customerLedger)) {
+            saveStoredCustomerLedger(data.customerLedger);
+            setCustomerLedger(data.customerLedger);
+          }
+          if (data.sales && Array.isArray(data.sales)) {
+            saveStoredSales(data.sales);
+            setSales(data.sales);
+          }
+          if (data.customerReturns && Array.isArray(data.customerReturns)) {
+            saveStoredCustomerReturns(data.customerReturns);
+            setCustomerReturns(data.customerReturns);
+          }
+          if (data.vendors && Array.isArray(data.vendors)) {
+            saveStoredVendors(data.vendors);
+            setVendors(data.vendors);
+          }
+          if (data.vendorLedger && Array.isArray(data.vendorLedger)) {
+            saveStoredVendorLedgerEntries(data.vendorLedger);
+            setLedgerEntries(data.vendorLedger);
+          }
+          if (data.vendorReturns && Array.isArray(data.vendorReturns)) {
+            saveStoredVendorReturns(data.vendorReturns);
+            setVendorReturns(data.vendorReturns);
+          }
+          if (data.purchases && Array.isArray(data.purchases)) {
+            saveStoredPurchases(data.purchases);
+            setPurchases(data.purchases);
+          }
+          if (data.purchaseOrders && Array.isArray(data.purchaseOrders)) {
+            saveStoredPurchaseOrders(data.purchaseOrders);
+            setPurchaseOrders(data.purchaseOrders);
+          }
+          if (data.quotations && Array.isArray(data.quotations)) {
+            saveStoredQuotations(data.quotations);
+            setQuotations(data.quotations);
+          }
+          if (data.demands && Array.isArray(data.demands)) {
+            saveStoredDemands(data.demands);
+            setDemands(data.demands);
+          }
+          if (data.expenses && Array.isArray(data.expenses)) {
+            saveStoredExpenses(data.expenses);
+            setExpenses(data.expenses);
+          }
+          if (data.employees && Array.isArray(data.employees)) {
+            saveStoredEmployees(data.employees);
+            setEmployees(data.employees);
+          }
+          if (data.stockLogs && Array.isArray(data.stockLogs)) {
+            saveStoredStockLogs(data.stockLogs);
+            setStockLogs(data.stockLogs);
+          }
+          if (data.pricingSettings) {
+            saveStoredPricingSettings(data.pricingSettings);
+            setPricingSettings(data.pricingSettings);
+          }
+        }}
       />
 
       {/* 8. Auth & Lock Screen Modal */}

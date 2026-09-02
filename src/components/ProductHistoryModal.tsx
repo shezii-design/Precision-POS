@@ -590,7 +590,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
           className="flex-1 overflow-y-auto overscroll-contain touch-pan-y min-h-0 divide-y divide-slate-200"
         >
           {/* SUMMARY KPI CARDS */}
-          <div className="p-3 sm:p-4 bg-slate-50 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+          <div className="p-3 sm:p-4 bg-slate-50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
             {/* Card 1: Purchases Summary */}
             <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-2xs">
               <div className="flex items-center justify-between text-indigo-700 font-bold text-xs">

@@ -263,7 +263,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
 
           {/* Items Table */}
           <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full min-w-[700px] text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200 text-[11px]">
                   <th className="py-2.5 px-3 w-8 text-center">#</th>

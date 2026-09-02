@@ -1,15 +1,7 @@
-// The Vite config is executed by Node, while the editor may not have the
-// workspace dependencies and Node type declarations installed yet.
-// @ts-ignore -- resolved by the project's package manager when Vite runs.
 import tailwindcss from '@tailwindcss/vite';
-// @ts-ignore -- resolved by the project's package manager when Vite runs.
 import react from '@vitejs/plugin-react';
-// @ts-ignore -- resolved by the project's package manager when Vite runs.
+import path from 'path';
 import {defineConfig} from 'vite';
-
-declare const process: {
-  env: Record<string, string | undefined>;
-};
 
 export default defineConfig(() => {
   return {
@@ -17,7 +9,7 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': new URL('./', import.meta.url).pathname,
+        '@': path.resolve(__dirname, '.'),
       },
     },
     server: {

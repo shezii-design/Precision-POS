@@ -135,8 +135,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsBiometricScanning(true);
     setErrorMessage('');
 
-    // Attempt native WebAuthn
-    const result = await authenticateWithWebAuthn();
+    // Attempt native WebAuthn using the saved credential if it exists
+    const result = await authenticateWithWebAuthn(authState.biometricCredentialId);
 
     if (result.success) {
       setBiometricSuccess(true);
@@ -145,14 +145,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onAuthSuccess();
       }, 500);
     } else {
-      // Fallback touch verification for browser environments
-      setTimeout(() => {
-        setBiometricSuccess(true);
-        setTimeout(() => {
-          setIsBiometricScanning(false);
-          onAuthSuccess();
-        }, 600);
-      }, 800);
+      setIsBiometricScanning(false);
+      setErrorMessage(result.error || 'Biometric authentication failed. Please try again or use PIN.');
+    }
+  };
+
+  const handleRegisterBiometrics = async () => {
+    const { registerWebAuthn } = await import('../services/auth');
+    const result = await registerWebAuthn();
+    if (result.success && result.credentialId) {
+      const updated: AuthState = {
+        ...authState,
+        biometricCredentialId: result.credentialId,
+        biometricsEnabled: true,
+      };
+      saveAuthState(updated);
+      onUpdateAuthState(updated);
+      setBiometricsToggle(true);
+      alert('Fingerprint successfully registered and saved!');
+    } else {
+      alert(`Registration failed: ${result.error}`);
     }
   };
 
@@ -495,7 +507,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               <div className="pt-1">
-                <label className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer">
+                <label className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer mb-2">
                   <div className="flex items-center gap-2.5">
                     <Fingerprint className="w-5 h-5 text-red-600" />
                     <div>
@@ -510,6 +522,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     className="w-4 h-4 text-red-600 rounded border-slate-300 focus:ring-red-500"
                   />
                 </label>
+
+                {biometricsToggle && (
+                  <button
+                    type="button"
+                    onClick={handleRegisterBiometrics}
+                    className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition-colors flex items-center justify-center gap-2 mb-2"
+                  >
+                    <ScanFace className="w-4 h-4 text-slate-600" />
+                    {authState.biometricCredentialId ? 'Re-register Fingerprint (Saved)' : 'Register Fingerprint to Device & Cloud'}
+                  </button>
+                )}
               </div>
 
               <div className="flex gap-2 pt-2">

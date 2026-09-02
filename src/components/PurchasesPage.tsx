@@ -400,7 +400,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
 
         {/* Expandable Advanced Filters Drawer */}
         {showFiltersDrawer && (
-          <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in">
+          <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in">
             {/* Vendor Filter */}
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">
@@ -506,7 +506,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
       ) : (
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
                   <th className="px-4 py-3.5">Bill # / Date</th>

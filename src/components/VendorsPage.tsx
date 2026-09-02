@@ -204,7 +204,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
         </div>
 
         {/* KPI Cards Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
           <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 shadow-2xs">
             <div className="flex items-center justify-between text-xs text-neutral-500 font-semibold">
               <span>Total Vendors</span>

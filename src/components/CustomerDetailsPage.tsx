@@ -845,7 +845,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
-                          <table className="w-full text-left text-xs border-collapse">
+                          <table className="w-full min-w-[700px] text-left text-xs border-collapse">
                             <thead>
                               <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
                                 <th className="py-2 px-3">Item / Filter Code</th>
@@ -1063,7 +1063,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
           {/* Ledger Table */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[700px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-900 text-white font-black">
                     <th className="py-3 px-4 w-28">Date</th>
@@ -1216,7 +1216,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
 
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[700px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-900 text-white font-black">
                     <th className="py-3 px-4">Invoice #</th>

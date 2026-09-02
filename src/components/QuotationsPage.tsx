@@ -195,7 +195,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
       </div>
 
       {/* KPI METRIC CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         {/* Stat 1: Total Active Quotations */}
         <div 
           onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
@@ -421,7 +421,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[700px] text-left text-xs">
               <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-4">Quotation # & Date</th>

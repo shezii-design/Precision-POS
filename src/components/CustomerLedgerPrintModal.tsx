@@ -264,7 +264,7 @@ export const CustomerLedgerPrintModal: React.FC<CustomerLedgerPrintModalProps> =
 
           {/* Statement Table */}
           <div className="border border-slate-300 rounded-xl overflow-hidden">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-900 text-white font-black">
                   <th className="py-2.5 px-3 border-r border-slate-800 w-24">Date</th>

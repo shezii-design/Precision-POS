@@ -573,7 +573,7 @@ export function isActionAllowed(user: EmployeeAccount, action: keyof EmployeePer
 /**
  * Attempts real WebAuthn authentication.
  */
-export async function authenticateWithWebAuthn(): Promise<{ success: boolean; error?: string }> {
+export async function authenticateWithWebAuthn(credentialId?: string): Promise<{ success: boolean; error?: string }> {
   try {
     if (typeof window === 'undefined' || !window.PublicKeyCredential) {
       return { success: false, error: 'Biometric hardware not accessible in this browser.' };
@@ -582,13 +582,35 @@ export async function authenticateWithWebAuthn(): Promise<{ success: boolean; er
     const challenge = new Uint8Array(32);
     window.crypto.getRandomValues(challenge);
 
-    const credential = await navigator.credentials.get({
+    const options: CredentialRequestOptions = {
       publicKey: {
         challenge,
         timeout: 60000,
         userVerification: 'preferred',
       }
-    });
+    };
+
+    if (credentialId && options.publicKey) {
+      try {
+        // Convert Base64URL to Uint8Array
+        let base64 = credentialId.replace(/-/g, '+').replace(/_/g, '/');
+        const padLen = (4 - (base64.length % 4)) % 4;
+        base64 += '='.repeat(padLen);
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        options.publicKey.allowCredentials = [{
+          type: 'public-key',
+          id: bytes,
+        }];
+      } catch (e) {
+        console.warn('Invalid credentialId format, skipping allowCredentials', e);
+      }
+    }
+
+    const credential = await navigator.credentials.get(options);
 
     if (credential) {
       return { success: true };
@@ -597,6 +619,47 @@ export async function authenticateWithWebAuthn(): Promise<{ success: boolean; er
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.warn('WebAuthn note:', errorMsg);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Registers a new WebAuthn credential (Fingerprint/FaceID).
+ */
+export async function registerWebAuthn(): Promise<{ success: boolean; credentialId?: string; error?: string }> {
+  try {
+    if (typeof window === 'undefined' || !window.PublicKeyCredential) {
+      return { success: false, error: 'Biometric hardware not supported.' };
+    }
+
+    const challenge = new Uint8Array(32);
+    window.crypto.getRandomValues(challenge);
+    const userId = new Uint8Array(16);
+    window.crypto.getRandomValues(userId);
+
+    const credential = await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { name: 'Precision Inventory', id: window.location.hostname },
+        user: { id: userId, name: 'admin', displayName: 'Admin' },
+        pubKeyCredParams: [
+          { type: 'public-key', alg: -7 },
+          { type: 'public-key', alg: -257 }
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',
+          userVerification: 'required'
+        },
+        timeout: 60000,
+      }
+    });
+
+    if (credential && credential.id) {
+      return { success: true, credentialId: credential.id };
+    }
+    return { success: false, error: 'Registration cancelled.' };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, error: errorMsg };
   }
 }

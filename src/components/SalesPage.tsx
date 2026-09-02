@@ -124,7 +124,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
   return (
     <div id="sales-page" className="space-y-6">
       {/* Top Banner / Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {/* Metric 1: Total Invoices */}
         <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-2xs min-w-0">
           <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
