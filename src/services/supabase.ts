@@ -1,4 +1,3 @@
-import { config } from '../config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { 
   Brand,
@@ -47,14 +46,14 @@ export function getEnvSupabaseConfig(): {
 
   // 1. Check Vite import.meta.env (.env file)
   try {
-    if (typeof import.meta !== 'undefined' && (import.meta as any)?.env) {
-      const viteUrl = ((import.meta as any).env.VITE_SUPABASE_URL as string | undefined)?.trim();
-      const viteKey = ((import.meta as any).env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
-      if (viteUrl && viteKey) {
-        url = viteUrl;
-        anonKey = viteKey;
-        source = 'env';
-      }
+    // @ts-ignore
+    const viteUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
+    // @ts-ignore
+    const viteKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+    if (viteUrl && viteKey) {
+      url = viteUrl;
+      anonKey = viteKey;
+      source = 'env';
     }
   } catch {
     // Graceful fallback
@@ -71,16 +70,7 @@ export function getEnvSupabaseConfig(): {
     }
   }
 
-  // 3. Check hardcoded config.ts (since .env is ignored by Git)
-  if (!url) {
-    if (config.supabase.url && config.supabase.anonKey) {
-      url = config.supabase.url.trim();
-      anonKey = config.supabase.anonKey.trim();
-      source = 'env'; // Treat as env to satisfy checks
-    }
-  }
-
-  // 4. Fallback to localStorage if configured via Settings
+  // 3. Fallback to localStorage if configured via Settings
   if (!url) {
     try {
       const stored = localStorage.getItem('kfh_inventory_supabase_config_v1');
@@ -153,7 +143,7 @@ export async function authenticateWithSupabase(
   if (!env.isConfigured) {
     return {
       success: false,
-      error: 'Supabase credentials are not configured. Please add them in src/config.ts or via Settings.'
+      error: 'Supabase credentials are not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env or Settings.'
     };
   }
 
@@ -257,7 +247,7 @@ export async function testSupabaseConnection(
   if (!url || !anonKey) {
     return { 
       success: false, 
-      message: 'Supabase credentials not found. Add them to src/config.ts or enter them in the Supabase Settings menu.',
+      message: 'Supabase credentials not found. Enter your Project URL & Anon Key or set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.',
       tables: monitoredTables.map(t => ({ tableName: t.name, label: t.label, exists: false, rowCount: 0, status: 'missing' })),
       readyTableCount: 0,
       totalTableCount: monitoredTables.length,

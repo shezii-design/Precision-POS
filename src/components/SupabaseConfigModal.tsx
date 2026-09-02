@@ -707,7 +707,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       <span>Supabase Cloud Credentials</span>
                     </h3>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Enter your project URL and public Anon Key from your Supabase dashboard (or configure via <code className="font-mono text-slate-700 bg-slate-200/80 px-1 py-0.5 rounded">src/config.ts</code>).
+                      Enter your project URL and public Anon Key from your Supabase dashboard (or configure via <code className="font-mono text-slate-700 bg-slate-200/80 px-1 py-0.5 rounded">.env</code>).
                     </p>
                   </div>
 
