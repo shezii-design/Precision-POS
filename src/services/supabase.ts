@@ -7,10 +7,28 @@ async function exactSyncRows(
   idCol: string = 'id'
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    const { data: existing, error: selectErr } = await client.from(tableName).select(idCol);
-    if (selectErr && selectErr.code !== '42P01') throw selectErr; // Ignore table missing
+    let existing: any[] = [];
+    let hasMore = true;
+    let from = 0;
+    const step = 1000;
+
+    while (hasMore) {
+      const { data, error: selectErr } = await client.from(tableName).select(idCol).range(from, from + step - 1);
+      if (selectErr && selectErr.code !== '42P01') throw selectErr; // Ignore table missing if it doesn't exist yet
+      if (selectErr && selectErr.code === '42P01') {
+        hasMore = false;
+        break;
+      }
+      if (data && data.length > 0) {
+        existing = existing.concat(data);
+        from += step;
+        if (data.length < step) hasMore = false;
+      } else {
+        hasMore = false;
+      }
+    }
     
-    const existingIds = new Set((existing || []).map(r => r[idCol]));
+    const existingIds = new Set(existing.map(r => r[idCol]));
     const currentIds = new Set(rows.map(r => r[idCol]));
     const idsToDelete = [...existingIds].filter(id => !currentIds.has(id));
     
@@ -1433,7 +1451,6 @@ export async function syncProductsToSupabase(
   products: Product[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    if (products.length === 0) return { success: true, count: 0 };
     const rows = products.map(p => productToSupabaseRow(p));
 
     return await exactSyncRows(client, 'inventory_products', rows, 'id');
@@ -1689,7 +1706,6 @@ export async function syncQuotationsToSupabase(
   quotations: Quotation[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    if (quotations.length === 0) return { success: true, count: 0 };
     const rows = quotations.map(q => ({
       id: q.id,
       quotation_number: q.quotationNumber,
@@ -1722,9 +1738,7 @@ export async function syncQuotationsToSupabase(
       updated_at: new Date().toISOString(),
     }));
 
-    const { error } = await client.from('quotations').upsert(rows, { onConflict: 'id' });
-    if (error) return { success: false, count: 0, error: error.message };
-    return { success: true, count: rows.length };
+    return await exactSyncRows(client, 'quotations', rows, 'id');
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, count: 0, error: errorMsg };
@@ -1736,7 +1750,6 @@ export async function syncDemandsToSupabase(
   demands: Demand[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    if (demands.length === 0) return { success: true, count: 0 };
     const rows = demands.map(d => ({
       id: d.id,
       demand_number: d.demandNumber,
@@ -1760,9 +1773,7 @@ export async function syncDemandsToSupabase(
       updated_at: new Date().toISOString(),
     }));
 
-    const { error } = await client.from('demands').upsert(rows, { onConflict: 'id' });
-    if (error) return { success: false, count: 0, error: error.message };
-    return { success: true, count: rows.length };
+    return await exactSyncRows(client, 'demands', rows, 'id');
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, count: 0, error: errorMsg };
@@ -1774,7 +1785,6 @@ export async function syncExpensesToSupabase(
   expenses: Expense[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    if (expenses.length === 0) return { success: true, count: 0 };
     const rows = expenses.map(e => ({
       id: e.id,
       expense_number: e.expenseNumber,
@@ -1789,9 +1799,7 @@ export async function syncExpensesToSupabase(
       updated_at: new Date().toISOString(),
     }));
 
-    const { error } = await client.from('expenses').upsert(rows, { onConflict: 'id' });
-    if (error) return { success: false, count: 0, error: error.message };
-    return { success: true, count: rows.length };
+    return await exactSyncRows(client, 'expenses', rows, 'id');
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, count: 0, error: errorMsg };
@@ -1860,18 +1868,14 @@ export async function syncMasterDataToSupabase(
   locations: LocationItem[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    if (brands.length > 0) {
-      const brandRows = brands.map(b => ({ id: b.id, name: b.name, item_count: b.itemCount || 0 }));
-      await client.from('inventory_brands').upsert(brandRows, { onConflict: 'id' });
-    }
-    if (types.length > 0) {
-      const typeRows = types.map(t => ({ id: t.id, name: t.name, item_count: t.itemCount || 0 }));
-      await client.from('inventory_categories').upsert(typeRows, { onConflict: 'id' });
-    }
-    if (locations.length > 0) {
-      const locRows = locations.map(l => ({ id: l.id, name: l.name, cabins: l.cabins || [] }));
-      await client.from('inventory_locations').upsert(locRows, { onConflict: 'id' });
-    }
+    const brandRows = brands.map(b => ({ id: b.id, name: b.name, item_count: b.itemCount || 0 }));
+    await exactSyncRows(client, 'inventory_brands', brandRows, 'id');
+
+    const typeRows = types.map(t => ({ id: t.id, name: t.name, item_count: t.itemCount || 0 }));
+    await exactSyncRows(client, 'inventory_categories', typeRows, 'id');
+
+    const locRows = locations.map(l => ({ id: l.id, name: l.name, cabins: l.cabins || [] }));
+    await exactSyncRows(client, 'inventory_locations', locRows, 'id');
     return { success: true, count: brands.length + types.length + locations.length };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
@@ -1884,7 +1888,6 @@ export async function syncSalesToSupabase(
   sales: Sale[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    if (sales.length === 0) return { success: true, count: 0 };
     const rows = sales.map(s => ({
       id: s.id,
       date: s.date,
@@ -1977,7 +1980,6 @@ export async function syncCustomerReturnsToSupabase(
   returns: CustomerReturn[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    if (returns.length === 0) return { success: true, count: 0 };
     const rows = returns.map(r => ({
       id: r.id,
       return_number: r.returnNumber,
@@ -1996,9 +1998,7 @@ export async function syncCustomerReturnsToSupabase(
       created_at: r.createdAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }));
-    const { error } = await client.from('customer_returns').upsert(rows, { onConflict: 'id' });
-    if (error) return { success: false, count: 0, error: error.message };
-    return { success: true, count: rows.length };
+    return await exactSyncRows(client, 'customer_returns', rows, 'id');
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, count: 0, error: errorMsg };
@@ -2042,7 +2042,6 @@ export async function syncVendorLedgerToSupabase(
   ledger: VendorLedgerEntry[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    if (ledger.length === 0) return { success: true, count: 0 };
     const rows = ledger.map(v => ({
       id: v.id,
       vendor_id: v.vendorId,
@@ -2060,9 +2059,7 @@ export async function syncVendorLedgerToSupabase(
       receipt_number: v.receiptNumber || null,
       notes: v.notes || null,
     }));
-    const { error } = await client.from('vendor_ledger').upsert(rows, { onConflict: 'id' });
-    if (error) return { success: false, count: 0, error: error.message };
-    return { success: true, count: rows.length };
+    return await exactSyncRows(client, 'vendor_ledger', rows, 'id');
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, count: 0, error: errorMsg };
@@ -2105,7 +2102,6 @@ export async function syncVendorReturnsToSupabase(
   returns: VendorReturn[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    if (returns.length === 0) return { success: true, count: 0 };
     const rows = returns.map(r => ({
       id: r.id,
       return_number: r.returnNumber,
@@ -2122,9 +2118,7 @@ export async function syncVendorReturnsToSupabase(
       created_at: r.createdAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }));
-    const { error } = await client.from('vendor_returns').upsert(rows, { onConflict: 'id' });
-    if (error) return { success: false, count: 0, error: error.message };
-    return { success: true, count: rows.length };
+    return await exactSyncRows(client, 'vendor_returns', rows, 'id');
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, count: 0, error: errorMsg };
@@ -2198,7 +2192,6 @@ export async function syncStockLogsToSupabase(
   logs: StockLog[]
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    if (logs.length === 0) return { success: true, count: 0 };
     const rows = logs.map(l => ({
       id: l.id,
       product_id: l.productId,
@@ -2222,9 +2215,7 @@ export async function syncStockLogsToSupabase(
       timestamp: l.timestamp,
       notes: l.notes || null,
     }));
-    const { error } = await client.from('stock_logs').upsert(rows, { onConflict: 'id' });
-    if (error) return { success: false, count: 0, error: error.message };
-    return { success: true, count: rows.length };
+    return await exactSyncRows(client, 'stock_logs', rows, 'id');
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, count: 0, error: errorMsg };
@@ -2764,24 +2755,20 @@ export async function syncAllModulesToSupabase(
   }
 
   // 4. Sales & Customer Returns
-  if (bundle.sales && bundle.sales.length > 0) {
-    try {
-      const salesRes = await syncSalesToSupabase(client, bundle.sales);
-      if (salesRes.success) syncedCounts.sales = salesRes.count;
-      else if (salesRes.error) errors.push(`Sales: ${salesRes.error}`);
-    } catch (e: any) {
-      errors.push(`Sales: ${e.message}`);
-    }
+  try {
+    const salesRes = await syncSalesToSupabase(client, bundle.sales || []);
+    if (salesRes.success) syncedCounts.sales = salesRes.count;
+    else if (salesRes.error) errors.push(`Sales: ${salesRes.error}`);
+  } catch (e: any) {
+    errors.push(`Sales: ${e.message}`);
   }
 
-  if (bundle.customerReturns && bundle.customerReturns.length > 0) {
-    try {
-      const crRes = await syncCustomerReturnsToSupabase(client, bundle.customerReturns);
-      if (crRes.success) syncedCounts.customerReturns = crRes.count;
-      else if (crRes.error) errors.push(`Customer Returns: ${crRes.error}`);
-    } catch (e: any) {
-      errors.push(`Customer Returns: ${e.message}`);
-    }
+  try {
+    const crRes = await syncCustomerReturnsToSupabase(client, bundle.customerReturns || []);
+    if (crRes.success) syncedCounts.customerReturns = crRes.count;
+    else if (crRes.error) errors.push(`Customer Returns: ${crRes.error}`);
+  } catch (e: any) {
+    errors.push(`Customer Returns: ${e.message}`);
   }
 
   // 5. Vendors & Purchases
@@ -2797,24 +2784,20 @@ export async function syncAllModulesToSupabase(
   }
 
   // 6. Vendor Ledger & Vendor Returns
-  if (bundle.vendorLedger && bundle.vendorLedger.length > 0) {
-    try {
-      const vlRes = await syncVendorLedgerToSupabase(client, bundle.vendorLedger);
-      if (vlRes.success) syncedCounts.vendorLedger = vlRes.count;
-      else if (vlRes.error) errors.push(`Vendor Ledger: ${vlRes.error}`);
-    } catch (e: any) {
-      errors.push(`Vendor Ledger: ${e.message}`);
-    }
+  try {
+    const vlRes = await syncVendorLedgerToSupabase(client, bundle.vendorLedger || []);
+    if (vlRes.success) syncedCounts.vendorLedger = vlRes.count;
+    else if (vlRes.error) errors.push(`Vendor Ledger: ${vlRes.error}`);
+  } catch (e: any) {
+    errors.push(`Vendor Ledger: ${e.message}`);
   }
 
-  if (bundle.vendorReturns && bundle.vendorReturns.length > 0) {
-    try {
-      const vrRes = await syncVendorReturnsToSupabase(client, bundle.vendorReturns);
-      if (vrRes.success) syncedCounts.vendorReturns = vrRes.count;
-      else if (vrRes.error) errors.push(`Vendor Returns: ${vrRes.error}`);
-    } catch (e: any) {
-      errors.push(`Vendor Returns: ${e.message}`);
-    }
+  try {
+    const vrRes = await syncVendorReturnsToSupabase(client, bundle.vendorReturns || []);
+    if (vrRes.success) syncedCounts.vendorReturns = vrRes.count;
+    else if (vrRes.error) errors.push(`Vendor Returns: ${vrRes.error}`);
+  } catch (e: any) {
+    errors.push(`Vendor Returns: ${e.message}`);
   }
 
   // 7. Quotations
@@ -2856,14 +2839,12 @@ export async function syncAllModulesToSupabase(
   }
 
   // 11. Stock Logs
-  if (bundle.stockLogs && bundle.stockLogs.length > 0) {
-    try {
-      const slRes = await syncStockLogsToSupabase(client, bundle.stockLogs);
-      if (slRes.success) syncedCounts.stockLogs = slRes.count;
-      else if (slRes.error) errors.push(`Stock Logs: ${slRes.error}`);
-    } catch (e: any) {
-      errors.push(`Stock Logs: ${e.message}`);
-    }
+  try {
+    const slRes = await syncStockLogsToSupabase(client, bundle.stockLogs || []);
+    if (slRes.success) syncedCounts.stockLogs = slRes.count;
+    else if (slRes.error) errors.push(`Stock Logs: ${slRes.error}`);
+  } catch (e: any) {
+    errors.push(`Stock Logs: ${e.message}`);
   }
 
   // 12. Pricing Settings

@@ -342,10 +342,10 @@ export const Navbar: React.FC<NavbarProps> = ({
       <header className="bg-gradient-to-r from-red-700 via-red-600 to-red-700 text-white shadow-md sticky top-0 z-30 border-b border-red-800/40 select-none">
         {/* Tier 1: Main Brand & Action Header */}
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between h-13 sm:h-14 gap-1.5 sm:gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full min-w-0 gap-2 sm:gap-0 py-2 sm:py-0 sm:h-14">
             
             {/* Top-Left: Brand & Single Menu Button */}
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink-0">
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 min-w-0 shrink-0 w-full sm:w-auto">
               {/* Brand Logo & Name */}
               <button
                 type="button"
@@ -363,7 +363,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-xl bg-white text-red-600 flex items-center justify-center font-black shadow-md border border-red-100 shrink-0">
                   <Box className="w-4 h-4" />
                 </div>
-                <div className="hidden sm:block leading-tight">
+                <div className="block leading-tight">
                   <div className="flex items-center gap-1">
                     <span className="text-xs sm:text-sm font-black tracking-tight text-white whitespace-nowrap">
                       Precision POS
@@ -403,7 +403,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Top-Right Action Buttons */}
-            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-nowrap">
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap overflow-x-auto overflow-y-hidden shrink-0 w-full sm:w-auto pb-0.5 sm:pb-0 mask-fade-edges" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               
               {/* Make Sale Quick Button (POS) - Checked via Permission */}
               {onOpenNewSale && canMakeSales && (

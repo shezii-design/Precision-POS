@@ -243,18 +243,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <KeyRound className="w-3.5 h-3.5" />
                 PIN Code
               </button>
-              <button
-                type="button"
-                onClick={() => { setActiveTab('biometric'); setErrorMessage(''); }}
-                className={`flex-1 py-3 text-center border-b-2 transition-all flex items-center justify-center gap-1.5 ${
-                  activeTab === 'biometric'
-                    ? 'border-red-600 text-red-600 bg-white'
-                    : 'border-transparent text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                {deviceInfo.os === 'iOS' ? <ScanFace className="w-3.5 h-3.5" /> : <Fingerprint className="w-3.5 h-3.5" />}
-                {deviceInfo.os === 'iOS' ? 'Face ID' : 'Fingerprint'}
-              </button>
+              
               <button
                 type="button"
                 onClick={() => { setActiveTab('password'); setErrorMessage(''); }}
@@ -322,14 +311,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {digit}
                   </button>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => handleBiometricAuth()}
-                  className="h-13 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 transition-all active:scale-95 cursor-pointer"
-                  title="Biometric scan"
-                >
-                  <Fingerprint className="w-6 h-6 text-red-600" />
-                </button>
+                <div></div>
                 <button
                   type="button"
                   onClick={() => handlePinInput('0')}
@@ -345,53 +327,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   DEL
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* 2. BIOMETRIC SCAN MODE */}
-          {activeTab === 'biometric' && (
-            <div className="text-center py-4 space-y-6">
-              <div className="text-sm font-semibold text-slate-700">
-                {deviceInfo.os === 'iOS' ? 'Face ID Authentication' : 'Fingerprint / Touch Sensor'}
-              </div>
-
-              <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
-                <div
-                  className={`absolute inset-0 rounded-full border-4 border-dashed border-red-500/40 ${
-                    isBiometricScanning ? 'animate-spin' : ''
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={handleBiometricAuth}
-                  className={`w-20 h-20 rounded-full flex items-center justify-center transition-all transform active:scale-90 shadow-lg cursor-pointer ${
-                    biometricSuccess
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-gradient-to-br from-red-600 to-red-700 text-white hover:shadow-red-500/30'
-                  }`}
-                >
-                  {biometricSuccess ? (
-                    <CheckCircle2 className="w-10 h-10 animate-in zoom-in" />
-                  ) : deviceInfo.os === 'iOS' ? (
-                    <ScanFace className="w-10 h-10" />
-                  ) : (
-                    <Fingerprint className="w-10 h-10" />
-                  )}
-                </button>
-              </div>
-
-              <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                Tap the sensor above to verify biometrics on your {deviceInfo.os} device.
-              </p>
-
-              <button
-                type="button"
-                onClick={handleBiometricAuth}
-                className="w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Fingerprint className="w-4 h-4" />
-                Scan Biometrics Now
-              </button>
             </div>
           )}
 
@@ -506,34 +441,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </p>
               </div>
 
-              <div className="pt-1">
-                <label className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer mb-2">
-                  <div className="flex items-center gap-2.5">
-                    <Fingerprint className="w-5 h-5 text-red-600" />
-                    <div>
-                      <div className="text-xs font-bold text-slate-900">Enable Biometrics</div>
-                      <div className="text-[11px] text-slate-500">Allow Fingerprint / Face scan on this device</div>
-                    </div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={biometricsToggle}
-                    onChange={(e) => setBiometricsToggle(e.target.checked)}
-                    className="w-4 h-4 text-red-600 rounded border-slate-300 focus:ring-red-500"
-                  />
-                </label>
-
-                {biometricsToggle && (
-                  <button
-                    type="button"
-                    onClick={handleRegisterBiometrics}
-                    className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition-colors flex items-center justify-center gap-2 mb-2"
-                  >
-                    <ScanFace className="w-4 h-4 text-slate-600" />
-                    {authState.biometricCredentialId ? 'Re-register Fingerprint (Saved)' : 'Register Fingerprint to Device & Cloud'}
-                  </button>
-                )}
-              </div>
+              
 
               <div className="flex gap-2 pt-2">
                 <button
