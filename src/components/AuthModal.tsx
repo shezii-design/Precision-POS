@@ -115,7 +115,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setErrorMessage(res.error || 'Invalid Supabase login credentials.');
       }
     } else {
-      // Fallback offline admin check if .env is not yet configured
+      // Fallback offline admin check if config is not yet configured
       setIsLoggingIn(false);
       const targetEmail = authState.email || 'admin@inventory.pk';
       const targetPass = authState.password || 'admin';
@@ -126,7 +126,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       ) {
         onAuthSuccess();
       } else {
-        setErrorMessage('Invalid login credentials. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env for Supabase Auth.');
+        setErrorMessage('Invalid login credentials. Set your Supabase credentials in src/config.ts or via Settings.');
       }
     }
   };
@@ -405,7 +405,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <p className="text-slate-600 text-[11px]">
                     {envConfig.isConfigured 
                       ? 'Authenticating with your Supabase cloud user accounts.' 
-                      : 'Configured via .env variables.'}
+                      : 'Configure via src/config.ts or Settings.'}
                   </p>
                 </div>
               </div>
@@ -502,7 +502,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   Supabase Auth Directory
                 </span>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Email & Password logins are managed centrally in your Supabase Auth dashboard. Supabase credentials are loaded from your <code className="font-mono text-slate-700 bg-slate-200 px-1 py-0.5 rounded">.env</code> file.
+                  Email & Password logins are managed centrally in your Supabase Auth dashboard. Supabase credentials are loaded from your <code className="font-mono text-slate-700 bg-slate-200 px-1 py-0.5 rounded">src/config.ts</code> file or Settings.
                 </p>
               </div>
 
