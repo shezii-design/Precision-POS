@@ -150,11 +150,6 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
   const envConfig = getEnvSupabaseConfig();
   const isCloudConfigured = envConfig.isConfigured || Boolean(config.url && config.anonKey);
 
-  // Manual Credentials Input State
-  const [manualUrl, setManualUrl] = useState<string>(() => config.url || envConfig.url || '');
-  const [manualKey, setManualKey] = useState<string>(() => config.anonKey || envConfig.anonKey || '');
-  const [showManualForm, setShowManualForm] = useState<boolean>(!envConfig.isConfigured);
-
   // Health and Testing state
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<DetailedConnectionResult | null>(null);
@@ -173,7 +168,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
   // On initial open, run a quiet connection test if credentials exist
   useEffect(() => {
     if (isOpen && (envConfig.isConfigured || (config.url && config.anonKey)) && !testResult) {
-      handleTestConnection(manualUrl || envConfig.url, manualKey || envConfig.anonKey);
+      handleTestConnection(envConfig.url || config.url, envConfig.anonKey || config.anonKey);
     }
   }, [isOpen]);
 
@@ -184,8 +179,8 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     setTestResult(null);
     setSyncFeedback(null);
 
-    const targetUrl = urlToTest || manualUrl || envConfig.url || config.url;
-    const targetKey = keyToTest || manualKey || envConfig.anonKey || config.anonKey;
+    const targetUrl = urlToTest || envConfig.url || config.url;
+    const targetKey = keyToTest || envConfig.anonKey || config.anonKey;
 
     if (!targetUrl || !targetKey) {
       setIsTesting(false);
@@ -214,25 +209,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     }
   };
 
-  const handleSaveManualCredentials = () => {
-    if (!manualUrl.trim() || !manualKey.trim()) {
-      setSyncFeedback({ success: false, message: 'Please enter both Supabase Project URL and Anon Key.' });
-      return;
-    }
-    const cleanUrl = manualUrl.trim();
-    const cleanKey = manualKey.trim();
-    const newConfig: SupabaseConfig = {
-      ...config,
-      url: cleanUrl,
-      anonKey: cleanKey,
-      enabled: true,
-      syncStatus: 'connected',
-      lastSyncedAt: new Date().toISOString(),
-    };
-    onSaveConfig(newConfig);
-    resetSupabaseClient();
-    handleTestConnection(cleanUrl, cleanKey);
-  };
+
 
   const handlePushAllToCloud = async () => {
     const client = getSupabaseClient(config);
@@ -728,45 +705,8 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
 
                 {/* Direct Credentials Input Form */}
                 <div className="space-y-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                        Supabase Project URL
-                      </label>
-                      <input
-                        type="text"
-                        value={manualUrl}
-                        onChange={(e) => setManualUrl(e.target.value)}
-                        placeholder="https://xyzcompany.supabase.co"
-                        className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-hidden bg-slate-50 focus:bg-white transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                        Supabase Public Anon Key
-                      </label>
-                      <input
-                        type="password"
-                        value={manualKey}
-                        onChange={(e) => setManualKey(e.target.value)}
-                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                        className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-hidden bg-slate-50 focus:bg-white transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex flex-wrap items-center justify-between gap-2.5">
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        id="btn-save-manual-supabase"
-                        onClick={handleSaveManualCredentials}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Save & Test Connection</span>
-                      </button>
-
                       <button
                         type="button"
                         id="btn-test-supabase-connection"

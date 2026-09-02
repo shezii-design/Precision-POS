@@ -1,4 +1,38 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
+async function exactSyncRows(
+  client: SupabaseClient,
+  tableName: string,
+  rows: any[],
+  idCol: string = 'id'
+): Promise<{ success: boolean; count: number; error?: string }> {
+  try {
+    const { data: existing, error: selectErr } = await client.from(tableName).select(idCol);
+    if (selectErr && selectErr.code !== '42P01') throw selectErr; // Ignore table missing
+    
+    const existingIds = new Set((existing || []).map(r => r[idCol]));
+    const currentIds = new Set(rows.map(r => r[idCol]));
+    const idsToDelete = [...existingIds].filter(id => !currentIds.has(id));
+    
+    if (idsToDelete.length > 0) {
+      for (let i = 0; i < idsToDelete.length; i += 100) {
+        await client.from(tableName).delete().in(idCol, idsToDelete.slice(i, i + 100));
+      }
+    }
+    
+    if (rows.length > 0) {
+      for (let i = 0; i < rows.length; i += 100) {
+        const { error: upsertErr } = await client.from(tableName).upsert(rows.slice(i, i + 100), { onConflict: idCol });
+        if (upsertErr) throw upsertErr;
+      }
+    }
+    
+    return { success: true, count: rows.length };
+  } catch (err: any) {
+    return { success: false, count: 0, error: err.message || String(err) };
+  }
+}
+
 import { 
   Brand,
   Customer, 
@@ -1402,19 +1436,7 @@ export async function syncProductsToSupabase(
     if (products.length === 0) return { success: true, count: 0 };
     const rows = products.map(p => productToSupabaseRow(p));
 
-    const chunkSize = 100;
-    for (let i = 0; i < rows.length; i += chunkSize) {
-      const chunk = rows.slice(i, i + chunkSize);
-      const { error } = await client
-        .from('inventory_products')
-        .upsert(chunk, { onConflict: 'id' });
-
-      if (error) {
-        return { success: false, count: i, error: error.message };
-      }
-    }
-
-    return { success: true, count: rows.length };
+    return await exactSyncRows(client, 'inventory_products', rows, 'id');
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, count: 0, error: errorMsg };
@@ -1448,7 +1470,7 @@ export async function syncCustomersToSupabase(
   ledgerEntries: CustomerLedgerEntry[]
 ): Promise<{ success: boolean; customerCount: number; ledgerCount: number; error?: string }> {
   try {
-    if (customers.length > 0) {
+
       const customerRows = customers.map(c => ({
         id: c.id,
         name: c.name,
@@ -1468,12 +1490,9 @@ export async function syncCustomersToSupabase(
         updated_at: new Date().toISOString(),
       }));
 
-      const { error: custErr } = await client
-        .from('customers')
-        .upsert(customerRows, { onConflict: 'id' });
+      const custRes = await exactSyncRows(client, 'customers', customerRows, 'id');
+      if (!custRes.success) return { success: false, customerCount: 0, ledgerCount: 0, error: custRes.error };
 
-      if (custErr) return { success: false, customerCount: 0, ledgerCount: 0, error: custErr.message };
-    }
 
     if (ledgerEntries.length > 0) {
       const ledgerRows = ledgerEntries.map(l => ({
@@ -1589,8 +1608,8 @@ export async function syncVendorsAndPurchasesToSupabase(
         updated_at: new Date().toISOString(),
       }));
 
-      const { error } = await client.from('vendors').upsert(vendorRows, { onConflict: 'id' });
-      if (error) return { success: false, vendorCount: 0, purchaseCount: 0, poCount: 0, error: error.message };
+      const vRes = await exactSyncRows(client, 'vendors', vendorRows, 'id');
+      if (!vRes.success) return { success: false, vendorCount: 0, purchaseCount: 0, poCount: 0, error: vRes.error };
     }
 
     if (purchaseOrders.length > 0) {
@@ -1900,13 +1919,7 @@ export async function syncSalesToSupabase(
       updated_at: new Date().toISOString(),
     }));
 
-    const chunkSize = 100;
-    for (let i = 0; i < rows.length; i += chunkSize) {
-      const chunk = rows.slice(i, i + chunkSize);
-      const { error } = await client.from('sales').upsert(chunk, { onConflict: 'id' });
-      if (error) return { success: false, count: i, error: error.message };
-    }
-    return { success: true, count: rows.length };
+    return await exactSyncRows(client, 'sales', rows, 'id');
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, count: 0, error: errorMsg };

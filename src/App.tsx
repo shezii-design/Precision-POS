@@ -111,7 +111,7 @@ import { filterAndSortProducts, normalizeSearchTerm } from './services/search';
 import { ParsedDimensionQuery } from './services/dimensions';
 import { formatPKR, formatPKRShort, generateProductSellingPrices, getDefaultRetailPrice } from './services/pricing';
 import { exportProductsToCSV, exportProductsToExcel } from './services/excel';
-import { getSupabaseClient, syncProductsToSupabase } from './services/supabase';
+import { getSupabaseClient, syncAllModulesToSupabase, fetchAllFromSupabase } from './services/supabase';
 
 // Components
 import { Navbar } from './components/Navbar';
@@ -194,8 +194,18 @@ export default function App() {
   const [supabaseConfig, setSupabaseConfig] = useState<SupabaseConfig>(() => getStoredSupabaseConfig());
   const [authState, setAuthState] = useState<AuthState>(() => {
     const stored = getStoredAuthState();
-    // Always lock the app on startup for security
-    return { ...stored, isLocked: true };
+    let shouldLock = true;
+    
+    // Check if within 24 hours
+    if (stored.lastUnlockedAt && stored.rememberSession !== false) {
+      const lastUnlockTime = new Date(stored.lastUnlockedAt).getTime();
+      const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+      if (Date.now() - lastUnlockTime < ONE_DAY_MS) {
+        shouldLock = false; // still valid for today
+      }
+    }
+    
+    return { ...stored, isLocked: shouldLock };
   });
   const [deviceInfo] = useState<DeviceInfo>(() => detectDeviceInfo());
 
@@ -1360,6 +1370,103 @@ export default function App() {
     }
   }, [currentEmployee, currentView]);
 
+
+  const handleImportFullBackup = (data: any) => {
+    if (data.products && Array.isArray(data.products)) {
+      saveStoredProducts(data.products);
+      setProducts(data.products);
+    }
+    if (data.brands && Array.isArray(data.brands)) {
+      saveStoredBrands(data.brands);
+      setBrands(data.brands);
+    }
+    if (data.types && Array.isArray(data.types)) {
+      saveStoredTypes(data.types);
+      setTypes(data.types);
+    }
+    if (data.locations && Array.isArray(data.locations)) {
+      saveStoredLocations(data.locations);
+      setLocations(data.locations);
+    }
+    if (data.customers && Array.isArray(data.customers)) {
+      saveStoredCustomers(data.customers);
+      setCustomers(data.customers);
+    }
+    if (data.customerLedger && Array.isArray(data.customerLedger)) {
+      saveStoredCustomerLedger(data.customerLedger);
+      setCustomerLedger(data.customerLedger);
+    }
+    if (data.sales && Array.isArray(data.sales)) {
+      saveStoredSales(data.sales);
+      setSales(data.sales);
+    }
+    if (data.customerReturns && Array.isArray(data.customerReturns)) {
+      saveStoredCustomerReturns(data.customerReturns);
+      setCustomerReturns(data.customerReturns);
+    }
+    if (data.vendors && Array.isArray(data.vendors)) {
+      saveStoredVendors(data.vendors);
+      setVendors(data.vendors);
+    }
+    if (data.vendorLedger && Array.isArray(data.vendorLedger)) {
+      saveStoredVendorLedgerEntries(data.vendorLedger);
+      setLedgerEntries(data.vendorLedger);
+    }
+    if (data.vendorReturns && Array.isArray(data.vendorReturns)) {
+      saveStoredVendorReturns(data.vendorReturns);
+      setVendorReturns(data.vendorReturns);
+    }
+    if (data.purchases && Array.isArray(data.purchases)) {
+      saveStoredPurchases(data.purchases);
+      setPurchases(data.purchases);
+    }
+    if (data.purchaseOrders && Array.isArray(data.purchaseOrders)) {
+      saveStoredPurchaseOrders(data.purchaseOrders);
+      setPurchaseOrders(data.purchaseOrders);
+    }
+    if (data.quotations && Array.isArray(data.quotations)) {
+      saveStoredQuotations(data.quotations);
+      setQuotations(data.quotations);
+    }
+    if (data.demands && Array.isArray(data.demands)) {
+      saveStoredDemands(data.demands);
+      setDemands(data.demands);
+    }
+    if (data.expenses && Array.isArray(data.expenses)) {
+      saveStoredExpenses(data.expenses);
+      setExpenses(data.expenses);
+    }
+    if (data.employees && Array.isArray(data.employees)) {
+      saveStoredEmployees(data.employees);
+      setEmployees(data.employees);
+    }
+    if (data.stockLogs && Array.isArray(data.stockLogs)) {
+      saveStoredStockLogs(data.stockLogs);
+      setStockLogs(data.stockLogs);
+    }
+    if (data.pricingSettings) {
+      saveStoredPricingSettings(data.pricingSettings);
+      setPricingSettings(data.pricingSettings);
+    }
+  };
+
+  const hasInitialPulled = useRef(false);
+
+  // Initial pull from cloud on mount
+  useEffect(() => {
+    if (!hasInitialPulled.current && supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+      hasInitialPulled.current = true;
+      const client = getSupabaseClient(supabaseConfig);
+      if (client) {
+        fetchAllFromSupabase(client).then(res => {
+          if (res.success && res.data) {
+            handleImportFullBackup(res.data);
+          }
+        });
+      }
+    }
+  }, [supabaseConfig.enabled, supabaseConfig.url, supabaseConfig.anonKey]);
+
   // Background cloud sync with debounce if Supabase is enabled
   useEffect(() => {
     if (!supabaseConfig.enabled || !supabaseConfig.url || !supabaseConfig.anonKey) {
@@ -1369,7 +1476,12 @@ export default function App() {
     const timer = setTimeout(() => {
       const client = getSupabaseClient(supabaseConfig);
       if (client) {
-        syncProductsToSupabase(client, products).then((res) => {
+        const bundle = {
+          products, brands, types, locations, customers, customerLedger, sales,
+          customerReturns, vendors, vendorLedger: ledgerEntries, vendorReturns, purchases, purchaseOrders,
+          quotations, demands, expenses, employees, registeredDevices: getStoredRegisteredDevices(), stockLogs, pricingSettings
+        };
+        syncAllModulesToSupabase(client, bundle).then((res) => {
           if (res.success) {
             setSupabaseConfig(prev => ({
               ...prev,
@@ -1379,10 +1491,15 @@ export default function App() {
           }
         });
       }
-    }, 1500);
+    }, 5000); // 5 seconds debounce to prevent spamming
 
     return () => clearTimeout(timer);
-  }, [products, supabaseConfig.enabled, supabaseConfig.url, supabaseConfig.anonKey]);
+  }, [
+    products, brands, types, locations, customers, customerLedger, sales,
+    customerReturns, vendors, ledgerEntries, vendorReturns, purchases, purchaseOrders,
+    quotations, demands, expenses, employees, stockLogs, pricingSettings,
+    supabaseConfig.enabled, supabaseConfig.url, supabaseConfig.anonKey
+  ]);
 
   // Filtered and Sorted Products
   const filteredProducts = useMemo(() => {
@@ -2405,84 +2522,7 @@ export default function App() {
         registeredDevices={getStoredRegisteredDevices()}
         stockLogs={stockLogs}
         pricingSettings={pricingSettings}
-        onImportFullBackup={(data: any) => {
-          if (data.products && Array.isArray(data.products)) {
-            saveStoredProducts(data.products);
-            setProducts(data.products);
-          }
-          if (data.brands && Array.isArray(data.brands)) {
-            saveStoredBrands(data.brands);
-            setBrands(data.brands);
-          }
-          if (data.types && Array.isArray(data.types)) {
-            saveStoredTypes(data.types);
-            setTypes(data.types);
-          }
-          if (data.locations && Array.isArray(data.locations)) {
-            saveStoredLocations(data.locations);
-            setLocations(data.locations);
-          }
-          if (data.customers && Array.isArray(data.customers)) {
-            saveStoredCustomers(data.customers);
-            setCustomers(data.customers);
-          }
-          if (data.customerLedger && Array.isArray(data.customerLedger)) {
-            saveStoredCustomerLedger(data.customerLedger);
-            setCustomerLedger(data.customerLedger);
-          }
-          if (data.sales && Array.isArray(data.sales)) {
-            saveStoredSales(data.sales);
-            setSales(data.sales);
-          }
-          if (data.customerReturns && Array.isArray(data.customerReturns)) {
-            saveStoredCustomerReturns(data.customerReturns);
-            setCustomerReturns(data.customerReturns);
-          }
-          if (data.vendors && Array.isArray(data.vendors)) {
-            saveStoredVendors(data.vendors);
-            setVendors(data.vendors);
-          }
-          if (data.vendorLedger && Array.isArray(data.vendorLedger)) {
-            saveStoredVendorLedgerEntries(data.vendorLedger);
-            setLedgerEntries(data.vendorLedger);
-          }
-          if (data.vendorReturns && Array.isArray(data.vendorReturns)) {
-            saveStoredVendorReturns(data.vendorReturns);
-            setVendorReturns(data.vendorReturns);
-          }
-          if (data.purchases && Array.isArray(data.purchases)) {
-            saveStoredPurchases(data.purchases);
-            setPurchases(data.purchases);
-          }
-          if (data.purchaseOrders && Array.isArray(data.purchaseOrders)) {
-            saveStoredPurchaseOrders(data.purchaseOrders);
-            setPurchaseOrders(data.purchaseOrders);
-          }
-          if (data.quotations && Array.isArray(data.quotations)) {
-            saveStoredQuotations(data.quotations);
-            setQuotations(data.quotations);
-          }
-          if (data.demands && Array.isArray(data.demands)) {
-            saveStoredDemands(data.demands);
-            setDemands(data.demands);
-          }
-          if (data.expenses && Array.isArray(data.expenses)) {
-            saveStoredExpenses(data.expenses);
-            setExpenses(data.expenses);
-          }
-          if (data.employees && Array.isArray(data.employees)) {
-            saveStoredEmployees(data.employees);
-            setEmployees(data.employees);
-          }
-          if (data.stockLogs && Array.isArray(data.stockLogs)) {
-            saveStoredStockLogs(data.stockLogs);
-            setStockLogs(data.stockLogs);
-          }
-          if (data.pricingSettings) {
-            saveStoredPricingSettings(data.pricingSettings);
-            setPricingSettings(data.pricingSettings);
-          }
-        }}
+        onImportFullBackup={handleImportFullBackup}
       />
 
       {/* 8. Auth & Lock Screen Modal */}
