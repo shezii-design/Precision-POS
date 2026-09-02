@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { PWAInstallButton } from './PWAInstallButton';
 import { AuthState, DeviceInfo, EmployeeAccount, GlobalPricingSettings, SupabaseConfig } from '../types';
 import { isActionAllowed, isTabAllowed } from '../services/auth';
 import { 
@@ -331,10 +332,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, [workspaceTabs, menuSearchQuery]);
 
   // Permission flags for action controls
-  const canMakeSales = !currentEmployee || isActionAllowed(currentEmployee, 'canCreateSales');
-  const canAddProduct = !currentEmployee || isActionAllowed(currentEmployee, 'canAddProducts');
-  const canManageSettings = !currentEmployee || isActionAllowed(currentEmployee, 'canManageSettings');
-  const canImportExport = !currentEmployee || isActionAllowed(currentEmployee, 'canImportExport');
+  const canMakeSales = isActionAllowed(currentEmployee, 'canCreateSales');
+  const canAddProduct = isActionAllowed(currentEmployee, 'canAddProducts');
+  const canManageSettings = isActionAllowed(currentEmployee, 'canManageSettings');
+  const canImportExport = isActionAllowed(currentEmployee, 'canImportExport');
   const isSuperAdmin = !currentEmployee || currentEmployee.role === 'admin';
 
   return (
@@ -404,6 +405,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Top-Right Action Buttons */}
             <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap overflow-x-auto overflow-y-hidden shrink-0 w-full sm:w-auto pb-0.5 sm:pb-0 mask-fade-edges" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              
+              {/* PWA Install Button */}
+              <PWAInstallButton />
               
               {/* Make Sale Quick Button (POS) - Checked via Permission */}
               {onOpenNewSale && canMakeSales && (

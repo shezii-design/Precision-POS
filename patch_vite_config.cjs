@@ -1,14 +1,11 @@
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-import {defineConfig} from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
+const fs = require('fs');
+let code = fs.readFileSync('vite.config.ts', 'utf-8');
 
+const importPwa = `import { VitePWA } from 'vite-plugin-pwa';\n`;
+code = code.replace(/import {defineConfig} from 'vite';/, "import {defineConfig} from 'vite';\n" + importPwa);
 
-export default defineConfig(() => {
-  return {
-    base: './',
-    plugins: [
+const oldPlugins = `plugins: [react(), tailwindcss()],`;
+const newPlugins = `plugins: [
       react(), 
       tailwindcss(),
       VitePWA({
@@ -37,10 +34,9 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-          maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
           runtimeCaching: [
             {
-              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+              urlPattern: /^https:\\/\\/fonts\\.googleapis\\.com\\/.*/i,
               handler: 'CacheFirst',
               options: {
                 cacheName: 'google-fonts-cache',
@@ -49,7 +45,7 @@ export default defineConfig(() => {
               }
             },
             {
-              urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+              urlPattern: /^https:\\/\\/fonts\\.gstatic\\.com\\/.*/i,
               handler: 'CacheFirst',
               options: {
                 cacheName: 'gstatic-fonts-cache',
@@ -64,18 +60,8 @@ export default defineConfig(() => {
           type: 'module'
         }
       })
-    ],
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      },
-    },
-    server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
-    },
-  };
-});
+    ],`;
+code = code.replace(oldPlugins, newPlugins);
+
+fs.writeFileSync('vite.config.ts', code);
+console.log('patched vite config for PWA');

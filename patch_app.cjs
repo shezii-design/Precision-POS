@@ -1,73 +1,24 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/App.tsx', 'utf-8');
 
-const oldSync = `  // Background cloud sync with debounce if Supabase is enabled
-  useEffect(() => {
-    if (!supabaseConfig.enabled || !supabaseConfig.url || !supabaseConfig.anonKey) {
-      return;
-    }
+const importStatement = `import { useOnlineStatus } from './hooks/useOnlineStatus';\n`;
 
-    const timer = setTimeout(() => {
-      const client = getSupabaseClient(supabaseConfig);
-      if (client) {
-        syncProductsToSupabase(client, products).then((res) => {
-          if (res.success) {
-            setSupabaseConfig(prev => ({
-              ...prev,
-              lastSyncedAt: new Date().toISOString(),
-              syncStatus: 'connected',
-            }));
-          }
-        });
-      }
-    }, 1500);
+// insert import after 'lucide-react'
+code = code.replace(/} from 'lucide-react';/, "} from 'lucide-react';\n" + importStatement);
 
-    return () => clearTimeout(timer);
-  }, [products, supabaseConfig.enabled, supabaseConfig.url, supabaseConfig.anonKey]);`;
+const appStart = `export default function App() {`;
+const newAppStart = `export default function App() {\n  const isOnline = useOnlineStatus();`;
+code = code.replace(appStart, newAppStart);
 
-const newSync = `  // Background cloud sync with debounce if Supabase is enabled
-  useEffect(() => {
-    if (!supabaseConfig.enabled || !supabaseConfig.url || !supabaseConfig.anonKey) {
-      return;
-    }
+const rootDiv = `<div className="min-h-screen bg-slate-50 flex flex-col font-sans">`;
+const newRootDiv = `<div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      {!isOnline && (
+        <div className="bg-amber-500 text-white text-center py-1.5 px-4 text-xs font-bold shadow-md z-50 flex items-center justify-center gap-2 sticky top-0">
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+          Offline Mode (Read-Only) — Working locally, edits disabled until connection is restored.
+        </div>
+      )}`;
+code = code.replace(rootDiv, newRootDiv);
 
-    const timer = setTimeout(() => {
-      const client = getSupabaseClient(supabaseConfig);
-      if (client) {
-        const bundle = {
-          products, brands, types, locations, customers, customerLedger, sales,
-          customerReturns, vendors, vendorLedger, vendorReturns, purchases, purchaseOrders,
-          quotations, demands, expenses, employees, registeredDevices, stockLogs, pricingSettings
-        };
-        syncAllModulesToSupabase(client, bundle).then((res) => {
-          if (res.success) {
-            setSupabaseConfig(prev => ({
-              ...prev,
-              lastSyncedAt: new Date().toISOString(),
-              syncStatus: 'connected',
-            }));
-          }
-        });
-      }
-    }, 5000); // 5 seconds debounce to prevent spamming
-
-    return () => clearTimeout(timer);
-  }, [
-    products, brands, types, locations, customers, customerLedger, sales,
-    customerReturns, vendors, vendorLedger, vendorReturns, purchases, purchaseOrders,
-    quotations, demands, expenses, employees, registeredDevices, stockLogs, pricingSettings,
-    supabaseConfig.enabled, supabaseConfig.url, supabaseConfig.anonKey
-  ]);`;
-
-if (code.includes('syncProductsToSupabase(client, products).then')) {
-    code = code.replace(oldSync, newSync);
-    // Also we need to import syncAllModulesToSupabase
-    code = code.replace(
-      "import { getSupabaseClient, syncProductsToSupabase } from './services/supabase';",
-      "import { getSupabaseClient, syncAllModulesToSupabase } from './services/supabase';"
-    );
-    fs.writeFileSync('src/App.tsx', code);
-    console.log("App.tsx patched");
-} else {
-    console.log("Could not find the target string in App.tsx");
-}
+fs.writeFileSync('src/App.tsx', code);
+console.log('patched App offline banner');

@@ -565,7 +565,22 @@ export function isTabAllowed(user: EmployeeAccount, tab: AppWorkspaceView): bool
 /**
  * Checks if an action is permitted for the employee
  */
-export function isActionAllowed(user: EmployeeAccount, action: keyof EmployeePermissions): boolean {
+export function isActionAllowed(user: EmployeeAccount | null, action: keyof EmployeePermissions): boolean {
+  // If offline, disable all write/edit actions globally for everyone
+  if (typeof window !== 'undefined' && !window.navigator.onLine) {
+    const writeActions = [
+      'canCreateSales', 'canAddProducts', 'canEditProducts', 'canDeleteProducts', 
+      'canManageSettings', 'canImportExport', 'canClearRecords', 'canManageStaff'
+    ];
+    if (writeActions.includes(action)) {
+      return false;
+    }
+  }
+
+  if (!user) {
+    // If no employee is logged in, assume super admin, but still restricted by offline check above
+    return true;
+  }
   if (user.role === 'admin') return true;
   return Boolean(user.permissions[action]);
 }

@@ -183,8 +183,11 @@ import {
   ShoppingCart,
   Building2
 } from 'lucide-react';
+import { useOnlineStatus } from './hooks/useOnlineStatus';
+
 
 export default function App() {
+  const isOnline = useOnlineStatus();
   // Global Data State
   const [products, setProducts] = useState<Product[]>(() => getStoredProducts());
   const [brands, setBrands] = useState<Brand[]>(() => getStoredBrands());
