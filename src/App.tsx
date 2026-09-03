@@ -126,6 +126,7 @@ import { StockAdjustModal } from './components/StockAdjustModal';
 import { LabelPrintModal } from './components/LabelPrintModal';
 import { SupabaseConfigModal } from './components/SupabaseConfigModal';
 import { AuthModal } from './components/AuthModal';
+import { FactoryResetModal } from './components/FactoryResetModal';
 import { DashboardPage } from './components/DashboardPage';
 import { IncomeStatementPage } from './components/IncomeStatementPage';
 import { SalesPage } from './components/SalesPage';
@@ -219,6 +220,7 @@ export default function App() {
   });
   const [activeEmployeeId, setActiveEmployeeId] = useState<string>(() => getStoredActiveEmployeeId());
   const [showStaffModal, setShowStaffModal] = useState<boolean>(false);
+  const [showWipeDataModal, setShowWipeDataModal] = useState<boolean>(false);
   const [showSwitchUserModal, setShowSwitchUserModal] = useState<boolean>(false);
 
   // Active current operator / employee account
@@ -1586,6 +1588,21 @@ export default function App() {
     });
   }, [products, primarySearch, dimensionQuery, brandFilter, typeFilter, locationFilter, cabinFilter, stockStatusFilter, sortBy]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 24;
+
+  const paginatedProducts = useMemo(() => {
+    return filteredProducts.slice(0, currentPage * itemsPerPage);
+  }, [filteredProducts, currentPage]);
+
+  const hasMoreProducts = paginatedProducts.length < filteredProducts.length;
+
+  // Reset pagination when search/filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [primarySearch, dimensionQuery, brandFilter, typeFilter, locationFilter, cabinFilter, stockStatusFilter, sortBy]);
+
+
   // Statistics calculation
   const totalValuation = useMemo(() => {
     return products.reduce((acc, p) => acc + (p.costPrice || 0) * (p.stockQuantity || 0), 0);
@@ -1791,6 +1808,50 @@ export default function App() {
   const availableCabins = activeLocationObj ? activeLocationObj.cabins : [];
 
   const nextInternalId = getNextInternalId(products);
+
+  const handleExportFullBackup = () => {
+    const backupData = {
+      products, brands, types, locations, customers, customerLedger, sales,
+      customerReturns, vendors, vendorLedger: ledgerEntries, vendorReturns, purchases, purchaseOrders,
+      quotations, demands, expenses, employees, registeredDevices: getStoredRegisteredDevices(), stockLogs, pricingSettings
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "inventory_full_backup_" + new Date().toISOString() + ".json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    showToast('Backup Exported', 'JSON File Saved');
+  };
+
+  const handleWipeData = (downloadBackup: boolean) => {
+    if (downloadBackup) {
+      handleExportFullBackup();
+    }
+    
+    setProducts([]);
+    setBrands([]);
+    setTypes([]);
+    setLocations([]);
+    setSales([]);
+    setCustomers([]);
+    setCustomerLedger([]);
+    setCustomerReturns([]);
+    setVendors([]);
+    setLedgerEntries([]);
+    setVendorReturns([]);
+    setPurchases([]);
+    setPurchaseOrders([]);
+    setQuotations([]);
+    setDemands([]);
+    setExpenses([]);
+    setStockLogs([]);
+    
+    setShowWipeDataModal(false);
+    showToast('Factory Reset', 'All Data Erased');
+  };
+
   
 
   return (
@@ -1812,6 +1873,7 @@ export default function App() {
           } catch {}
         }}
         onOpenSecuritySettings={() => setShowSecurityModal(true)}
+        onOpenWipeData={() => setShowWipeDataModal(true)}
         onOpenStaffManagement={() => setShowStaffModal(true)}
         onOpenSwitchUser={() => setShowSwitchUserModal(true)}
         currentEmployee={currentEmployee}
@@ -2639,6 +2701,12 @@ export default function App() {
       />
 
       {/* 8. Auth & Lock Screen Modal */}
+
+      <FactoryResetModal
+        isOpen={showWipeDataModal}
+        onClose={() => setShowWipeDataModal(false)}
+        onConfirmWipe={handleWipeData}
+      />
       <AuthModal
         isOpen={authState.isLocked || showSecurityModal}
         isLockScreenMode={authState.isLocked}

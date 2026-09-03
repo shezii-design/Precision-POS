@@ -1,20 +1,28 @@
 const fs = require('fs');
+
 let code = fs.readFileSync('src/components/Navbar.tsx', 'utf-8');
 
-const oldNavbarRight = `<div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-nowrap">`;
-const newNavbarRight = `<div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden no-scrollbar">`;
+code = code.replace(
+  '                        <span>Security & PIN Config</span>\n                      </button>\n                    )}',
+  `                        <span>Security & PIN Config</span>
+                      </button>
+                    )}
+                    {canManageSettings && (
+                      <button
+                        type="button"
+                        onClick={() => { setShowToolsMenu(false); onOpenWipeData(); }}
+                        className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-red-50 text-red-700 rounded-xl flex items-center gap-2.5 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600 shrink-0" />
+                        <span>Factory Reset / Wipe Data</span>
+                      </button>
+                    )}`
+);
 
-code = code.replace(oldNavbarRight, newNavbarRight);
-
-// If `no-scrollbar` isn't in tailwind, we can use inline styles, but let's just add `scrollbar-width: none` using style if we want to be safe,
-// Actually, let's just do:
-const newNavbarRightSafe = `<div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-nowrap overflow-x-auto overflow-y-hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>`;
-code = code.replace(newNavbarRight, newNavbarRightSafe);
-code = code.replace(oldNavbarRight, newNavbarRightSafe); // just in case
-
-// I noticed the first left side part is also flex-nowrap and might push things. 
-// Let's just make the right side max-w for mobile so it scrolls instead of getting pushed out of the viewport.
-code = code.replace(`style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>`, `style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', maxWidth: 'calc(100vw - 120px)' }}>`);
+// We need to import Trash2 from lucide-react in Navbar.tsx
+if (!code.includes('Trash2')) {
+  code = code.replace('Shield,', 'Shield, Trash2,');
+}
 
 fs.writeFileSync('src/components/Navbar.tsx', code);
-console.log('patched Navbar mobile scrolling');
+console.log('patched Navbar.tsx');
