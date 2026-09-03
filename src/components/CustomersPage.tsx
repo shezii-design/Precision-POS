@@ -202,14 +202,14 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
 
   // Save Customer Handler
   const handleSaveCustomer = (customerData: Partial<Customer>) => {
-    if (!isOnline) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
+    if (typeof window !== 'undefined' && !window.navigator.onLine) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
     const updated = saveCustomer(customerData, customers);
     onUpdateCustomers(updated);
   };
 
   // Delete Customer Handler
   const handleDeleteCustomer = (customerId: string, e: React.MouseEvent) => {
-    if (!isOnline) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
+    if (typeof window !== 'undefined' && !window.navigator.onLine) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this customer account?')) {
       const result = deleteCustomer(customerId, customers, sales, customerLedger);
@@ -226,7 +226,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
     entryData: Omit<CustomerLedgerEntry, 'id' | 'createdAt'>,
     entryId?: string
   ) => {
-    if (!isOnline) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
+    if (typeof window !== 'undefined' && !window.navigator.onLine) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
     const result = recordCustomerPaymentAndUpdateAll(entryData, customerLedger, customers);
     onUpdateLedger(result.updatedLedgerEntries);
     onUpdateCustomers(result.updatedCustomers);

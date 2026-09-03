@@ -883,7 +883,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                                     No exact product match found. You can enter custom part name.
                                   </div>
                                 ) : (
-                                  filteredProducts.map(p => (
+                                  filteredProducts.slice(0, 50).map(p => (
                                     <div
                                       key={p.id}
                                       onClick={() => handleSelectProduct(index, p)}

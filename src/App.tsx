@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   AuthState, 
   Brand, 
@@ -518,14 +518,14 @@ export default function App() {
   };
 
   const handleSaveExpense = (expenseData: Partial<Expense>) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const res = saveExpense(expenseData, expenses);
     setExpenses(res.updatedExpenses);
     showToast(`Expense Saved: PKR ${res.savedExpense.amount.toLocaleString()}`, res.savedExpense.title);
   };
 
   const handleDeleteExpense = (expenseId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const expense = expenses.find(e => e.id === expenseId);
     if (!expense) return;
     if (!window.confirm(`Delete expense record "${expense.title}" for PKR ${expense.amount.toLocaleString()}?`)) return;
@@ -535,7 +535,7 @@ export default function App() {
   };
 
   const handleOpenCreateQuotation = () => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setEditingQuotation(null);
     setShowQuotationFormModal(true);
     showToast('New Quotation (7-Day Validity)', 'F6');
@@ -547,13 +547,13 @@ export default function App() {
   };
 
   const handleEditQuotation = (quotation: Quotation) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setEditingQuotation(quotation);
     setShowQuotationFormModal(true);
   };
 
   const handleSaveQuotation = (quotationData: Quotation) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (editingQuotation) {
       const updated = updateQuotation(quotationData, quotations);
       setQuotations(updated);
@@ -568,7 +568,7 @@ export default function App() {
   };
 
   const handleDeleteQuotation = (quotationId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const updated = deleteQuotation(quotationId, quotations);
     setQuotations(updated);
     showToast('Quotation Deleted', 'Removed from list');
@@ -599,7 +599,7 @@ export default function App() {
   };
 
   const handleOpenCreatePO = (vendorId?: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const validVendorId = typeof vendorId === 'string' ? vendorId : undefined;
     setPoModalVendorId(validVendorId);
     setEditingPOForModal(null);
@@ -608,7 +608,7 @@ export default function App() {
   };
 
   const handleOpenEditPO = (po: PurchaseOrder) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setPoModalVendorId(po.vendorId);
     setEditingPOForModal(po);
     setShowPOFormModal(true);
@@ -616,7 +616,7 @@ export default function App() {
   };
 
   const handleOpenReceiveCargo = (po: PurchaseOrder) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setActivePOForReceive(po);
     setShowPOReceiveModal(true);
     showToast(`Receive Cargo for ${po.poNumber}`, 'Cargo & Cost Allocation');
@@ -628,7 +628,7 @@ export default function App() {
   };
 
   const handleSavePO = (poData: PurchaseOrder) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (editingPOForModal) {
       const updated = updatePurchaseOrder(poData, purchaseOrders);
       setPurchaseOrders(updated);
@@ -643,7 +643,7 @@ export default function App() {
   };
 
   const handleProcessPOCargoReceiving = (poData: PurchaseOrder, isPendingBill: boolean) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const res = processPOCargoReceivingAndUpdateAll(
       poData,
       purchaseOrders,
@@ -676,7 +676,7 @@ export default function App() {
   };
 
   const handleDeletePO = (poId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const po = purchaseOrders.find(p => p.id === poId);
     if (!po) return;
     if (!window.confirm(`Are you sure you want to delete Purchase Order "${po.poNumber}"?`)) return;
@@ -716,20 +716,20 @@ export default function App() {
   };
 
   const handleOpenCreateDemand = () => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setEditingDemand(null);
     setShowDemandFormModal(true);
     showToast('New Demand Request', 'Demand Entry');
   };
 
   const handleOpenEditDemand = (demand: Demand) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setEditingDemand(demand);
     setShowDemandFormModal(true);
   };
 
   const handleSaveDemand = (demandData: Demand) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const res = saveDemand(demandData, demands);
     setDemands(res.updatedDemands);
     setShowDemandFormModal(false);
@@ -738,7 +738,7 @@ export default function App() {
   };
 
   const handleDeleteDemand = (demandId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const demand = demands.find(d => d.id === demandId);
     if (demand && !window.confirm(`Are you sure you want to delete demand for "${demand.customerName} - ${demand.itemName}"?`)) {
       return;
@@ -749,7 +749,7 @@ export default function App() {
   };
 
   const handleUpdateDemandStatus = (demandId: string, status: DemandStatus) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const res = updateDemandStatus(demandId, status, undefined, demands);
     setDemands(res.updatedDemands);
     showToast(`Demand Marked ${status.toUpperCase()}`, 'Status Updated');
@@ -812,7 +812,7 @@ export default function App() {
   };
 
   const handleOpenNewSale = (customerId?: string, presetItems?: InitialSaleItemPreset[]) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setEditingSaleForModal(null);
     setActiveDemandIdForSale(null);
     setInitialSaleCustomerPhone(undefined);
@@ -834,7 +834,7 @@ export default function App() {
   };
 
   const handleEditSale = (sale: Sale) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setActiveDemandIdForSale(null);
     setEditingSaleForModal(sale);
     setShowNewSaleModal(true);
@@ -842,7 +842,7 @@ export default function App() {
   };
 
   const handleCompleteSale = (newSale: Sale, originalSale?: Sale | null) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (originalSale) {
       const res = updateSaleAndUpdateAll(newSale, originalSale, products, sales, customers, vendors, ledgerEntries);
       setProducts(res.updatedProducts);
@@ -896,19 +896,19 @@ export default function App() {
   };
 
   const handleOpenAddVendorModal = () => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setEditingVendor(null);
     setShowVendorFormModal(true);
   };
 
   const handleOpenEditVendorModal = (vendor: Vendor) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setEditingVendor(vendor);
     setShowVendorFormModal(true);
   };
 
   const handleSaveVendor = (savedVendor: Vendor) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const exists = vendors.some(v => v.id === savedVendor.id);
     let updated: Vendor[];
     if (exists) {
@@ -929,7 +929,7 @@ export default function App() {
   };
 
   const handleDeleteVendor = (vendorId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const vendor = vendors.find(v => v.id === vendorId);
     if (!vendor) return;
     if (!window.confirm(`Are you sure you want to delete vendor "${vendor.businessName}"? This will also remove their purchases and ledger history.`)) {
@@ -955,7 +955,7 @@ export default function App() {
 
   // Cash / Payment Entry Handlers
   const handleOpenCashModal = (vendorId?: string, editingEntry?: VendorLedgerEntry | null) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const validVendorId = typeof vendorId === 'string' ? vendorId : undefined;
     setCashModalVendorId(validVendorId);
     setEditingLedgerEntry(editingEntry && typeof editingEntry === 'object' && 'amount' in editingEntry ? editingEntry : null);
@@ -963,7 +963,7 @@ export default function App() {
   };
 
   const handleSaveCashEntry = (entryData: Omit<VendorLedgerEntry, 'id' | 'createdAt'>, entryId?: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (entryId) {
       const res = updateCashEntryAndUpdateAll(entryId, entryData, ledgerEntries, vendors);
       setLedgerEntries(res.updatedLedgerEntries);
@@ -980,7 +980,7 @@ export default function App() {
   };
 
   const handleDeleteLedgerEntry = (entryId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (!window.confirm('Are you sure you want to delete this payment record?')) return;
     const res = deleteCashEntryAndUpdateAll(entryId, ledgerEntries, vendors);
     setLedgerEntries(res.updatedLedgerEntries);
@@ -990,7 +990,7 @@ export default function App() {
 
   // Purchase Handlers (Atomic updates across inventory, purchases, vendors, ledger)
   const handleOpenPurchaseModal = (vendorId?: string, editingPurch?: Purchase | null) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const validVendorId = typeof vendorId === 'string' ? vendorId : undefined;
     setPurchaseModalVendorId(validVendorId);
     setEditingPurchase(editingPurch && typeof editingPurch === 'object' && 'totalAmount' in editingPurch ? editingPurch : null);
@@ -998,7 +998,7 @@ export default function App() {
   };
 
   const handleSavePurchase = (purchase: Purchase, originalPurchase?: Purchase | null) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (originalPurchase) {
       const res = updatePurchaseAndUpdateAll(purchase, originalPurchase, products, purchases, vendors, ledgerEntries);
       setProducts(res.updatedProducts);
@@ -1019,7 +1019,7 @@ export default function App() {
   };
 
   const handleDeletePurchase = (purchaseId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (!window.confirm('Are you sure you want to delete this purchase bill? Stock items will be subtracted back and ledger reversed.')) {
       return;
     }
@@ -1033,13 +1033,13 @@ export default function App() {
 
   // Linked Products Configuration Handlers
   const handleOpenConfigureLinksModal = (vendor: Vendor) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setVendorForLinking(vendor);
     setShowConfigureLinksModal(true);
   };
 
   const handleSaveLinkedProducts = (vendorId: string, linkedProductIds: string[]) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const res = linkProductsToVendor(vendorId, linkedProductIds, vendors, products);
     setVendors(res.updatedVendors);
     setProducts(res.updatedProducts);
@@ -1053,7 +1053,7 @@ export default function App() {
 
   // Customer & Vendor Returns Handlers
   const handleOpenCustomerReturnModal = (docOrSale?: CustomerReturn | Sale) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (docOrSale && 'returnNumber' in docOrSale) {
       setEditingCustomerReturn(docOrSale as CustomerReturn);
       setInitialSaleForReturn(null);
@@ -1068,13 +1068,13 @@ export default function App() {
   };
 
   const handleOpenVendorReturnModal = (returnDoc?: VendorReturn) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setEditingVendorReturn(returnDoc || null);
     setShowVendorReturnModal(true);
   };
 
   const handleSaveCustomerReturn = (returnDoc: CustomerReturn) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (editingCustomerReturn) {
       const rolledBack = deleteCustomerReturnAndUpdateAll(
         editingCustomerReturn.id,
@@ -1123,7 +1123,7 @@ export default function App() {
   };
 
   const handleDeleteCustomerReturn = (returnId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const res = deleteCustomerReturnAndUpdateAll(
       returnId,
       products,
@@ -1141,7 +1141,7 @@ export default function App() {
   };
 
   const handleSaveVendorReturn = (returnDoc: VendorReturn) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (editingVendorReturn) {
       const rolledBack = deleteVendorReturnAndUpdateAll(
         editingVendorReturn.id,
@@ -1190,7 +1190,7 @@ export default function App() {
   };
 
   const handleDeleteVendorReturn = (returnId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const res = deleteVendorReturnAndUpdateAll(
       returnId,
       products,
@@ -1509,21 +1509,50 @@ export default function App() {
   }, [supabaseConfig.enabled, supabaseConfig.url, supabaseConfig.anonKey]);
 
   // Background cloud sync with debounce if Supabase is enabled
+  const prevSyncState = useRef<any>({});
+
   useEffect(() => {
     if (!supabaseConfig.enabled || !supabaseConfig.url || !supabaseConfig.anonKey) {
+      return;
+    }
+
+    const currentDevices = getStoredRegisteredDevices();
+
+    const currentBundle: any = {
+      products, brands, types, locations, customers, customerLedger, sales,
+      customerReturns, vendors, vendorLedger: ledgerEntries, vendorReturns, purchases, purchaseOrders,
+      quotations, demands, expenses, employees, registeredDevices: currentDevices, stockLogs, pricingSettings
+    };
+
+    const changedBundle: any = {};
+    let hasChanges = false;
+
+    for (const key in currentBundle) {
+      if (key === 'registeredDevices') {
+        if (JSON.stringify(currentBundle[key]) !== JSON.stringify(prevSyncState.current[key])) {
+          changedBundle[key] = currentBundle[key];
+          hasChanges = true;
+        }
+      } else {
+        if (currentBundle[key] !== prevSyncState.current[key]) {
+          changedBundle[key] = currentBundle[key];
+          hasChanges = true;
+        }
+      }
+    }
+
+    if (!hasChanges) {
       return;
     }
 
     const timer = setTimeout(() => {
       const client = getSupabaseClient(supabaseConfig);
       if (client) {
-        const bundle = {
-          products, brands, types, locations, customers, customerLedger, sales,
-          customerReturns, vendors, vendorLedger: ledgerEntries, vendorReturns, purchases, purchaseOrders,
-          quotations, demands, expenses, employees, registeredDevices: getStoredRegisteredDevices(), stockLogs, pricingSettings
-        };
-        syncAllModulesToSupabase(client, bundle).then((res) => {
+        syncAllModulesToSupabase(client, changedBundle).then((res) => {
           if (res.success) {
+            for (const key in changedBundle) {
+              prevSyncState.current[key] = changedBundle[key];
+            }
             setSupabaseConfig(prev => ({
               ...prev,
               lastSyncedAt: new Date().toISOString(),
@@ -1532,7 +1561,7 @@ export default function App() {
           }
         });
       }
-    }, 5000); // 5 seconds debounce to prevent spamming
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [
@@ -1543,6 +1572,7 @@ export default function App() {
   ]);
 
   // Filtered and Sorted Products
+  
   const filteredProducts = useMemo(() => {
     return filterAndSortProducts(products, {
       primarySearch,
@@ -1574,20 +1604,20 @@ export default function App() {
   }, [products]);
 
   // Handlers for Product Management
-  const handleOpenAddProduct = () => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+  const handleOpenAddProduct = useCallback(() => {
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setEditingProduct(null);
     setShowProductModal(true);
-  };
+  }, [isOnline]);
 
-  const handleEditProduct = (prod: Product) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+  const handleEditProduct = useCallback((prod: Product) => {
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setEditingProduct(prod);
     setShowProductModal(true);
-  };
+  }, [isOnline]);
 
   const handleSaveProduct = (data: Partial<Product>) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (editingProduct) {
       // Update existing
       const updated = products.map(p => {
@@ -1632,30 +1662,31 @@ export default function App() {
     }
   };
 
-  const handleDeleteProduct = (id: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+  const handleDeleteProduct = useCallback((id: string) => {
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (window.confirm('Are you sure you want to delete this product from inventory?')) {
-      setProducts(products.filter(p => p.id !== id));
+      setProducts(prev => prev.filter(p => p.id !== id));
     }
-  };
+  }, [isOnline]);
 
-  const handleDuplicateProduct = (prod: Product) => {
-    const nextId = getNextInternalId(products);
-    const duplicated: Product = {
-      ...prod,
-      id: `prod-${Date.now()}`,
-      internalId: nextId,
-      name: `${prod.name} (Copy)`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setProducts([duplicated, ...products]);
-  };
+  const handleDuplicateProduct = useCallback((prod: Product) => {
+    setProducts(prev => {
+      const nextId = getNextInternalId(prev);
+      const duplicated: Product = {
+        ...prod,
+        id: `prod-${Date.now()}`,
+        internalId: nextId,
+        name: `${prod.name} (Copy)`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      return [duplicated, ...prev];
+    });
+  }, []);
 
-  const handleQuickUpdateCost = (productId: string, newCost: number) => {
-    const updated = products.map(p => {
+  const handleQuickUpdateCost = useCallback((productId: string, newCost: number) => {
+    setProducts(prev => prev.map(p => {
       if (p.id === productId) {
-        // Regenerate tier selling prices based on new cost unless locked
         const nextPrices = generateProductSellingPrices(newCost, pricingSettings, p.sellingPrices);
         return {
           ...p,
@@ -1665,19 +1696,18 @@ export default function App() {
         };
       }
       return p;
-    });
-    setProducts(updated);
-  };
+    }));
+  }, [pricingSettings]);
 
   // Stock Adjustment Handler
-  const handleOpenStockAdjust = (prod: Product) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+  const handleOpenStockAdjust = useCallback((prod: Product) => {
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setProductForStock(prod);
     setShowStockModal(true);
-  };
+  }, [isOnline]);
 
   const handleSaveStock = (productId: string, newStock: number, log: StockLog) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     saveStockLog(log);
     setStockLogs(getStoredStockLogs());
     const updated = products.map(p => {
@@ -1694,20 +1724,20 @@ export default function App() {
   };
 
   // Label Printing Handler
-  const handleOpenLabelPrint = (prod: Product) => {
+  const handleOpenLabelPrint = useCallback((prod: Product) => {
     setProductForLabel(prod);
     setShowLabelModal(true);
-  };
+  }, []);
 
   // Product History Handler
-  const handleOpenProductHistory = (prod: Product) => {
+  const handleOpenProductHistory = useCallback((prod: Product) => {
     setProductForHistory(prod);
     setShowProductHistoryModal(true);
-  };
+  }, []);
 
   // Pricing Formulas Save & Recalculate
   const handleSavePricingSettings = (newSettings: GlobalPricingSettings, recalculateAll: boolean) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', 'error'); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setPricingSettings(newSettings);
     if (recalculateAll) {
       const updated = products.map(p => ({
@@ -1720,7 +1750,11 @@ export default function App() {
   };
 
   // Bulk Import Handler
-  const handleImportSuccess = (importedProducts: Product[], mode: 'append' | 'overwrite') => {
+  const handleImportSuccess = (importedProducts: Product[], mode: 'append' | 'overwrite', newBrands?: Brand[], newTypes?: ProductType[], newLocations?: LocationItem[]) => {
+    if (newBrands) setBrands(newBrands);
+    if (newTypes) setTypes(newTypes);
+    if (newLocations) setLocations(newLocations);
+    
     if (mode === 'append') {
       setProducts([...importedProducts, ...products]);
     } else {
@@ -1757,6 +1791,7 @@ export default function App() {
   const availableCabins = activeLocationObj ? activeLocationObj.cabins : [];
 
   const nextInternalId = getNextInternalId(products);
+  
 
   return (
     <div className="min-h-screen bg-slate-100/70 flex flex-col font-sans text-slate-900 selection:bg-red-500 selection:text-white">
@@ -2423,36 +2458,66 @@ export default function App() {
                 </button>
               </div>
             </div>
-          ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  pricingSettings={pricingSettings}
-                  onEdit={handleEditProduct}
-                  onDelete={handleDeleteProduct}
-                  onDuplicate={handleDuplicateProduct}
-                  onPrintLabel={handleOpenLabelPrint}
-                  onAdjustStock={handleOpenStockAdjust}
-                  onQuickUpdateCost={handleQuickUpdateCost}
-                  onViewHistory={handleOpenProductHistory}
-                />
-              ))}
-            </div>
+                    ) : viewMode === 'grid' ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {paginatedProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    pricingSettings={pricingSettings}
+                    onEdit={handleEditProduct}
+                    onDelete={handleDeleteProduct}
+                    onDuplicate={handleDuplicateProduct}
+                    onPrintLabel={handleOpenLabelPrint}
+                    onAdjustStock={handleOpenStockAdjust}
+                    onQuickUpdateCost={handleQuickUpdateCost}
+                    onViewHistory={handleOpenProductHistory}
+                  />
+                ))}
+              </div>
+              
+              {hasMoreProducts && (
+                <div className="flex justify-center mt-6 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    className="px-6 py-2.5 bg-white border border-slate-200 hover:border-red-300 hover:bg-red-50 text-slate-700 hover:text-red-700 font-bold rounded-xl shadow-sm transition-all"
+                  >
+                    Load More ({filteredProducts.length - paginatedProducts.length} remaining)
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
-            <ProductTable
-              products={filteredProducts}
-              pricingSettings={pricingSettings}
-              onEdit={handleEditProduct}
-              onDelete={handleDeleteProduct}
-              onDuplicate={handleDuplicateProduct}
-              onPrintLabel={handleOpenLabelPrint}
-              onAdjustStock={handleOpenStockAdjust}
-              onQuickUpdateCost={handleQuickUpdateCost}
-              onViewHistory={handleOpenProductHistory}
-            />
+            <>
+              <ProductTable
+                products={paginatedProducts}
+                pricingSettings={pricingSettings}
+                onEdit={handleEditProduct}
+                onDelete={handleDeleteProduct}
+                onDuplicate={handleDuplicateProduct}
+                onPrintLabel={handleOpenLabelPrint}
+                onAdjustStock={handleOpenStockAdjust}
+                onQuickUpdateCost={handleQuickUpdateCost}
+                onViewHistory={handleOpenProductHistory}
+              />
+              
+              {hasMoreProducts && (
+                <div className="flex justify-center mt-6 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    className="px-6 py-2.5 bg-white border border-slate-200 hover:border-red-300 hover:bg-red-50 text-slate-700 hover:text-red-700 font-bold rounded-xl shadow-sm transition-all"
+                  >
+                    Load More ({filteredProducts.length - paginatedProducts.length} remaining)
+                  </button>
+                </div>
+              )}
+            </>
           )}
+
+          
         </section>
         </>
         )}

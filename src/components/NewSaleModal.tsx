@@ -1227,7 +1227,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
               {showProductDropdown && productSearchTerm.trim().length > 0 && (
                 <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 z-40 overflow-hidden max-h-64 overflow-y-auto">
                   {filteredProducts.length > 0 ? (
-                    filteredProducts.map(prod => {
+                    filteredProducts.slice(0, 50).map(prod => {
                       const prodTiers = getProductAvailableTiers(prod, pricingSettings);
                       const retailPrice = getDefaultRetailPrice(prod);
                       const cost = prod.costPrice || 0;

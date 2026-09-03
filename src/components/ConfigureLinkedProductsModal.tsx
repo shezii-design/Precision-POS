@@ -201,7 +201,7 @@ export const ConfigureLinkedProductsModal: React.FC<ConfigureLinkedProductsModal
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-              {filteredProducts.map(product => {
+              {filteredProducts.slice(0, 100).map(product => {
                 const isSelected = selectedIds.includes(product.id);
                 const retailPrice = product.sellingPrices?.find(p => p.tierId === 'tier-retail')?.price || product.costPrice * 1.25;
 

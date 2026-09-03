@@ -2650,25 +2650,25 @@ export async function fetchAllFromSupabase(client: SupabaseClient): Promise<{
 }
 
 export interface FullSyncDataBundle {
-  products: Product[];
-  brands: Brand[];
-  types: ProductType[];
-  locations: LocationItem[];
-  customers: Customer[];
-  customerLedger: CustomerLedgerEntry[];
+  products?: Product[];
+  brands?: Brand[];
+  types?: ProductType[];
+  locations?: LocationItem[];
+  customers?: Customer[];
+  customerLedger?: CustomerLedgerEntry[];
   sales?: Sale[];
   customerReturns?: CustomerReturn[];
-  vendors: Vendor[];
+  vendors?: Vendor[];
   vendorLedger?: VendorLedgerEntry[];
   vendorReturns?: VendorReturn[];
-  purchases: Purchase[];
-  purchaseOrders: PurchaseOrder[];
-  quotations: Quotation[];
-  demands: Demand[];
-  expenses: Expense[];
-  employees: EmployeeAccount[];
-  registeredDevices: RegisteredDevice[];
-  stockLogs: StockLog[];
+  purchases?: Purchase[];
+  purchaseOrders?: PurchaseOrder[];
+  quotations?: Quotation[];
+  demands?: Demand[];
+  expenses?: Expense[];
+  employees?: EmployeeAccount[];
+  registeredDevices?: RegisteredDevice[];
+  stockLogs?: StockLog[];
   pricingSettings?: GlobalPricingSettings;
 }
 
@@ -2726,125 +2726,154 @@ export async function syncAllModulesToSupabase(
   };
 
   // 1. Products
-  try {
-    const prodRes = await syncProductsToSupabase(client, bundle.products);
-    if (prodRes.success) syncedCounts.products = prodRes.count;
-    else if (prodRes.error) errors.push(`Products: ${prodRes.error}`);
-  } catch (e: any) {
-    errors.push(`Products: ${e.message}`);
+  if (bundle.products) {
+    try {
+      const prodRes = await syncProductsToSupabase(client, bundle.products);
+      if (prodRes.success) syncedCounts.products = prodRes.count;
+      else if (prodRes.error) errors.push(`Products: ${prodRes.error}`);
+    } catch (e: any) {
+      errors.push(`Products: ${e.message}`);
+    }
   }
 
   // 2. Master Data
-  try {
-    const masterRes = await syncMasterDataToSupabase(client, bundle.brands, bundle.types, bundle.locations);
-    if (masterRes.success) syncedCounts.masterData = masterRes.count;
-    else if (masterRes.error) errors.push(`Master Data: ${masterRes.error}`);
-  } catch (e: any) {
-    errors.push(`Master Data: ${e.message}`);
+  if (bundle.brands || bundle.types || bundle.locations) {
+    try {
+      const masterRes = await syncMasterDataToSupabase(client, bundle.brands || [], bundle.types || [], bundle.locations || []);
+      if (masterRes.success) syncedCounts.masterData = masterRes.count;
+      else if (masterRes.error) errors.push(`Master Data: ${masterRes.error}`);
+    } catch (e: any) {
+      errors.push(`Master Data: ${e.message}`);
+    }
   }
 
   // 3. Customers & Ledgers
-  try {
-    const custRes = await syncCustomersToSupabase(client, bundle.customers, bundle.customerLedger);
-    if (custRes.success) {
-      syncedCounts.customers = custRes.customerCount;
-      syncedCounts.customerLedger = custRes.ledgerCount;
-    } else if (custRes.error) errors.push(`Customers: ${custRes.error}`);
-  } catch (e: any) {
-    errors.push(`Customers: ${e.message}`);
+  if (bundle.customers || bundle.customerLedger) {
+    try {
+      const custRes = await syncCustomersToSupabase(client, bundle.customers || [], bundle.customerLedger || []);
+      if (custRes.success) {
+        syncedCounts.customers = custRes.customerCount;
+        syncedCounts.customerLedger = custRes.ledgerCount;
+      } else if (custRes.error) errors.push(`Customers: ${custRes.error}`);
+    } catch (e: any) {
+      errors.push(`Customers: ${e.message}`);
+    }
   }
 
   // 4. Sales & Customer Returns
-  try {
-    const salesRes = await syncSalesToSupabase(client, bundle.sales || []);
-    if (salesRes.success) syncedCounts.sales = salesRes.count;
-    else if (salesRes.error) errors.push(`Sales: ${salesRes.error}`);
-  } catch (e: any) {
-    errors.push(`Sales: ${e.message}`);
+  if (bundle.sales) {
+    try {
+      const salesRes = await syncSalesToSupabase(client, bundle.sales);
+      if (salesRes.success) syncedCounts.sales = salesRes.count;
+      else if (salesRes.error) errors.push(`Sales: ${salesRes.error}`);
+    } catch (e: any) {
+      errors.push(`Sales: ${e.message}`);
+    }
   }
 
-  try {
-    const crRes = await syncCustomerReturnsToSupabase(client, bundle.customerReturns || []);
-    if (crRes.success) syncedCounts.customerReturns = crRes.count;
-    else if (crRes.error) errors.push(`Customer Returns: ${crRes.error}`);
-  } catch (e: any) {
-    errors.push(`Customer Returns: ${e.message}`);
+  if (bundle.customerReturns) {
+    try {
+      const crRes = await syncCustomerReturnsToSupabase(client, bundle.customerReturns);
+      if (crRes.success) syncedCounts.customerReturns = crRes.count;
+      else if (crRes.error) errors.push(`Customer Returns: ${crRes.error}`);
+    } catch (e: any) {
+      errors.push(`Customer Returns: ${e.message}`);
+    }
   }
 
   // 5. Vendors & Purchases
-  try {
-    const vendRes = await syncVendorsAndPurchasesToSupabase(client, bundle.vendors, bundle.purchases, bundle.purchaseOrders);
-    if (vendRes.success) {
-      syncedCounts.vendors = vendRes.vendorCount;
-      syncedCounts.purchases = vendRes.purchaseCount;
-      syncedCounts.purchaseOrders = vendRes.poCount;
-    } else if (vendRes.error) errors.push(`Vendors & Purchases: ${vendRes.error}`);
-  } catch (e: any) {
-    errors.push(`Vendors & Purchases: ${e.message}`);
+  if (bundle.vendors || bundle.purchases || bundle.purchaseOrders) {
+    try {
+      const vendRes = await syncVendorsAndPurchasesToSupabase(client, bundle.vendors || [], bundle.purchases || [], bundle.purchaseOrders || []);
+      if (vendRes.success) {
+        syncedCounts.vendors = vendRes.vendorCount;
+        syncedCounts.purchases = vendRes.purchaseCount;
+        syncedCounts.purchaseOrders = vendRes.poCount;
+      } else if (vendRes.error) errors.push(`Vendors & Purchases: ${vendRes.error}`);
+    } catch (e: any) {
+      errors.push(`Vendors & Purchases: ${e.message}`);
+    }
   }
 
   // 6. Vendor Ledger & Vendor Returns
-  try {
-    const vlRes = await syncVendorLedgerToSupabase(client, bundle.vendorLedger || []);
-    if (vlRes.success) syncedCounts.vendorLedger = vlRes.count;
-    else if (vlRes.error) errors.push(`Vendor Ledger: ${vlRes.error}`);
-  } catch (e: any) {
-    errors.push(`Vendor Ledger: ${e.message}`);
+  if (bundle.vendorLedger) {
+    try {
+      const vlRes = await syncVendorLedgerToSupabase(client, bundle.vendorLedger);
+      if (vlRes.success) syncedCounts.vendorLedger = vlRes.count;
+      else if (vlRes.error) errors.push(`Vendor Ledger: ${vlRes.error}`);
+    } catch (e: any) {
+      errors.push(`Vendor Ledger: ${e.message}`);
+    }
   }
 
-  try {
-    const vrRes = await syncVendorReturnsToSupabase(client, bundle.vendorReturns || []);
-    if (vrRes.success) syncedCounts.vendorReturns = vrRes.count;
-    else if (vrRes.error) errors.push(`Vendor Returns: ${vrRes.error}`);
-  } catch (e: any) {
-    errors.push(`Vendor Returns: ${e.message}`);
+  if (bundle.vendorReturns) {
+    try {
+      const vrRes = await syncVendorReturnsToSupabase(client, bundle.vendorReturns);
+      if (vrRes.success) syncedCounts.vendorReturns = vrRes.count;
+      else if (vrRes.error) errors.push(`Vendor Returns: ${vrRes.error}`);
+    } catch (e: any) {
+      errors.push(`Vendor Returns: ${e.message}`);
+    }
   }
 
   // 7. Quotations
-  try {
-    const quoteRes = await syncQuotationsToSupabase(client, bundle.quotations);
-    if (quoteRes.success) syncedCounts.quotations = quoteRes.count;
-    else if (quoteRes.error) errors.push(`Quotations: ${quoteRes.error}`);
-  } catch (e: any) {
-    errors.push(`Quotations: ${e.message}`);
+  if (bundle.quotations) {
+    try {
+      // @ts-ignore
+      const quoteRes = await syncQuotationsToSupabase(client, bundle.quotations);
+      if (quoteRes.success) syncedCounts.quotations = quoteRes.count;
+      else if (quoteRes.error) errors.push(`Quotations: ${quoteRes.error}`);
+    } catch (e: any) {
+      errors.push(`Quotations: ${e.message}`);
+    }
   }
 
   // 8. Demands
-  try {
-    const demRes = await syncDemandsToSupabase(client, bundle.demands);
-    if (demRes.success) syncedCounts.demands = demRes.count;
-    else if (demRes.error) errors.push(`Demands: ${demRes.error}`);
-  } catch (e: any) {
-    errors.push(`Demands: ${e.message}`);
+  if (bundle.demands) {
+    try {
+      // @ts-ignore
+      const demRes = await syncDemandsToSupabase(client, bundle.demands);
+      if (demRes.success) syncedCounts.demands = demRes.count;
+      else if (demRes.error) errors.push(`Demands: ${demRes.error}`);
+    } catch (e: any) {
+      errors.push(`Demands: ${e.message}`);
+    }
   }
 
   // 9. Expenses
-  try {
-    const expRes = await syncExpensesToSupabase(client, bundle.expenses);
-    if (expRes.success) syncedCounts.expenses = expRes.count;
-    else if (expRes.error) errors.push(`Expenses: ${expRes.error}`);
-  } catch (e: any) {
-    errors.push(`Expenses: ${e.message}`);
+  if (bundle.expenses) {
+    try {
+      const expRes = await syncExpensesToSupabase(client, bundle.expenses);
+      if (expRes.success) syncedCounts.expenses = expRes.count;
+      else if (expRes.error) errors.push(`Expenses: ${expRes.error}`);
+    } catch (e: any) {
+      errors.push(`Expenses: ${e.message}`);
+    }
   }
 
   // 10. Staff & Devices
-  try {
-    const staffRes = await syncStaffAndDevicesToSupabase(client, bundle.employees, bundle.registeredDevices);
-    if (staffRes.success) {
-      syncedCounts.employees = staffRes.employeeCount;
-      syncedCounts.devices = staffRes.deviceCount;
-    } else if (staffRes.error) errors.push(`Staff & Devices: ${staffRes.error}`);
-  } catch (e: any) {
-    errors.push(`Staff & Devices: ${e.message}`);
+  if (bundle.employees || bundle.registeredDevices) {
+    try {
+      // @ts-ignore
+      const staffRes = await syncStaffAndDevicesToSupabase(client, bundle.employees || [], bundle.registeredDevices || []);
+      if (staffRes.success) {
+        syncedCounts.employees = staffRes.employeeCount;
+        syncedCounts.devices = staffRes.deviceCount;
+      } else if (staffRes.error) errors.push(`Staff & Devices: ${staffRes.error}`);
+    } catch (e: any) {
+      errors.push(`Staff & Devices: ${e.message}`);
+    }
   }
 
   // 11. Stock Logs
-  try {
-    const slRes = await syncStockLogsToSupabase(client, bundle.stockLogs || []);
-    if (slRes.success) syncedCounts.stockLogs = slRes.count;
-    else if (slRes.error) errors.push(`Stock Logs: ${slRes.error}`);
-  } catch (e: any) {
-    errors.push(`Stock Logs: ${e.message}`);
+  if (bundle.stockLogs) {
+    try {
+      const slRes = await syncStockLogsToSupabase(client, bundle.stockLogs);
+      if (slRes.success) syncedCounts.stockLogs = slRes.count;
+      else if (slRes.error) errors.push(`Stock Logs: ${slRes.error}`);
+    } catch (e: any) {
+      errors.push(`Stock Logs: ${e.message}`);
+    }
   }
 
   // 12. Pricing Settings
@@ -2856,15 +2885,10 @@ export async function syncAllModulesToSupabase(
     }
   }
 
-  const isFullSuccess = errors.length === 0;
-  const totalRecords = Object.values(syncedCounts).reduce((a, b) => a + b, 0);
-
   return {
-    success: isFullSuccess || totalRecords > 0,
-    message: isFullSuccess 
-      ? `Full Cloud Synchronization completed! Total ${totalRecords} records across all modules updated in Supabase.`
-      : `Synchronized ${totalRecords} records with ${errors.length} warning(s). Check missing tables.`,
+    success: errors.length === 0,
+    message: errors.length > 0 ? 'Sync completed with errors' : 'Sync successful',
     syncedCounts,
-    errors,
+    errors: errors.length > 0 ? errors : undefined,
   };
 }

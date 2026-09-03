@@ -29,7 +29,7 @@ interface BulkImportModalProps {
   types: ProductType[];
   locations: LocationItem[];
   pricingSettings: GlobalPricingSettings;
-  onImportSuccess: (importedProducts: Product[], mode: 'append' | 'overwrite') => void;
+  onImportSuccess: (importedProducts: Product[], mode: 'append' | 'overwrite', newBrands: Brand[], newTypes: ProductType[], newLocations: LocationItem[]) => void;
 }
 
 export const BulkImportModal: React.FC<BulkImportModalProps> = ({
@@ -96,25 +96,42 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
   const handleConfirmImport = () => {
     if (!parsedRows || parsedRows.length === 0) return;
 
-    // Convert parsed rows to full Product records
     let currentWorkingList = [...existingProducts];
     const newProducts: Product[] = [];
+    
+    const currentBrands = [...brands];
+    const currentTypes = [...types];
+    const currentLocations = [...locations];
 
     parsedRows.forEach((row, index) => {
-      // Find or assign internal ID
       let assignedId = row.internalId;
       if (!assignedId || importMode === 'append') {
         assignedId = getNextInternalId([...currentWorkingList, ...newProducts]);
       }
 
-      // Match or use provided brand/type/location
-      const brandMatch = brands.find(b => b.name.toLowerCase() === row.brandName.toLowerCase()) || brands[0];
-      const typeMatch = types.find(t => t.name.toLowerCase() === row.typeName.toLowerCase()) || types[0];
-      const locMatch = locations.find(l => l.name.toLowerCase() === row.locationName.toLowerCase()) || locations[0];
+      let brandMatch = currentBrands.find(b => b.name.toLowerCase() === (row.brandName || '').toLowerCase());
+      if (!brandMatch) {
+        brandMatch = { id: `b-${Date.now()}-${index}`, name: row.brandName || 'Standard' };
+        currentBrands.push(brandMatch);
+      }
 
-      // Selling prices
+      let typeMatch = currentTypes.find(t => t.name.toLowerCase() === (row.typeName || '').toLowerCase());
+      if (!typeMatch) {
+        typeMatch = { id: `t-${Date.now()}-${index}`, name: row.typeName || 'General Part' };
+        currentTypes.push(typeMatch);
+      }
+
+      let locMatch = currentLocations.find(l => l.name.toLowerCase() === (row.locationName || '').toLowerCase());
+      if (!locMatch) {
+        locMatch = { id: `loc-${Date.now()}-${index}`, name: row.locationName || 'Main Shop', cabins: [row.cabinNumber || 'C-01'] };
+        currentLocations.push(locMatch);
+      } else {
+        if (row.cabinNumber && !locMatch.cabins.includes(row.cabinNumber)) {
+          locMatch.cabins.push(row.cabinNumber);
+        }
+      }
+
       const computedSellingPrices = generateProductSellingPrices(row.costPrice, pricingSettings);
-      // If row has custom wholesale/retail price, override them
       if (row.wholesalePrice && computedSellingPrices[0]) {
         computedSellingPrices[0].price = row.wholesalePrice;
         computedSellingPrices[0].isOverridden = true;
@@ -129,12 +146,12 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         internalId: assignedId,
         name: row.name,
         image: row.image || undefined,
-        typeId: typeMatch?.id || 't-1',
-        typeName: row.typeName || typeMatch?.name || 'General Part',
-        brandId: brandMatch?.id || 'b-1',
-        brandName: row.brandName || brandMatch?.name || 'Standard',
-        locationId: locMatch?.id || 'loc-1',
-        locationName: row.locationName || locMatch?.name || 'Main Shop',
+        typeId: typeMatch.id,
+        typeName: typeMatch.name,
+        brandId: brandMatch.id,
+        brandName: brandMatch.name,
+        locationId: locMatch.id,
+        locationName: locMatch.name,
         cabinNumber: row.cabinNumber || 'C-01',
         stockQuantity: row.stockQuantity,
         minStockAlert: 5,
@@ -145,7 +162,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
           height: row.height,
           outerDia: row.outerDia,
           innerDia: row.innerDia,
-          inputUnit: 'inch', // strictly standard in inches for import
+          inputUnit: 'inch',
           thread: row.thread,
           gasket_OD: row.gasket_OD,
           gasket_ID: row.gasket_ID,
@@ -160,11 +177,10 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-
       newProducts.push(prod);
     });
 
-    onImportSuccess(newProducts, importMode);
+    onImportSuccess(newProducts, importMode, currentBrands, currentTypes, currentLocations);
 
     // Confetti celebration
     try {

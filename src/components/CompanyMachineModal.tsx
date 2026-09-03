@@ -419,7 +419,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
                         No matching product found. You can add it as a custom part above.
                       </div>
                     ) : (
-                      filteredProducts.map((prod) => (
+                      filteredProducts.slice(0, 50).map((prod) => (
                         <div
                           key={prod.id}
                           onClick={() => handleSelectProduct(prod)}

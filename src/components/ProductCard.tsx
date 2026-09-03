@@ -38,7 +38,7 @@ interface ProductCardProps {
   onViewHistory?: (product: Product) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   product,
   pricingSettings,
   onEdit,
@@ -614,4 +614,4 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       )}
     </div>
   );
-};
+});

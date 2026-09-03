@@ -359,7 +359,7 @@ export async function parseFileForImport(file: File): Promise<ParsedImportRow[]>
           const rawCross = String(normalized['crossreferences'] || normalized['crossreference'] || normalized['interchange'] || '');
           const crossReferences = rawCross.replace(/;/g, '\n').trim();
 
-          const image = String(normalized['imageurl'] || normalized['image'] || '').trim();
+          const image = String(normalized['imageurl'] || normalized['image'] || normalized['imagelink'] || normalized['picture'] || '').trim();
 
           parsedRows.push({
             internalId: internalId || undefined,

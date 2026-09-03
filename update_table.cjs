@@ -1,96 +1,18 @@
-import React, { useState } from 'react';
-import { DimensionUnit, GlobalPricingSettings, Product } from '../types';
-import { formatDimension } from '../services/dimensions';
-import { formatPKR, getTierTheme } from '../services/pricing';
-import { TableVirtuoso } from 'react-virtuoso';
-import { 
-  Edit3, 
-  Trash2, 
-  Printer, 
-  Copy, 
-  MapPin, 
-  Box, 
-  ArrowRightLeft,
-  Check,
-  Tag,
-  History
-} from 'lucide-react';
+const fs = require('fs');
 
-interface ProductTableProps {
-  products: Product[];
-  pricingSettings: GlobalPricingSettings;
-  onEdit: (product: Product) => void;
-  onDelete: (id: string) => void;
-  onDuplicate: (product: Product) => void;
-  onPrintLabel: (product: Product) => void;
-  onAdjustStock: (product: Product) => void;
-  onQuickUpdateCost: (productId: string, newCost: number) => void;
-  onViewHistory?: (product: Product) => void;
-}
+let code = fs.readFileSync('src/components/ProductTable.tsx', 'utf-8');
 
-export const ProductTable: React.FC<ProductTableProps> = React.memo(({
-  products,
-  pricingSettings,
-  onEdit,
-  onDelete,
-  onDuplicate,
-  onPrintLabel,
-  onAdjustStock,
-  onQuickUpdateCost,
-  onViewHistory,
-}) => {
-  const [tableUnit, setTableUnit] = useState<DimensionUnit>('inch');
-  const [editingCostId, setEditingCostId] = useState<string | null>(null);
-  const [tempCostValue, setTempCostValue] = useState<string>('');
+// Add import
+code = code.replace(
+  "import { \n  Edit3,",
+  "import { TableVirtuoso } from 'react-virtuoso';\nimport { \n  Edit3,"
+);
 
-  const handleStartCostEdit = (p: Product) => {
-    setEditingCostId(p.id);
-    setTempCostValue(String(p.costPrice || 0));
-  };
+// We'll replace from `<table className="w-full min-w-[920px] text-left text-xs">` down to `</table>`
 
-  const handleSaveCost = (productId: string) => {
-    const val = parseFloat(tempCostValue);
-    if (!isNaN(val) && val >= 0) {
-      onQuickUpdateCost(productId, val);
-    }
-    setEditingCostId(null);
-  };
+const targetRegex = /<table className="w-full min-w-\[920px\] text-left text-xs">[\s\S]*?<\/table>/;
 
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-      {/* Table control sub-bar */}
-      <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-xs font-semibold text-slate-700">
-        <div>
-          Showing <span className="font-bold text-slate-900">{products.length}</span> items in table view
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] sm:text-xs">Dimensions Unit:</span>
-          <div className="flex bg-slate-200/80 p-0.5 rounded-lg">
-            <button
-              type="button"
-              onClick={() => setTableUnit('inch')}
-              className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
-                tableUnit === 'inch' ? 'bg-red-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Inches (in)
-            </button>
-            <button
-              type="button"
-              onClick={() => setTableUnit('mm')}
-              className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
-                tableUnit === 'mm' ? 'bg-red-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              mm (Metric)
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <TableVirtuoso
+const replacement = `<TableVirtuoso
           style={{ height: '70vh' }}
           data={products}
           components={{
@@ -172,13 +94,13 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                   <td className="py-3 px-3">
                     <div
                       onClick={() => onAdjustStock(p)}
-                      className={`inline-flex font-mono text-xs font-black px-2 py-1 rounded cursor-pointer hover:opacity-80 transition-opacity ${
+                      className={\`inline-flex font-mono text-xs font-black px-2 py-1 rounded cursor-pointer hover:opacity-80 transition-opacity \${
                         isOutOfStock
                           ? 'bg-red-100 text-red-700'
                           : isLowStock
                           ? 'bg-amber-100 text-amber-900'
                           : 'bg-emerald-100 text-emerald-800'
-                      }`}
+                      }\`}
                       title="Click to adjust stock"
                     >
                       <span>{p.stockQuantity} {p.unit}</span>
@@ -241,10 +163,10 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                                   {rt.tierName}:
                                 </span>
                               )}
-                              <span className={`font-mono font-black text-xs ${theme.textColor}`}>
+                              <span className={\`font-mono font-black text-xs \${theme.textColor}\`}>
                                 {formatPKR(rt.price)}
                               </span>
-                              <span className={`text-[9px] px-1 rounded ${theme.markupBadge}`}>
+                              <span className={\`text-[9px] px-1 rounded \${theme.markupBadge}\`}>
                                 {rt.markupPercent}%
                               </span>
                             </div>
@@ -255,7 +177,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                       (() => {
                         const theme = getTierTheme(defaultRetailSp, 1, activeTiers.length);
                         return (
-                          <div className={`font-mono font-black text-xs ${theme.textColor}`}>
+                          <div className={\`font-mono font-black text-xs \${theme.textColor}\`}>
                             {formatPKR(defaultRetailSp.price)}
                           </div>
                         );
@@ -339,8 +261,9 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
               </>
             );
           }}
-        />
-      </div>
-    </div>
-  );
-});
+        />`;
+
+code = code.replace(targetRegex, replacement);
+
+fs.writeFileSync('src/components/ProductTable.tsx', code);
+console.log('ProductTable.tsx updated');

@@ -329,7 +329,7 @@ export const PurchaseFormModal: React.FC<PurchaseFormModalProps> = ({
                   id="purchase-product-autocomplete"
                   className="absolute z-30 top-full mt-1 left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden max-h-60 overflow-y-auto"
                 >
-                  {filteredProducts.map(p => (
+                  {filteredProducts.slice(0, 50).map(p => (
                     <div
                       key={p.id}
                       onClick={() => handleAddProduct(p)}
