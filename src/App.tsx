@@ -111,7 +111,7 @@ import { filterAndSortProducts, normalizeSearchTerm } from './services/search';
 import { ParsedDimensionQuery } from './services/dimensions';
 import { formatPKR, formatPKRShort, generateProductSellingPrices, getDefaultRetailPrice } from './services/pricing';
 import { exportProductsToCSV, exportProductsToExcel } from './services/excel';
-import { getSupabaseClient, syncAllModulesToSupabase, fetchAllFromSupabase } from './services/supabase';
+import { getSupabaseClient, syncAllModulesToSupabase, fetchAllFromSupabase, wipeAllSupabaseData } from './services/supabase';
 
 // Components
 import { Navbar } from './components/Navbar';
@@ -1825,9 +1825,17 @@ export default function App() {
     showToast('Backup Exported', 'JSON File Saved');
   };
 
-  const handleWipeData = (downloadBackup: boolean) => {
+  const handleWipeData = async (downloadBackup: boolean) => {
     if (downloadBackup) {
       handleExportFullBackup();
+    }
+    
+    // Clear Supabase Data first if configured
+    if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+      const client = getSupabaseClient(supabaseConfig);
+      if (client) {
+        await wipeAllSupabaseData(client);
+      }
     }
     
     setProducts([]);
@@ -1847,6 +1855,9 @@ export default function App() {
     setDemands([]);
     setExpenses([]);
     setStockLogs([]);
+    
+    // Clear the sync cache to ensure the empty state syncs properly or avoids ghost syncs
+    prevSyncState.current = {};
     
     setShowWipeDataModal(false);
     showToast('Factory Reset', 'All Data Erased');
