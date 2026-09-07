@@ -14,8 +14,8 @@ async function exactSyncRows(
 
     while (hasMore) {
       const { data, error: selectErr } = await client.from(tableName).select(idCol).range(from, from + step - 1);
-      if (selectErr && selectErr.code !== '42P01') throw selectErr; // Ignore table missing if it doesn't exist yet
-      if (selectErr && selectErr.code === '42P01') {
+      if (selectErr && selectErr.code !== '42P01' && selectErr.code !== 'PGRST205') throw selectErr; // Ignore table missing if it doesn't exist yet
+      if (selectErr && (selectErr.code === '42P01' || selectErr.code === 'PGRST205')) {
         hasMore = false;
         break;
       }
@@ -325,7 +325,7 @@ export async function testSupabaseConnection(
           .select('*', { count: 'exact', head: true });
 
         if (error) {
-          if (error.code === '42P01' || error.message?.includes('does not exist')) {
+          if (error.code === '42P01' || error.code === 'PGRST205' || error.message?.includes('does not exist')) {
             return { tableName: t.name, label: t.label, exists: false, rowCount: 0, status: 'missing' };
           }
           return { 
@@ -2586,6 +2586,19 @@ export async function fetchAllFromSupabase(client: SupabaseClient): Promise<{
   error?: string;
 }> {
   try {
+    // Quick check to avoid spamming the console with 20x 404s if the tables haven't been created yet
+    const { error: healthErr } = await client.from('inventory_products').select('id').limit(1);
+    if (healthErr && (healthErr.code === '42P01' || healthErr.code === 'PGRST205')) {
+      return { 
+        success: true, 
+        data: { 
+          products: [], brands: [], types: [], locations: [], customers: [], customerLedger: [], 
+          sales: [], customerReturns: [], vendors: [], vendorLedger: [], vendorReturns: [], 
+          purchases: [], purchaseOrders: [], quotations: [], demands: [], expenses: [], 
+          employees: [], registeredDevices: [], stockLogs: [] 
+        } 
+      };
+    }
     const [
       prodRes,
       masterRes,
@@ -2725,7 +2738,7 @@ export async function wipeAllSupabaseData(client: SupabaseClient): Promise<boole
   try {
     for (const table of tablesToWipe) {
       const { error } = await client.from(table).delete().not('id', 'is', null);
-      if (error && error.code !== '42P01') {
+      if (error && error.code !== '42P01' && error.code !== 'PGRST205') {
         console.error(`Failed to wipe table ${table}:`, error);
       }
     }
@@ -2741,6 +2754,12 @@ export async function syncAllModulesToSupabase(
   bundle: FullSyncDataBundle
 ): Promise<FullSyncResult> {
   const errors: string[] = [];
+  
+  // Quick check to avoid spamming the console with 20x 404s if the tables haven't been created yet
+  const { error: healthErr } = await client.from('inventory_products').select('id').limit(1);
+  if (healthErr && (healthErr.code === '42P01' || healthErr.code === 'PGRST205')) {
+    return { message: 'Failed to sync', success: true, errors: ['Database tables not found. Please run the SQL schema.'], syncedCounts: { products: 0, customers: 0, customerLedger: 0, sales: 0, customerReturns: 0, vendors: 0, vendorLedger: 0, vendorReturns: 0, purchases: 0, purchaseOrders: 0, quotations: 0, demands: 0, expenses: 0, employees: 0, devices: 0, stockLogs: 0, masterData: 0 } };
+  }
   const syncedCounts = {
     products: 0,
     customers: 0,

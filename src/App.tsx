@@ -108,6 +108,7 @@ import {
 } from './services/auth';
 import { detectDeviceInfo, getStoredRegisteredDevices } from './services/device';
 import { filterAndSortProducts, normalizeSearchTerm } from './services/search';
+import { autoUpdateProductsROP, calculateSmartROP, buildProductSalesMap } from './services/analytics';
 import { ParsedDimensionQuery } from './services/dimensions';
 import { formatPKR, formatPKRShort, generateProductSellingPrices, getDefaultRetailPrice } from './services/pricing';
 import { exportProductsToCSV, exportProductsToExcel } from './services/excel';
@@ -127,6 +128,7 @@ import { LabelPrintModal } from './components/LabelPrintModal';
 import { SupabaseConfigModal } from './components/SupabaseConfigModal';
 import { AuthModal } from './components/AuthModal';
 import { FactoryResetModal } from './components/FactoryResetModal';
+import { AnalyticsPage } from './components/AnalyticsPage';
 import { DashboardPage } from './components/DashboardPage';
 import { IncomeStatementPage } from './components/IncomeStatementPage';
 import { SalesPage } from './components/SalesPage';
@@ -157,6 +159,7 @@ import { DemandsPage } from './components/DemandsPage';
 import { DemandFormModal } from './components/DemandFormModal';
 import { InventoryAuditLog } from './components/InventoryAuditLog';
 import { LowStockNotificationBanner } from './components/LowStockNotificationBanner';
+import { StockBreachToast } from './components/StockBreachToast';
 import { StaffManagementModal } from './components/StaffManagementModal';
 import { SwitchUserModal } from './components/SwitchUserModal';
 import { AppWorkspaceView } from './components/Navbar';
@@ -287,6 +290,7 @@ export default function App() {
   const [showPOFormModal, setShowPOFormModal] = useState<boolean>(false);
   const [editingPOForModal, setEditingPOForModal] = useState<PurchaseOrder | null>(null);
   const [poModalVendorId, setPoModalVendorId] = useState<string | undefined>(undefined);
+  const [initialPOPresets, setInitialPOPresets] = useState<Array<{ productId: string, orderedQuantity: number }> | undefined>(undefined);
   const [showPOReceiveModal, setShowPOReceiveModal] = useState<boolean>(false);
   const [activePOForReceive, setActivePOForReceive] = useState<PurchaseOrder | null>(null);
   const [showPOViewModal, setShowPOViewModal] = useState<boolean>(false);
@@ -340,6 +344,7 @@ export default function App() {
   const [showSecurityModal, setShowSecurityModal] = useState<boolean>(false);
 
   // In-App Low Stock Login Notification Banner State (shown if > 5 low stock products)
+  const [stockBreaches, setStockBreaches] = useState<Array<{ product: Product, eoq: number }>>([]);
   const [showLowStockBanner, setShowLowStockBanner] = useState<boolean>(() => {
     try {
       return sessionStorage.getItem('kfh_dismissed_low_stock_banner') !== 'true';
@@ -600,11 +605,12 @@ export default function App() {
     showToast('Purchase Orders & Cargo', 'Ctrl + O');
   };
 
-  const handleOpenCreatePO = (vendorId?: string) => {
+  const handleOpenCreatePO = (vendorId?: string, presets?: Array<{ productId: string, orderedQuantity: number }>) => {
     if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     const validVendorId = typeof vendorId === 'string' ? vendorId : undefined;
     setPoModalVendorId(validVendorId);
     setEditingPOForModal(null);
+    setInitialPOPresets(presets);
     setShowPOFormModal(true);
     showToast('Create Purchase Order', 'Draft PO');
   };
@@ -861,6 +867,33 @@ export default function App() {
       const res = recordSaleAndUpdateInventory(newSale, products, sales, customers);
       setProducts(res.updatedProducts);
       setSales(res.updatedSales);
+      
+      // BACKGROUND CHECK: Detect newly breached thresholds
+      const newBreaches: {product: Product, eoq: number}[] = [];
+      newSale.items.forEach(saleItem => {
+        const oldProd = products.find(p => p.id === saleItem.productId);
+        const newProd = res.updatedProducts.find(p => p.id === saleItem.productId);
+        if (oldProd && newProd) {
+          const threshold = typeof newProd.minStockAlert === 'number' && !isNaN(newProd.minStockAlert) ? newProd.minStockAlert : 5;
+          const oldStock = oldProd.stockQuantity || 0;
+          const newStock = newProd.stockQuantity || 0;
+          // If it just crossed the threshold
+          if (oldStock > threshold && newStock <= threshold) {
+             // Calculate EOQ for quick action
+             
+             const insight = calculateSmartROP(newProd, buildProductSalesMap(res.updatedSales));
+             newBreaches.push({ product: newProd, eoq: insight ? insight.eoq : 10 });
+          }
+        }
+      });
+      if (newBreaches.length > 0) {
+        setStockBreaches(prev => {
+           const existingIds = new Set(prev.map(b => b.product.id));
+           const toAdd = newBreaches.filter(b => !existingIds.has(b.product.id));
+           return [...prev, ...toAdd];
+        });
+      }
+
       setCustomers(res.updatedCustomers);
 
       // If this sale fulfilled an active demand, update demand status to fulfilled and link sale ID
@@ -1958,6 +1991,19 @@ export default function App() {
               setCurrentView('customers');
             }}
           />
+        ) : currentView === 'analytics' ? (
+          <AnalyticsPage
+            products={products}
+            sales={sales}
+            purchases={purchases}
+            onOpenProductHistory={(product) => {
+              handleOpenProductHistory(product);
+            }}
+            onOpenCreatePO={(presets) => {
+              handleOpenCreatePO(undefined, presets);
+              setCurrentView('purchase_orders');
+            }}
+          />
         ) : currentView === 'income_statement' ? (
           <IncomeStatementPage
             sales={sales}
@@ -3025,6 +3071,12 @@ export default function App() {
         }}
       />
 
+      <StockBreachToast 
+        breaches={stockBreaches} 
+        onOpenCreatePO={(presets) => handleOpenCreatePO(undefined, presets)}
+        onDismiss={(id) => setStockBreaches(prev => prev.filter(b => b.product.id !== id))}
+      />
+      
       {/* Keyboard Shortcut HUD Toast Notification */}
       {shortcutToast && (
         <div className="fixed bottom-6 right-6 z-50 pointer-events-none transition-all duration-300 animate-in fade-in slide-in-from-bottom-3">

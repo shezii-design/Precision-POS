@@ -141,40 +141,45 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         computedSellingPrices[1].isOverridden = true;
       }
 
+
+      const existingProduct = importMode === 'overwrite' && row.internalId
+        ? existingProducts.find(p => p.internalId.toLowerCase() === row.internalId.toLowerCase())
+        : undefined;
+
       const prod: Product = {
-        id: `prod-import-${Date.now()}-${index}`,
+        id: existingProduct ? existingProduct.id : `prod-import-${Date.now()}-${index}`,
         internalId: assignedId,
         name: row.name,
-        image: row.image || undefined,
+        image: row.image || (existingProduct ? existingProduct.image : undefined),
         typeId: typeMatch.id,
         typeName: typeMatch.name,
         brandId: brandMatch.id,
         brandName: brandMatch.name,
         locationId: locMatch.id,
         locationName: locMatch.name,
-        cabinNumber: row.cabinNumber || 'C-01',
+        cabinNumber: row.cabinNumber || (existingProduct ? existingProduct.cabinNumber : 'C-01'),
         stockQuantity: row.stockQuantity,
-        minStockAlert: 5,
-        unit: (row.unit as any) || 'Pcs',
+        minStockAlert: existingProduct ? existingProduct.minStockAlert : 5,
+        unit: (row.unit as any) || (existingProduct ? existingProduct.unit : 'Pcs'),
         costPrice: row.costPrice,
         sellingPrices: computedSellingPrices,
         dimensions: {
-          height: row.height,
-          outerDia: row.outerDia,
-          innerDia: row.innerDia,
+          height: row.height !== undefined ? row.height : existingProduct?.dimensions?.height,
+          outerDia: row.outerDia !== undefined ? row.outerDia : existingProduct?.dimensions?.outerDia,
+          innerDia: row.innerDia !== undefined ? row.innerDia : existingProduct?.dimensions?.innerDia,
           inputUnit: 'inch',
-          thread: row.thread,
-          gasket_OD: row.gasket_OD,
-          gasket_ID: row.gasket_ID,
+          thread: row.thread !== undefined ? row.thread : existingProduct?.dimensions?.thread,
+          gasket_OD: row.gasket_OD !== undefined ? row.gasket_OD : existingProduct?.dimensions?.gasket_OD,
+          gasket_ID: row.gasket_ID !== undefined ? row.gasket_ID : existingProduct?.dimensions?.gasket_ID,
         },
-        dimensionLabels: {
+        dimensionLabels: existingProduct ? existingProduct.dimensionLabels : {
           heightName: 'H',
           outerDiaName: 'OD',
           innerDiaName: 'ID',
         },
-        machineNames: row.machineNames,
-        crossReferences: row.crossReferences,
-        createdAt: new Date().toISOString(),
+        machineNames: row.machineNames !== undefined ? row.machineNames : existingProduct?.machineNames,
+        crossReferences: row.crossReferences !== undefined ? row.crossReferences : existingProduct?.crossReferences,
+        createdAt: existingProduct ? existingProduct.createdAt : new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       newProducts.push(prod);
@@ -355,6 +360,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
                         <span className="font-mono font-bold text-red-600">{row.internalId || `Auto-ID`}</span>
                         <span className="font-bold text-slate-900">{row.name}</span>
                         <span className="text-slate-400 text-[11px]">({row.brandName} • {row.typeName})</span>
+                        {row.image && <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold">Image</span>}
                       </div>
                       <div className="flex items-center gap-2.5 text-slate-600 font-medium text-[11px] sm:text-xs">
                         <span>Cabin: {row.cabinNumber}</span>

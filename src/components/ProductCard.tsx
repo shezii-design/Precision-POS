@@ -38,6 +38,31 @@ interface ProductCardProps {
   onViewHistory?: (product: Product) => void;
 }
 
+
+// Helper to find older cost tiers
+const getOldCostTiers = (product: Product) => {
+  if (!product.costBatches || product.costBatches.length === 0) return [];
+  // Sort oldest first
+  const sortedBatches = [...product.costBatches].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  
+  // Group remaining quantities by unitCost, but only for costs DIFFERENT from the current costPrice
+  const tiers: Record<number, number> = {};
+  for (const batch of sortedBatches) {
+    if ((batch.remainingQuantity || 0) > 0) {
+      if (batch.unitCost !== product.costPrice) {
+        tiers[batch.unitCost] = (tiers[batch.unitCost] || 0) + batch.remainingQuantity;
+      }
+    }
+  }
+  
+  return Object.entries(tiers).map(([costStr, qty]) => ({
+    cost: Number(costStr),
+    qty,
+  }));
+};
+
 export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   product,
   pricingSettings,
@@ -67,6 +92,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   const alertThreshold = typeof product.minStockAlert === 'number' && !isNaN(product.minStockAlert) ? product.minStockAlert : 5;
   const isOutOfStock = stockQty <= 0;
   const isLowStock = !isOutOfStock && stockQty <= alertThreshold;
+  const oldTiers = getOldCostTiers(product);
 
   const handleSaveCost = () => {
     const val = parseFloat(costInput);
@@ -420,6 +446,15 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
         {/* PRICING SECTION (Cost in Red + Wholesale in Yellow + Retail Tiers in Progressive Green) */}
         <div className="pt-2 border-t border-slate-100 space-y-2.5">
+          {oldTiers.length > 0 && (
+            <div className="flex flex-col gap-1 px-1">
+              {oldTiers.map(t => (
+                <div key={t.cost} className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/60 inline-block w-fit">
+                  {t.qty} item{t.qty !== 1 ? 's' : ''} in stock at {formatPKR(t.cost)}
+                </div>
+              ))}
+            </div>
+          )}
           {/* Editable Cost Price - Highlighted in Red */}
           <div className="flex items-center justify-between bg-red-950 text-white px-3 py-2 rounded-xl border border-red-900 shadow-2xs">
             <span className="text-xs font-bold text-red-200 uppercase tracking-wider flex items-center gap-1.5">

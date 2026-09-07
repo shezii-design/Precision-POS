@@ -28,6 +28,7 @@ interface PurchaseOrderFormModalProps {
   initialPO?: PurchaseOrder | null;
   editingPO?: PurchaseOrder | null;
   initialVendorId?: string;
+  initialPresets?: Array<{ productId: string; orderedQuantity: number }>;
   nextPONumber?: string;
   purchaseOrdersList?: PurchaseOrder[];
 }
@@ -55,6 +56,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
   initialPO: initialPOProp,
   editingPO,
   initialVendorId,
+  initialPresets,
   nextPONumber: customNextPONumber,
   purchaseOrdersList = []
 }) => {
@@ -117,23 +119,41 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
         })
       );
     } else {
-      // New PO
-      const preselectedVendor = vendors.find(v => v.id === initialVendorId) || vendors[0];
-      setVendorId(preselectedVendor ? preselectedVendor.id : '');
-      setVendorName(preselectedVendor ? preselectedVendor.businessName : '');
-      setVendorPhone(preselectedVendor ? preselectedVendor.phone || '' : '');
-      setVendorAddress(preselectedVendor ? preselectedVendor.marketAddress || '' : '');
+      setVendorId(initialVendorId || '');
+      setVendorName('');
+      setVendorPhone('');
+      setVendorAddress('');
       setPoNumber(autoNextPONumber);
       setOrderDate(new Date().toISOString().split('T')[0]);
-      
-      const twoDaysLater = new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0];
-      setExpectedDeliveryDate(twoDaysLater);
+      setExpectedDeliveryDate('');
       setEstimatedCargoCost(0);
       setStatus('ordered');
       setNotes('');
-      setItems([]);
+      
+      if (initialPresets && initialPresets.length > 0) {
+        setItems(
+          initialPresets.map(preset => {
+            const matchProd = products.find(p => p.id === preset.productId);
+            return {
+              tempId: `poi-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+              productId: preset.productId,
+              internalId: matchProd?.internalId || '',
+              productName: matchProd?.name || 'Unknown',
+              brandName: matchProd?.brandName || '',
+              typeName: matchProd?.typeName || '',
+              unit: matchProd?.unit || 'Pcs',
+              stockInHand: matchProd?.stockQuantity || 0,
+              orderedQuantity: preset.orderedQuantity,
+              estimatedUnitPrice: matchProd?.costPrice || 0,
+              notes: ''
+            };
+          })
+        );
+      } else {
+        setItems([]);
+      }
     }
-  }, [isOpen, initialPO, initialVendorId, autoNextPONumber, vendors, products]);
+  }, [isOpen, initialPO, initialVendorId, initialPresets, autoNextPONumber, vendors, products]);
 
   // Sync vendor details on change
   const handleVendorSelect = (selectedId: string) => {

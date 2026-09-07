@@ -13,7 +13,7 @@ export function FactoryResetModal({ isOpen, onClose, onConfirmWipe }: FactoryRes
 
   if (!isOpen) return null;
 
-  const isConfirmed = confirmText === 'DELETE ALL';
+  const isConfirmed = confirmText.trim().toUpperCase() === 'DELETE ALL';
 
   const handleConfirm = () => {
     if (isConfirmed) {

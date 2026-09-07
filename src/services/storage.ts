@@ -615,9 +615,7 @@ export function recordSaleAndUpdateInventory(
     });
 
     const pricingSettings = getStoredPricingSettings();
-    const nextSellingPrices = nextActiveCost > 0
-      ? generateProductSellingPrices(nextActiveCost, pricingSettings, prod.sellingPrices)
-      : prod.sellingPrices;
+    const nextSellingPrices = prod.sellingPrices;
 
     const enrichedSaleItem: SaleItem = {
       ...saleItem,
@@ -691,7 +689,7 @@ export function recordSaleAndUpdateInventory(
     return {
       ...prod,
       stockQuantity: newStock,
-      costPrice: nextActiveCost > 0 ? nextActiveCost : prod.costPrice,
+      costPrice: prod.costPrice,
       sellingPrices: nextSellingPrices,
       costBatches: fifoResult.updatedBatches,
       crossReferences: mergedCrossrefs,
@@ -1958,14 +1956,12 @@ export function deleteSaleAndUpdateAll(
     });
 
     const pricingSettings = getStoredPricingSettings();
-    const nextSellingPrices = activeFifoCost > 0
-      ? generateProductSellingPrices(activeFifoCost, pricingSettings, prod.sellingPrices)
-      : prod.sellingPrices;
+    const nextSellingPrices = prod.sellingPrices;
 
     return {
       ...prod,
       stockQuantity: newStock,
-      costPrice: activeFifoCost > 0 ? activeFifoCost : prod.costPrice,
+      costPrice: prod.costPrice,
       sellingPrices: nextSellingPrices,
       costBatches: updatedBatches,
       updatedAt: new Date().toISOString(),

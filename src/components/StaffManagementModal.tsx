@@ -92,6 +92,7 @@ const TAB_METADATA: Record<AppWorkspaceView, { label: string; icon: React.Compon
   demands: { label: 'Demands & Backorders', icon: PackageSearch, description: 'Customer part inquiries, sizing specs & promises' },
   inventory_audit: { label: 'Inventory Audit Trail', icon: ClipboardList, description: 'Timestamped stock movements & audit snapshots' },
   audit_logs: { label: 'Audit Logs', icon: ClipboardList, description: 'Historical system and movement audit logs' },
+  analytics: { label: 'AI Analytics', icon: ClipboardList, description: 'Smart stock predictions' },
 };
 
 const ROLE_INFO: Record<UserRole, { label: string; badgeClass: string; desc: string }> = {

@@ -1,6 +1,8 @@
 import * as XLSX from 'xlsx';
 import { Product, ProductSellingPrice, StockLog } from '../types';
 import { getNextInternalId } from './storage';
+import { calculateSmartROP, buildProductSalesMap } from './analytics';
+import { Sale } from '../types';
 
 /**
  * Sanitizes string cell values against CSV / Excel Formula Injection (CWE-1236).
@@ -317,7 +319,35 @@ export async function parseFileForImport(file: File): Promise<ParsedImportRow[]>
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
+const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Fix for Excel auto-formatting URLs as hyperlinks or formulas which truncates cell values
+        if (worksheet['!ref']) {
+          const range = XLSX.utils.decode_range(worksheet['!ref']);
+          for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+              const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+              const cell = worksheet[cellAddress];
+              if (!cell) continue;
+              
+              let extractedUrl = null;
+              if (cell.l && cell.l.Target) {
+                extractedUrl = cell.l.Target;
+              } else if (cell.f && typeof cell.f === 'string') {
+                const match = cell.f.match(/HYPERLINK\(\s*"([^"]+)"/i);
+                if (match && match[1]) {
+                  extractedUrl = match[1];
+                }
+              }
+              
+              if (extractedUrl) {
+                cell.v = extractedUrl;
+                cell.w = extractedUrl;
+              }
+            }
+          }
+        }
+
         const rawJson: Array<Record<string, unknown>> = XLSX.utils.sheet_to_json(worksheet);
 
         const parsedRows: ParsedImportRow[] = [];
@@ -359,7 +389,7 @@ export async function parseFileForImport(file: File): Promise<ParsedImportRow[]>
           const rawCross = String(normalized['crossreferences'] || normalized['crossreference'] || normalized['interchange'] || '');
           const crossReferences = rawCross.replace(/;/g, '\n').trim();
 
-          const image = String(normalized['imageurl'] || normalized['image'] || normalized['imagelink'] || normalized['picture'] || '').trim();
+          const image = String(normalized['imageurl'] || normalized['image'] || normalized['imagelink'] || normalized['picture'] || normalized['url'] || normalized['link'] || normalized['productimage'] || normalized['itemimage'] || '').trim();
 
           parsedRows.push({
             internalId: internalId || undefined,
@@ -394,4 +424,59 @@ export async function parseFileForImport(file: File): Promise<ParsedImportRow[]>
     reader.onerror = (err) => reject(err);
     reader.readAsArrayBuffer(file);
   });
+}
+
+
+
+export function exportAnalyticsToExcel(products: Product[], sales: Sale[], fileName: string = 'analytics_eoq_export.xlsx'): void {
+  const salesMap = buildProductSalesMap(sales);
+  const now = new Date();
+
+  const rows = products.map(p => {
+    const insight = calculateSmartROP(p, salesMap, now);
+    
+    return {
+      'Internal ID': sanitizeFormulaCell(p.internalId),
+      'Part Number (Name)': sanitizeFormulaCell(p.name),
+      'Brand': sanitizeFormulaCell(p.brandName),
+      'Type / Category': sanitizeFormulaCell(p.typeName),
+      'Location': sanitizeFormulaCell(p.locationName),
+      'Cabin / Shelf': sanitizeFormulaCell(p.cabinNumber),
+      'Current Stock': p.stockQuantity,
+      'Min Stock Alert (Current)': p.minStockAlert,
+      'Unit': p.unit,
+      'Cost Price (PKR)': p.costPrice,
+      '30-Day Sales': insight ? insight.forecastedAds * 30 : 0,
+      'Daily Sales Avg': insight ? Number(insight.forecastedAds.toFixed(2)) : 0,
+      'Smart ROP (Suggested Min)': insight ? insight.suggestedROP : p.minStockAlert,
+      'Calculated EOQ (Order Qty)': insight ? insight.eoq : 0,
+      'Stock Status': p.stockQuantity <= (insight ? insight.suggestedROP : p.minStockAlert) ? 'LOW STOCK' : 'Healthy',
+    };
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Analytics & EOQ');
+  
+  // Auto-size columns roughly
+  const colWidths = [
+    { wch: 12 }, // ID
+    { wch: 25 }, // Name
+    { wch: 15 }, // Brand
+    { wch: 15 }, // Type
+    { wch: 15 }, // Location
+    { wch: 12 }, // Cabin
+    { wch: 15 }, // Stock
+    { wch: 25 }, // Min Stock
+    { wch: 8 },  // Unit
+    { wch: 15 }, // Cost Price
+    { wch: 15 }, // 30-Day Sales
+    { wch: 15 }, // Daily Avg
+    { wch: 25 }, // Smart ROP
+    { wch: 25 }, // Calculated EOQ
+    { wch: 15 }, // Stock Status
+  ];
+  worksheet['!cols'] = colWidths;
+
+  XLSX.writeFile(workbook, fileName);
 }

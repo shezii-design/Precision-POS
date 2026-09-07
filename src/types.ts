@@ -246,7 +246,8 @@ export type AppWorkspaceView =
   | 'quotations' 
   | 'demands' 
   | 'audit_logs'
-  | 'inventory_audit';
+  | 'inventory_audit'
+  | 'analytics';
 
 export type StockMovementType = 
   | 'sale' 

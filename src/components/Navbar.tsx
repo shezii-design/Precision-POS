@@ -54,7 +54,8 @@ export type AppWorkspaceView =
   | 'returns' 
   | 'quotations' 
   | 'demands' 
-  | 'inventory_audit';
+  | 'inventory_audit'
+  | 'analytics';
 
 interface NavbarProps {
   onOpenAddProduct: () => void;
@@ -172,6 +173,15 @@ export const Navbar: React.FC<NavbarProps> = ({
       shortcut: 'Ctrl + B',
       description: 'Executive business overview, sales vs purchases graphs, top products, receivables & financial health.',
       themeColor: 'red',
+    },
+    {
+      id: 'analytics',
+      title: 'Analytics & Reordering',
+      shortTitle: 'Analytics',
+      icon: TrendingUp,
+      shortcut: 'Ctrl + Y',
+      description: 'Long-term seasonality charts, smart reorder threshold calculators, and dead stock identification.',
+      themeColor: 'emerald',
     },
     {
       id: 'inventory',
