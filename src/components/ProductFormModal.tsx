@@ -119,7 +119,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setMinStockAlert(productToEdit.minStockAlert || 5);
       setUnit(productToEdit.unit || 'Pcs');
       setCostPrice(productToEdit.costPrice || 0);
-      setSellingPrices(productToEdit.sellingPrices || []);
+      const existingTiers = productToEdit.sellingPrices || [];
+      const mergedTiers = generateProductSellingPrices(productToEdit.costPrice || 0, pricingSettings, existingTiers);
+      setSellingPrices(mergedTiers);
 
       const dims = productToEdit.dimensions;
       const inputU = dims?.inputUnit || 'inch';
@@ -196,7 +198,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   // Recalculate selling prices when cost changes unless manually overridden
   useEffect(() => {
     if (isOpen && !allowManualPriceOverride) {
-      setSellingPrices(generateProductSellingPrices(costPrice, pricingSettings));
+      setSellingPrices(prev => generateProductSellingPrices(costPrice, pricingSettings, prev));
     }
   }, [isOpen, costPrice, allowManualPriceOverride]);
 
@@ -960,11 +962,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                               <span>{sp.tierName}</span>
                             </span>
                             <span className={`text-xs px-2 py-0.5 rounded-md ${theme.markupBadge}`}>
-                              {sp.markupPercent}% Markup
+                              {sp.tierId === 'tier-general' || sp.tierName.toLowerCase().includes('general') ? 'Fixed' : `${sp.markupPercent}% Markup`}
                             </span>
                           </div>
 
-                          {allowManualPriceOverride ? (
+                          {allowManualPriceOverride || sp.tierId === 'tier-general' || sp.tierId === 'tier-general' || sp.tierName.toLowerCase().includes('general') ? (
                             <div className="relative">
                               <input
                                 type="number"
@@ -982,7 +984,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                             </div>
                           )}
                           <span className="text-[10px] text-slate-500 font-mono block">
-                            Formula: <strong className="text-red-600">{formatPKR(costPrice, false)}</strong> × (1 + {sp.markupPercent}%)
+                            Formula: <strong className="text-red-600">{formatPKR(costPrice, false)}</strong> × (1 + {sp.tierId === 'tier-general' || sp.tierName.toLowerCase().includes('general') ? '0%' : `${sp.markupPercent}%`})
                           </span>
                         </div>
                       );

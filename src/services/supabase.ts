@@ -1354,11 +1354,14 @@ export function supabaseRowToProduct(row: Record<string, any>): Product {
   }
 
   if (row.tier3_name || (row.tier3_price !== null && row.tier3_price !== undefined && row.tier3_price > 0)) {
+    const nameStr = row.tier3_name ? row.tier3_name.toLowerCase() : '';
+    const isGen = !row.tier3_name || nameStr.includes('general') || nameStr.includes('tier 3');
     sellingPrices.push({
-      tierId: 'tier-3',
-      tierName: row.tier3_name || 'Tier 3',
+      tierId: isGen ? 'tier-general' : 'tier-3',
+      tierName: row.tier3_name || (isGen ? 'General Price' : 'Tier 3'),
       price: Number(row.tier3_price) || 0,
       markupPercent: Number(row.tier3_markup) || 0,
+      isOverridden: isGen ? true : false,
     });
   }
 

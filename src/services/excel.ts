@@ -24,6 +24,7 @@ export function exportProductsToExcel(products: Product[], fileName: string = 'i
     const sellingPrices = Array.isArray(p.sellingPrices) ? p.sellingPrices : [];
     const wholesale = sellingPrices.find(s => s?.tierName?.toLowerCase()?.includes('wholesale'))?.price || '';
     const retail = sellingPrices.find(s => s?.tierName?.toLowerCase()?.includes('retail'))?.price || '';
+    const generalPrice = sellingPrices.find(s => s?.tierId === 'tier-general' || s?.tierName?.toLowerCase()?.includes('general'))?.price || '';
     const tier3 = sellingPrices[2]?.price || '';
     const tier4 = sellingPrices[3]?.price || '';
     const tier5 = sellingPrices[4]?.price || '';
@@ -40,6 +41,7 @@ export function exportProductsToExcel(products: Product[], fileName: string = 'i
       'Cost Price (PKR)': p.costPrice,
       'Wholesale Price (PKR)': wholesale,
       'Retail Price (PKR)': retail,
+      'General Price (PKR)': generalPrice,
       'Tier 3 Price (PKR)': tier3,
       'Tier 4 Price (PKR)': tier4,
       'Tier 5 Price (PKR)': tier5,
@@ -73,6 +75,7 @@ export function exportProductsToExcel(products: Product[], fileName: string = 'i
     { wch: 16 }, // Cost
     { wch: 18 }, // Wholesale
     { wch: 18 }, // Retail
+    { wch: 18 }, // General Price
     { wch: 16 }, // Tier 3
     { wch: 16 }, // Tier 4
     { wch: 16 }, // Tier 5
@@ -96,6 +99,7 @@ export function exportProductsToCSV(products: Product[], fileName: string = 'inv
     const sellingPrices = Array.isArray(p.sellingPrices) ? p.sellingPrices : [];
     const wholesale = sellingPrices.find(s => s?.tierName?.toLowerCase()?.includes('wholesale'))?.price || '';
     const retail = sellingPrices.find(s => s?.tierName?.toLowerCase()?.includes('retail'))?.price || '';
+    const generalPrice = sellingPrices.find(s => s?.tierId === 'tier-general' || s?.tierName?.toLowerCase()?.includes('general'))?.price || '';
 
     return {
       'Internal ID': sanitizeFormulaCell(p.internalId),
@@ -109,6 +113,7 @@ export function exportProductsToCSV(products: Product[], fileName: string = 'inv
       'Cost Price (PKR)': p.costPrice,
       'Wholesale Price (PKR)': wholesale,
       'Retail Price (PKR)': retail,
+      'General Price (PKR)': generalPrice,
       'Height (Inches)': p.dimensions?.height !== undefined ? p.dimensions.height : '',
       'OD or Length (Inches)': p.dimensions?.outerDia !== undefined ? p.dimensions.outerDia : '',
       'ID or Width (Inches)': p.dimensions?.innerDia !== undefined ? p.dimensions.innerDia : '',
@@ -234,6 +239,7 @@ export function downloadSampleTemplate(format: 'xlsx' | 'csv' = 'xlsx'): void {
       'Cost Price (PKR)': 3200,
       'Wholesale Price (PKR)': 3520,
       'Retail Price (PKR)': 4000,
+      'General Price (PKR)': 0,
       'Height (Inches)': 7.85,
       'OD or Length (Inches)': 3.75,
       'ID or Width (Inches)': '',
@@ -299,6 +305,7 @@ export interface ParsedImportRow {
   costPrice: number;
   wholesalePrice?: number;
   retailPrice?: number;
+  generalPrice?: number;
   height?: number;
   outerDia?: number;
   innerDia?: number;
@@ -373,6 +380,7 @@ const worksheet = workbook.Sheets[firstSheetName];
           const costPrice = Number(normalized['costpricepkr'] || normalized['costprice'] || normalized['cost'] || 0);
           const wholesalePrice = Number(normalized['wholesalepricepkr'] || normalized['wholesaleprice'] || normalized['wholesale'] || 0);
           const retailPrice = Number(normalized['retailpricepkr'] || normalized['retailprice'] || normalized['retail'] || 0);
+          const generalPrice = Number(normalized['generalpricepkr'] || normalized['generalprice'] || normalized['general'] || 0);
 
           // Dimensions (in inches for import)
           const height = normalized['heightinches'] || normalized['heightin'] || normalized['height'] || normalized['h'] ? Number(normalized['heightinches'] || normalized['heightin'] || normalized['height'] || normalized['h']) : undefined;
@@ -403,6 +411,7 @@ const worksheet = workbook.Sheets[firstSheetName];
             costPrice: isNaN(costPrice) ? 0 : costPrice,
             wholesalePrice: !isNaN(wholesalePrice) && wholesalePrice > 0 ? wholesalePrice : undefined,
             retailPrice: !isNaN(retailPrice) && retailPrice > 0 ? retailPrice : undefined,
+            generalPrice: !isNaN(generalPrice) && generalPrice > 0 ? generalPrice : undefined,
             height: height && !isNaN(height) ? height : undefined,
             outerDia: outerDia && !isNaN(outerDia) ? outerDia : undefined,
             innerDia: innerDia && !isNaN(innerDia) ? innerDia : undefined,

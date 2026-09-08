@@ -186,7 +186,21 @@ export function getStoredProducts(): Product[] {
       return initialized;
     }
     const parsed: Product[] = JSON.parse(raw);
-    return parsed.map(ensureProductBatches);
+    const migrated = parsed.map(p => {
+      if (Array.isArray(p.sellingPrices)) {
+        p.sellingPrices = p.sellingPrices.map(sp => {
+          if (sp.tierId === 'tier-3') {
+            const nameStr = sp.tierName ? sp.tierName.toLowerCase() : '';
+            if (nameStr.includes('general') || nameStr.includes('tier 3') || !sp.tierName) {
+              return { ...sp, tierId: 'tier-general', tierName: 'General Price', isOverridden: true };
+            }
+          }
+          return sp;
+        });
+      }
+      return p;
+    });
+    return migrated.map(ensureProductBatches);
   } catch (err) {
     console.error('Failed to load products', err);
     return INITIAL_PRODUCTS.map(ensureProductBatches);
@@ -271,7 +285,18 @@ export function getStoredPricingSettings(): GlobalPricingSettings {
       saveStoredPricingSettings(DEFAULT_PRICING_SETTINGS);
       return DEFAULT_PRICING_SETTINGS;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    
+    // Inject General Price if missing
+    if (!parsed.tiers.some(t => t.id === 'tier-general')) {
+       parsed.tiers.splice(2, 0, { id: 'tier-general', name: 'General Price', markupPercent: 0, isDefault: true });
+       if (parsed.activeTierCount < 3) {
+           parsed.activeTierCount = 3;
+       }
+       saveStoredPricingSettings(parsed);
+    }
+    
+    return parsed;
   } catch (err) {
     return DEFAULT_PRICING_SETTINGS;
   }

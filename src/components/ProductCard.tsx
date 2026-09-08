@@ -507,7 +507,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                       <span>{sp.tierName}</span>
                     </span>
                     <span className={`px-1.5 py-0.2 rounded text-[10px] ${theme.markupBadge}`}>
-                      {sp.markupPercent}%
+                      {sp.tierId === 'tier-general' || sp.tierName.toLowerCase().includes('general') ? 'Fix' : `${sp.markupPercent}%`}
                     </span>
                   </div>
                   <div className={`font-mono font-black text-xs tracking-tight ${theme.textColor}`}>

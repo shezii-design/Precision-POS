@@ -1,11 +1,12 @@
 import { GlobalPricingSettings, PricingTierConfig, ProductSellingPrice } from '../types';
 
 export const DEFAULT_PRICING_SETTINGS: GlobalPricingSettings = {
-  activeTierCount: 2,
+  activeTierCount: 3,
   roundToNearest: 5,
   tiers: [
     { id: 'tier-wholesale', name: 'Wholesale', markupPercent: 10, isDefault: true },
     { id: 'tier-retail', name: 'Retail', markupPercent: 25, isDefault: true },
+    { id: 'tier-general', name: 'General Price', markupPercent: 0, isDefault: true },
     { id: 'tier-3', name: 'Sell@15%', markupPercent: 15 },
     { id: 'tier-4', name: 'Sell@20%', markupPercent: 20 },
     { id: 'tier-5', name: 'Sell@30%', markupPercent: 30 },
@@ -53,11 +54,24 @@ export function generateProductSellingPrices(
   const activeTiers = settings.tiers.slice(0, settings.activeTierCount);
 
   return activeTiers.map(tier => {
-    const existing = existingPrices?.find(p => p.tierId === tier.id);
+    const existing = existingPrices?.find(p => p.tierId === tier.id || (tier.id === 'tier-general' && p.tierId === 'tier-3'));
     
     // If the price was manually overridden for this specific product, preserve it unless recalculate is forced
     if (existing && existing.isOverridden) {
       return existing;
+    }
+
+    const isGeneral = tier.id === 'tier-general' || tier.name.toLowerCase().includes('general');
+    
+    // If it's the general price, it doesn't follow markup, it stays 0 until edited (or keeps existing)
+    if (isGeneral) {
+      return {
+        tierId: tier.id,
+        tierName: tier.name,
+        price: existing && existing.price !== undefined ? existing.price : 0,
+        markupPercent: 0,
+        isOverridden: true, // Always allow direct typing for general price
+      };
     }
 
     const price = calculateSellingPrice(costPrice, tier.markupPercent, settings.roundToNearest);

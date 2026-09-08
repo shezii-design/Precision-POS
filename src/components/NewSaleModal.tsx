@@ -1506,7 +1506,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                               </span>
                               {tier.markupPercent !== undefined && (
                                 <span className={`text-[10px] ${isSelected ? 'text-red-100' : 'text-slate-400'} font-medium`}>
-                                  (+{tier.markupPercent}%)
+                                  (+{tier.tierId === 'tier-general' || tier.tierName.toLowerCase().includes('general') ? 'Fix' : `${tier.markupPercent}%`})
                                 </span>
                               )}
                               {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white shrink-0" />}

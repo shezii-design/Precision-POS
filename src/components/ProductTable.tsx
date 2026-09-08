@@ -271,7 +271,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                                 {formatPKR(rt.price)}
                               </span>
                               <span className={`text-[9px] px-1 rounded ${theme.markupBadge}`}>
-                                {rt.markupPercent}%
+                                {rt.tierId === 'tier-general' || rt.tierName.toLowerCase().includes('general') ? 'Fix' : `${rt.markupPercent}%`}
                               </span>
                             </div>
                           );

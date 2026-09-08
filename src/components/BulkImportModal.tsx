@@ -131,7 +131,11 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         }
       }
 
-      const computedSellingPrices = generateProductSellingPrices(row.costPrice, pricingSettings);
+      const existingProduct = importMode === 'overwrite' && row.internalId
+        ? existingProducts.find(p => p.internalId.toLowerCase() === row.internalId.toLowerCase())
+        : undefined;
+
+      const computedSellingPrices = generateProductSellingPrices(row.costPrice, pricingSettings, existingProduct?.sellingPrices);
       if (row.wholesalePrice && computedSellingPrices[0]) {
         computedSellingPrices[0].price = row.wholesalePrice;
         computedSellingPrices[0].isOverridden = true;
@@ -140,11 +144,16 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         computedSellingPrices[1].price = row.retailPrice;
         computedSellingPrices[1].isOverridden = true;
       }
+      let generalTier = computedSellingPrices.find(t => t.tierId === 'tier-general');
+      if (!generalTier) {
+        generalTier = { tierId: 'tier-general', tierName: 'General Price', price: 0, markupPercent: 0, isOverridden: true };
+        computedSellingPrices.push(generalTier);
+      }
+      if (row.generalPrice !== undefined && row.generalPrice !== null) {
+        generalTier.price = row.generalPrice;
+        generalTier.isOverridden = true;
+      }
 
-
-      const existingProduct = importMode === 'overwrite' && row.internalId
-        ? existingProducts.find(p => p.internalId.toLowerCase() === row.internalId.toLowerCase())
-        : undefined;
 
       const prod: Product = {
         id: existingProduct ? existingProduct.id : `prod-import-${Date.now()}-${index}`,
