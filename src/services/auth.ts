@@ -304,6 +304,7 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
     email: 'admin@inventory.pk',
     phone: '+92 300 1234567',
     pin: '1234',
+    password: 'admin',
     role: 'admin',
     designation: 'Shop Owner & Super Admin',
     status: 'active',
@@ -317,7 +318,7 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
 ];
 
 export const DEFAULT_AUTH_STATE: AuthState = {
-  isLocked: false,
+  isLocked: true,
   isConfigured: true,
   authMethod: 'pin',
   email: 'admin@inventory.pk',

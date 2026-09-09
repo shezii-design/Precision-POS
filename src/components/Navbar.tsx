@@ -585,7 +585,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-blue-50 text-blue-800 rounded-xl flex items-center gap-2.5 cursor-pointer"
                       >
                         <UserCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                        <span>Switch Operator / Cashier</span>
+                        <span>Logout / Switch User</span>
                       </button>
                     )}
 

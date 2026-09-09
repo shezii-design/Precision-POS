@@ -2,19 +2,12 @@ const fs = require('fs');
 let code = fs.readFileSync('src/services/auth.ts', 'utf8');
 
 code = code.replace(
-  'matched = employees.find(e => e.pin === identifierOrPin.trim() && e.status === \'active\');',
-  'matched = employees.find(e => String(e.pin) === identifierOrPin.trim() && e.status === \'active\');'
+  "pin: '1234',",
+  "pin: '1234',\n    password: 'admin',"
 );
 
-code = code.replace(
-  'const inactive = employees.find(e => e.pin === identifierOrPin.trim());',
-  'const inactive = employees.find(e => String(e.pin) === identifierOrPin.trim());'
-);
-
-code = code.replace(
-  '(e.pin === pin.trim() || e.password === pin.trim())',
-  '(String(e.pin) === pin.trim() || e.password === pin.trim())'
-);
+// We need to also clean up the initial employee load to not overwrite password if we change it here.
+// But this is just INITIAL_EMPLOYEES.
 
 fs.writeFileSync('src/services/auth.ts', code);
-console.log("Patched auth.ts");
+console.log("Updated auth.ts");

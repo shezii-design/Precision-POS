@@ -162,7 +162,7 @@ import { InventoryAuditLog } from './components/InventoryAuditLog';
 import { LowStockNotificationBanner } from './components/LowStockNotificationBanner';
 import { StockBreachToast } from './components/StockBreachToast';
 import { StaffManagementModal } from './components/StaffManagementModal';
-import { SwitchUserModal } from './components/SwitchUserModal';
+
 import { AppWorkspaceView } from './components/Navbar';
 
 import { 
@@ -225,7 +225,7 @@ export default function App() {
   const [activeEmployeeId, setActiveEmployeeId] = useState<string>(() => getStoredActiveEmployeeId());
   const [showStaffModal, setShowStaffModal] = useState<boolean>(false);
   const [showWipeDataModal, setShowWipeDataModal] = useState<boolean>(false);
-  const [showSwitchUserModal, setShowSwitchUserModal] = useState<boolean>(false);
+  
 
   // Active current operator / employee account
   const currentEmployee = useMemo(() => {
@@ -1433,6 +1433,13 @@ export default function App() {
     saveStoredEmployees(employees);
   }, [employees]);
 
+
+  useEffect(() => {
+    if (authState.currentUserId && authState.currentUserId !== activeEmployeeId) {
+      setActiveEmployeeId(authState.currentUserId);
+    }
+  }, [authState.currentUserId]);
+
   useEffect(() => {
     saveStoredActiveEmployeeId(activeEmployeeId);
   }, [activeEmployeeId]);
@@ -1920,7 +1927,7 @@ export default function App() {
         onOpenSecuritySettings={() => setShowSecurityModal(true)}
         onOpenWipeData={() => setShowWipeDataModal(true)}
         onOpenStaffManagement={() => setShowStaffModal(true)}
-        onOpenSwitchUser={() => setShowSwitchUserModal(true)}
+        onOpenSwitchUser={() => { setAuthState(prev => ({ ...prev, isLocked: true, currentUserId: undefined })); }}
         currentEmployee={currentEmployee}
         onGoToInventory={handleGoToInventory}
         currentView={currentView}
@@ -2771,6 +2778,9 @@ export default function App() {
         onClose={() => setShowSecurityModal(false)}
         authState={authState}
         onAuthSuccess={() => {
+          if (authState.currentUserId) {
+            setActiveEmployeeId(authState.currentUserId);
+          }
           setAuthState(prev => ({ ...prev, isLocked: false, lastUnlockedAt: new Date().toISOString() }));
           setShowSecurityModal(false);
           try {
@@ -3052,25 +3062,7 @@ export default function App() {
         deviceInfo={deviceInfo}
       />
 
-      {/* 26. Switch User / Operator Modal */}
-      <SwitchUserModal
-        isOpen={showSwitchUserModal}
-        onClose={() => setShowSwitchUserModal(false)}
-        employees={employees}
-        activeEmployeeId={activeEmployeeId}
-        currentUserId={activeEmployeeId}
-        currentDeviceId={deviceInfo.deviceId}
-        deviceInfo={deviceInfo}
-        onOpenStaffManagement={() => {
-          setShowSwitchUserModal(false);
-          setShowStaffModal(true);
-        }}
-        onSelectEmployee={(emp) => {
-          setActiveEmployeeId(emp.id);
-          saveStoredActiveEmployeeId(emp.id);
-          showToast(`Active Operator: ${emp.name}`, `${emp.designation} (${emp.role.toUpperCase()})`);
-        }}
-      />
+      
 
       <StockBreachToast 
         breaches={stockBreaches} 

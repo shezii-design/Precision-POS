@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+const fs = require('fs');
+
+const authModalContent = `import React, { useState } from 'react';
 import { AuthState, DeviceInfo } from '../types';
 import { authenticateEmployee } from '../services/auth';
 import { ShieldCheck, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -136,3 +138,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     </div>
   );
 };
+`;
+
+fs.writeFileSync('src/components/AuthModal.tsx', authModalContent);
+console.log("Updated AuthModal");

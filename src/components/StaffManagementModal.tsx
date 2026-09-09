@@ -290,6 +290,16 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
       showNotification('Please enter an email or username.');
       return;
     }
+    
+    // Check for duplicate username/email
+    const isDuplicate = employees.some(emp => 
+      emp.email.toLowerCase() === formData.email.trim().toLowerCase() && emp.id !== formData.id
+    );
+    if (isDuplicate) {
+      showNotification('Username / Email already exists. Please use a different one.');
+      return;
+    }
+
     if (!formData.pin || formData.pin.length < 4) {
       showNotification('PIN must be at least 4 digits.');
       return;
