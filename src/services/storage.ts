@@ -138,6 +138,46 @@ export function getActiveFifoCost(prod: { costBatches?: CostBatch[]; costPrice?:
 }
 
 /**
+ * Accurately calculates the total financial valuation of a product's current stock
+ * using explicit FIFO cost batches. Gracefully handles legacy/manual stock mismatches.
+ */
+export function calculateProductStockValue(prod: { stockQuantity?: number; costBatches?: CostBatch[]; costPrice?: number } | undefined | null): number {
+  if (!prod) return 0;
+  
+  const stock = Number(prod.stockQuantity) || 0;
+  if (stock <= 0) return 0;
+
+  const batches = prod.costBatches || [];
+  if (batches.length === 0) {
+    return (Number(prod.costPrice) || 0) * stock;
+  }
+
+  let batchTotalValue = 0;
+  let batchTotalQty = 0;
+
+  batches.forEach(b => {
+    const qty = Number(b.remainingQuantity) || 0;
+    const cost = Number(b.unitCost) || 0;
+    batchTotalValue += qty * cost;
+    batchTotalQty += qty;
+  });
+
+  if (Math.abs(batchTotalQty - stock) < 0.01) {
+    return batchTotalValue;
+  }
+
+  // Mismatch fallback
+  if (batchTotalQty < stock) {
+    const missingQty = stock - batchTotalQty;
+    const activeCost = getActiveFifoCost(prod);
+    return batchTotalValue + (missingQty * activeCost);
+  } else {
+    const avgCost = batchTotalQty > 0 ? batchTotalValue / batchTotalQty : getActiveFifoCost(prod);
+    return stock * avgCost;
+  }
+}
+
+/**
  * Ensures a product has a valid costBatches array initialized for FIFO cost tracking
  * without inappropriately reverting manually set or newly purchased costPrices.
  */

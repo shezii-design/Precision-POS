@@ -1,3 +1,4 @@
+import { calculateProductStockValue } from "../services/storage";
 import React, { useState, useMemo } from 'react';
 import { 
   Product, 
@@ -327,7 +328,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   // 3. Balance Sheet & Asset Snapshot (Current Overall)
   const assetSnapshots = useMemo(() => {
-    const inventoryValuationCost = products.reduce((sum, p) => sum + ((Number(p.costPrice) || 0) * (Number(p.stockQuantity) || 0)), 0);
+    const inventoryValuationCost = products.reduce((sum, p) => sum + calculateProductStockValue(p), 0);
     const inventoryValuationRetail = products.reduce((sum, p) => {
       const retailPrice = p.sellingPrices?.[1]?.price || (p.costPrice * 1.25);
       return sum + (retailPrice * (Number(p.stockQuantity) || 0));

@@ -514,10 +514,10 @@ export function authenticateEmployee(
 
   // Case 1: PIN only provided
   if (!pin) {
-    matched = employees.find(e => e.pin === identifierOrPin.trim() && e.status === 'active');
+    matched = employees.find(e => String(e.pin) === identifierOrPin.trim() && e.status === 'active');
     if (!matched) {
       // Check if disabled
-      const inactive = employees.find(e => e.pin === identifierOrPin.trim());
+      const inactive = employees.find(e => String(e.pin) === identifierOrPin.trim());
       if (inactive) {
         return { success: false, error: 'This employee account is currently deactivated.' };
       }
@@ -528,7 +528,7 @@ export function authenticateEmployee(
     const cleanId = identifierOrPin.trim().toLowerCase();
     matched = employees.find(
       e => (e.email.toLowerCase() === cleanId || e.name.toLowerCase() === cleanId) && 
-           (e.pin === pin.trim() || e.password === pin.trim())
+           (String(e.pin) === pin.trim() || e.password === pin.trim())
     );
 
     if (!matched) {

@@ -93,7 +93,8 @@ import {
   saveStoredQuotations,
   saveStoredPurchaseOrders,
   saveStoredDemands,
-  saveStoredStockLogs
+  saveStoredStockLogs,
+  calculateProductStockValue
 } from './services/storage';
 import { 
   getStoredAuthState, 
@@ -1638,7 +1639,7 @@ export default function App() {
 
   // Statistics calculation
   const totalValuation = useMemo(() => {
-    return products.reduce((acc, p) => acc + (p.costPrice || 0) * (p.stockQuantity || 0), 0);
+    return products.reduce((acc, p) => acc + calculateProductStockValue(p), 0);
   }, [products]);
 
   const totalStockUnits = useMemo(() => {

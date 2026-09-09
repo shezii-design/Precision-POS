@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AuthState, DeviceInfo } from '../types';
-import { authenticateWithWebAuthn, saveAuthState } from '../services/auth';
+import { authenticateWithWebAuthn, saveAuthState, authenticateEmployee } from '../services/auth';
 import { authenticateWithSupabase, getEnvSupabaseConfig } from '../services/supabase';
 import { 
   Lock, 
@@ -67,9 +67,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (enteredPin.length < 6) {
       const next = enteredPin + digit;
       setEnteredPin(next);
-      // Auto verify when length reaches target PIN length
-      const targetPin = authState.pin || '1234';
-      if (next.length === targetPin.length) {
+      
+      const correctMasterPin = authState.pin || '1234';
+      if (next === correctMasterPin) {
+        verifyPin(next);
+        return;
+      }
+      
+      const empRes = authenticateEmployee(next, undefined, deviceInfo.deviceId);
+      if (empRes.success) {
+        verifyPin(next, empRes.employee?.id);
+        return;
+      }
+      
+      if (next.length === Math.max(6, correctMasterPin.length)) {
         verifyPin(next);
       }
     }
@@ -80,14 +91,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMessage('');
   };
 
-  const verifyPin = (pinToTest: string) => {
+  const verifyPin = (pinToTest: string, matchedEmployeeId?: string) => {
     const correctPin = authState.pin || '1234';
     if (pinToTest === correctPin) {
       setErrorMessage('');
       setEnteredPin('');
+      // Admin master override
+      onUpdateAuthState({ ...authState, currentUserId: 'admin-master', isLocked: false });
+      onAuthSuccess();
+    } else if (matchedEmployeeId) {
+      setErrorMessage('');
+      setEnteredPin('');
+      onUpdateAuthState({ ...authState, currentUserId: matchedEmployeeId, isLocked: false });
       onAuthSuccess();
     } else {
-      setErrorMessage('Incorrect PIN. Default is 1234.');
+      setErrorMessage('Incorrect PIN.');
       setEnteredPin('');
     }
   };
@@ -296,7 +314,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     />
                   ))}
                 </div>
-                <span className="text-[11px] text-slate-400">Default PIN: 1234</span>
+                {(!authState.pin || authState.pin === "1234") && <span className="text-[11px] text-slate-400">Default PIN: 1234</span>}
               </div>
 
               {/* Numeric Keypad */}

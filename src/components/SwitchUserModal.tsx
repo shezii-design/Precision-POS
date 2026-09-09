@@ -66,7 +66,7 @@ export const SwitchUserModal: React.FC<SwitchUserModalProps> = ({
     if (enteredPin.length < 6) {
       const next = enteredPin + digit;
       setEnteredPin(next);
-      if (selectedEmployee && next.length === selectedEmployee.pin.length) {
+      if (selectedEmployee && next.length === String(selectedEmployee.pin || "").length) {
         verifyPinAndSwitch(selectedEmployee, next);
       }
     }
@@ -92,7 +92,7 @@ export const SwitchUserModal: React.FC<SwitchUserModalProps> = ({
     }
 
     // 2. PIN verification
-    if (pinToTest === targetEmployee.pin) {
+    if (String(pinToTest) === String(targetEmployee.pin)) {
       setIsSuccessAnim(true);
       setTimeout(() => {
         setIsSuccessAnim(false);
@@ -233,7 +233,7 @@ export const SwitchUserModal: React.FC<SwitchUserModalProps> = ({
                   Enter Quick PIN for {selectedEmployee.name}:
                 </label>
                 <div className="flex items-center justify-center gap-2.5">
-                  {Array.from({ length: selectedEmployee.pin.length || 4 }).map((_, i) => (
+                  {Array.from({ length: String(selectedEmployee.pin || "").length || 4 }).map((_, i) => (
                     <div
                       key={i}
                       className={`w-4 h-4 rounded-full border-2 transition-all ${

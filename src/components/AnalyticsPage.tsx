@@ -1,3 +1,4 @@
+import { calculateProductStockValue } from "../services/storage";
 import React, { useMemo, useState } from 'react';
 import { Product, Sale, Purchase } from '../types';
 import { calculateSmartROP, buildProductSalesMap } from '../services/analytics';
@@ -90,7 +91,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
         return isAfter(d, ninetyDaysAgo) && s.items.some(it => it.productId === p.id);
       });
       return !recentSales;
-    }).sort((a, b) => (b.stockQuantity || 0) * (b.costPrice || 0) - (a.stockQuantity || 0) * (a.costPrice || 0));
+    }).sort((a, b) => calculateProductStockValue(b) - calculateProductStockValue(a));
   }, [products, sales]);
 
   // 4. Smart Reorder Point (ROP), EOQ & Seasonal Insights (Now AI Managed Thresholds)
