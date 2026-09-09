@@ -1910,8 +1910,8 @@ export default function App() {
     <div className="min-h-screen bg-slate-100/70 flex flex-col font-sans text-slate-900 selection:bg-red-500 selection:text-white">
       {/* Top Main Navbar */}
       <Navbar
-        onOpenAddProduct={handleOpenAddProduct}
-        onOpenNewSale={() => handleOpenNewSale()}
+        onOpenAddProduct={isActionAllowed(currentEmployee, 'canAddProducts') ? handleOpenAddProduct : undefined}
+        onOpenNewSale={isActionAllowed(currentEmployee, 'canCreateSales') ? () => handleOpenNewSale() : undefined}
         onOpenPricingFormulas={() => setShowPricingModal(true)}
         onOpenSupabaseConfig={() => setShowSupabaseModal(true)}
         onOpenCategories={() => setShowCategoriesModal(true)}
@@ -1982,11 +1982,11 @@ export default function App() {
             customerLedger={customerLedger}
             vendorLedger={ledgerEntries}
             expenses={expenses}
-            onOpenNewSale={() => handleOpenNewSale()}
-            onOpenNewPurchase={(vendorId) => handleOpenPurchaseModal(vendorId)}
-            onOpenCreatePO={() => handleOpenCreatePO()}
-            onOpenCreateDemand={handleOpenCreateDemand}
-            onOpenAddProduct={handleOpenAddProduct}
+            onOpenNewSale={isActionAllowed(currentEmployee, 'canCreateSales') ? () => handleOpenNewSale() : undefined}
+            onOpenNewPurchase={isActionAllowed(currentEmployee, 'canCreatePurchases') ? (vendorId) => handleOpenPurchaseModal(vendorId) : undefined}
+            onOpenCreatePO={isActionAllowed(currentEmployee, 'canCreatePurchaseOrders') ? () => handleOpenCreatePO() : undefined}
+            onOpenCreateDemand={isActionAllowed(currentEmployee, 'canManageDemands') ? handleOpenCreateDemand : undefined}
+            onOpenAddProduct={isActionAllowed(currentEmployee, 'canAddProducts') ? handleOpenAddProduct : undefined}
             onGoToView={(view) => setCurrentView(view)}
             onViewInvoice={handleViewInvoice}
             onViewPurchase={(purchase) => {
@@ -2035,10 +2035,10 @@ export default function App() {
             products={products}
             customers={customers}
             customerReturns={customerReturns}
-            onOpenNewSale={() => handleOpenNewSale()}
+            onOpenNewSale={isActionAllowed(currentEmployee, 'canCreateSales') ? () => handleOpenNewSale() : undefined}
             onViewInvoice={handleViewInvoice}
-            onEditSale={handleEditSale}
-            onOpenCustomerReturn={(sale) => handleOpenCustomerReturnModal(sale)}
+            onEditSale={isActionAllowed(currentEmployee, 'canEditSales') ? handleEditSale : undefined}
+            onOpenCustomerReturn={isActionAllowed(currentEmployee, 'canProcessReturns') ? (sale) => handleOpenCustomerReturnModal(sale) : undefined}
           />
         ) : currentView === 'inventory_audit' ? (
           <InventoryAuditLog
@@ -2068,7 +2068,7 @@ export default function App() {
             purchases={purchases}
             vendors={vendors}
             products={products}
-            onOpenNewPurchase={(vendorId) => handleOpenPurchaseModal(vendorId)}
+            onOpenNewPurchase={isActionAllowed(currentEmployee, 'canCreatePurchases') ? (vendorId) => handleOpenPurchaseModal(vendorId) : undefined}
             onViewPurchase={(purchase) => {
               setActivePurchaseForInvoice(purchase);
               setShowPurchaseInvoiceModal(true);
@@ -2076,7 +2076,7 @@ export default function App() {
             onEditPurchase={(purchase) => {
               handleOpenPurchaseModal(purchase.vendorId, purchase);
             }}
-            onDeletePurchase={handleDeletePurchase}
+            onDeletePurchase={isActionAllowed(currentEmployee, 'canDeletePurchases') ? handleDeletePurchase : undefined}
             onGoToPurchaseOrders={() => {
               setCurrentView('purchase_orders');
               showToast('Purchase Orders & Cargo', 'Ctrl + O');
@@ -2140,7 +2140,7 @@ export default function App() {
             onUpdateLedger={setCustomerLedger}
             onUpdateProducts={setProducts}
             onViewInvoice={handleViewInvoice}
-            onEditSale={handleEditSale}
+            onEditSale={isActionAllowed(currentEmployee, 'canEditSales') ? handleEditSale : undefined}
           />
         ) : currentView === 'vendors' ? (
           selectedVendorForDetails ? (
@@ -2158,11 +2158,11 @@ export default function App() {
               onOpenCreatePO={handleOpenCreatePO}
               onOpenReceivePO={handleOpenReceiveCargo}
               onViewPO={handleViewPO}
-              onOpenConfigureLinksModal={handleOpenConfigureLinksModal}
+              onOpenConfigureLinksModal={isActionAllowed(currentEmployee, 'canManageVendors') ? handleOpenConfigureLinksModal : undefined}
               onOpenEditVendorModal={handleOpenEditVendorModal}
-              onEditSale={handleEditSale}
+              onEditSale={isActionAllowed(currentEmployee, 'canEditSales') ? handleEditSale : undefined}
               onDeleteLedgerEntry={handleDeleteLedgerEntry}
-              onDeletePurchase={handleDeletePurchase}
+              onDeletePurchase={isActionAllowed(currentEmployee, 'canDeletePurchases') ? handleDeletePurchase : undefined}
               onViewInvoice={handleViewInvoice}
               onViewPurchase={(purchase) => {
                 setActivePurchaseForInvoice(purchase);
@@ -2180,8 +2180,8 @@ export default function App() {
               onOpenAddVendorModal={handleOpenAddVendorModal}
               onOpenEditVendorModal={handleOpenEditVendorModal}
               onOpenCashModal={handleOpenCashModal}
-              onOpenConfigureLinksModal={handleOpenConfigureLinksModal}
-              onDeleteVendor={handleDeleteVendor}
+              onOpenConfigureLinksModal={isActionAllowed(currentEmployee, 'canManageVendors') ? handleOpenConfigureLinksModal : undefined}
+              onDeleteVendor={isActionAllowed(currentEmployee, 'canManageVendors') ? handleDeleteVendor : undefined}
             />
           )
         ) : (
@@ -2576,13 +2576,13 @@ export default function App() {
                 >
                   Clear Search & Filters
                 </button>
-                <button
+                {isActionAllowed(currentEmployee, 'canAddProducts') && (<button
                   type="button"
                   onClick={handleOpenAddProduct}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" /> Add Product ({nextInternalId})
-                </button>
+                </button>)}
               </div>
             </div>
                     ) : viewMode === 'grid' ? (
@@ -2593,11 +2593,11 @@ export default function App() {
                     key={product.id}
                     product={product}
                     pricingSettings={pricingSettings}
-                    onEdit={handleEditProduct}
-                    onDelete={handleDeleteProduct}
-                    onDuplicate={handleDuplicateProduct}
-                    onPrintLabel={handleOpenLabelPrint}
-                    onAdjustStock={handleOpenStockAdjust}
+                    onEdit={isActionAllowed(currentEmployee, 'canEditProducts') ? handleEditProduct : undefined}
+                    onDelete={isActionAllowed(currentEmployee, 'canDeleteProducts') ? handleDeleteProduct : undefined}
+                    onDuplicate={isActionAllowed(currentEmployee, 'canAddProducts') ? handleDuplicateProduct : undefined}
+                    onPrintLabel={isActionAllowed(currentEmployee, 'canPrintLabels') ? handleOpenLabelPrint : undefined}
+                    onAdjustStock={isActionAllowed(currentEmployee, 'canAdjustStock') ? handleOpenStockAdjust : undefined}
                     onQuickUpdateCost={handleQuickUpdateCost}
                     onViewHistory={handleOpenProductHistory}
                   />
@@ -2621,11 +2621,11 @@ export default function App() {
               <ProductTable
                 products={paginatedProducts}
                 pricingSettings={pricingSettings}
-                onEdit={handleEditProduct}
-                onDelete={handleDeleteProduct}
-                onDuplicate={handleDuplicateProduct}
-                onPrintLabel={handleOpenLabelPrint}
-                onAdjustStock={handleOpenStockAdjust}
+                onEdit={isActionAllowed(currentEmployee, 'canEditProducts') ? handleEditProduct : undefined}
+                onDelete={isActionAllowed(currentEmployee, 'canDeleteProducts') ? handleDeleteProduct : undefined}
+                onDuplicate={isActionAllowed(currentEmployee, 'canAddProducts') ? handleDuplicateProduct : undefined}
+                onPrintLabel={isActionAllowed(currentEmployee, 'canPrintLabels') ? handleOpenLabelPrint : undefined}
+                onAdjustStock={isActionAllowed(currentEmployee, 'canAdjustStock') ? handleOpenStockAdjust : undefined}
                 onQuickUpdateCost={handleQuickUpdateCost}
                 onViewHistory={handleOpenProductHistory}
               />

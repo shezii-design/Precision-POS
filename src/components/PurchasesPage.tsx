@@ -38,10 +38,10 @@ interface PurchasesPageProps {
   purchases: Purchase[];
   vendors: Vendor[];
   products: Product[];
-  onOpenNewPurchase: (vendorId?: string) => void;
+  onOpenNewPurchase?: (vendorId?: string) => void;
   onViewPurchase: (purchase: Purchase) => void;
-  onEditPurchase: (purchase: Purchase) => void;
-  onDeletePurchase: (purchaseId: string) => void;
+  onEditPurchase?: (purchase: Purchase) => void;
+  onDeletePurchase?: (purchaseId: string) => void;
   onSelectVendor?: (vendor: Vendor) => void;
   onExportExcel?: () => void;
   onGoToPurchaseOrders?: () => void;
@@ -240,7 +240,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
               >
                 <Truck className="w-4 h-4 text-amber-300" />
                 <span>Cargo & POs</span>
-              </button>
+            </button>
             )}
 
             {onExportExcel && (
@@ -252,7 +252,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
               >
                 <Download className="w-4 h-4" />
                 <span>Export</span>
-              </button>
+            </button>
             )}
 
             <button
@@ -492,16 +492,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
             >
               Clear Search Filters
             </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onOpenNewPurchase()}
-              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl shadow-md transition-all inline-flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span>Record First Purchase Bill</span>
-            </button>
-          )}
+          ) : ( onOpenNewPurchase ? <button type="button" onClick={() => onOpenNewPurchase()} className="flex-1 sm:flex-initial justify-center px-4 sm:px-6 py-2.5 sm:py-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none" title="Record a New Purchase / Bill"><Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" /><span className="whitespace-nowrap">New Purchase</span></button> : null )}
         </div>
       ) : (
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">

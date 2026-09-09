@@ -34,10 +34,10 @@ interface VendorsPageProps {
   ledgerEntries: VendorLedgerEntry[];
   products: Product[];
   onSelectVendor: (vendor: Vendor) => void;
-  onOpenAddVendorModal: () => void;
-  onOpenEditVendorModal: (vendor: Vendor) => void;
-  onOpenCashModal: (vendorId?: string) => void;
-  onOpenConfigureLinksModal: (vendor: Vendor) => void;
+  onOpenAddVendorModal?: () => void;
+  onOpenEditVendorModal?: (vendor: Vendor) => void;
+  onOpenCashModal?: (vendorId?: string) => void;
+  onOpenConfigureLinksModal?: (vendor: Vendor) => void;
   onDeleteVendor: (vendorId: string) => void;
 }
 

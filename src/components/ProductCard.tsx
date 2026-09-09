@@ -29,12 +29,12 @@ import {
 interface ProductCardProps {
   product: Product;
   pricingSettings: GlobalPricingSettings;
-  onEdit: (product: Product) => void;
-  onDelete: (id: string) => void;
-  onDuplicate: (product: Product) => void;
-  onPrintLabel: (product: Product) => void;
-  onAdjustStock: (product: Product) => void;
-  onQuickUpdateCost: (productId: string, newCost: number) => void;
+  onEdit?: (product: Product) => void;
+  onDelete?: (id: string) => void;
+  onDuplicate?: (product: Product) => void;
+  onPrintLabel?: (product: Product) => void;
+  onAdjustStock?: (product: Product) => void;
+  onQuickUpdateCost?: (productId: string, newCost: number) => void;
   onViewHistory?: (product: Product) => void;
 }
 
@@ -274,7 +274,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
               <button
                 type="button"
-                onClick={() => onAdjustStock(product)}
+                onClick={onAdjustStock ? () => onAdjustStock(product) : undefined}
                 className="text-[11px] text-red-600 hover:text-red-700 font-bold hover:underline"
               >
                 Adjust
@@ -599,22 +599,22 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
         </div>
 
         <div className="flex items-center gap-1.5">
-          <button
+          {onDuplicate && (<button
             type="button"
             onClick={() => onDuplicate(product)}
             className="p-1.5 text-slate-500 hover:text-slate-800 bg-white hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors shadow-2xs"
             title="Duplicate"
           >
             <Copy className="w-3.5 h-3.5" />
-          </button>
-          <button
+          </button>)}
+          {onEdit && (<button
             type="button"
             onClick={() => onEdit(product)}
             className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors flex items-center gap-1"
           >
             <Edit3 className="w-3.5 h-3.5" />
             Edit
-          </button>
+          </button>)}
         </div>
       </div>
 

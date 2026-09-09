@@ -249,7 +249,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
           sales={sales}
           customerLedger={customerLedger}
           allCustomers={customers}
-          onOpenNewSaleForCustomer={onOpenNewSale ? (cId, items) => onOpenNewSale(cId, items) : undefined}
+          onOpenNewSaleForCustomer={(cId, items) => onOpenNewSale(cId, items)}
           onUpdateCustomers={onUpdateCustomers}
           onUpdateLedger={onUpdateLedger}
           onUpdateProducts={onUpdateProducts}

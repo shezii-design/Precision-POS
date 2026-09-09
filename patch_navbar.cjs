@@ -1,29 +1,13 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/Navbar.tsx', 'utf-8');
+let code = fs.readFileSync('src/components/Navbar.tsx', 'utf8');
 
 code = code.replace(
-  "| 'inventory_audit';",
-  "| 'inventory_audit'\n  | 'analytics';"
-);
-
-// We also need to add it to the array.
-const analyticsTab = `    {
-      id: 'analytics',
-      title: 'Analytics & Reordering',
-      shortTitle: 'Analytics',
-      icon: TrendingUp,
-      shortcut: 'Ctrl + Y',
-      description: 'Long-term seasonality charts, smart reorder threshold calculators, and dead stock identification.',
-      themeColor: 'emerald',
-    },
-    {
-      id: 'inventory',`;
-
-code = code.replace(
-  `    {
-      id: 'inventory',`,
-  analyticsTab
+  /\{canManageSettings && \(\s*<button\s+type="button"\s+onClick=\{\(\) => \{\s*setShowToolsMenu\(false\);\s*onOpenWipeData\(\);\s*\}\}/,
+  `{isActionAllowed(currentEmployee, 'canClearRecords') && (
+                      <button
+                        type="button"
+                        onClick={() => { setShowToolsMenu(false); onOpenWipeData(); }}`
 );
 
 fs.writeFileSync('src/components/Navbar.tsx', code);
-console.log("Patched Navbar.tsx");
+console.log("Patched Navbar.tsx wipe data");

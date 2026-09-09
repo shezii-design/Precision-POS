@@ -69,7 +69,7 @@ interface CustomerDetailsPageProps {
   sales: Sale[];
   customerLedger: CustomerLedgerEntry[];
   allCustomers: Customer[];
-  onOpenNewSaleForCustomer: (customerId: string, presetItems?: InitialSaleItemPreset[]) => void;
+  onOpenNewSaleForCustomer?: (customerId: string, presetItems?: InitialSaleItemPreset[]) => void;
   onUpdateCustomers: (customers: Customer[]) => void;
   onUpdateLedger: (ledger: CustomerLedgerEntry[]) => void;
   onUpdateProducts: (products: Product[]) => void;
@@ -227,7 +227,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
 
   const handleRecordSaleForSelected = () => {
     if (selectedItemsToRecord.length === 0) return;
-    onOpenNewSaleForCustomer(currentCustomer.id, selectedItemsToRecord);
+    if (onOpenNewSaleForCustomer) onOpenNewSaleForCustomer(currentCustomer.id, selectedItemsToRecord);
   };
 
   const handleQuickRecordSaleForSingleMachine = (machine: CompanyMachine) => {
@@ -244,7 +244,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
       unitPrice: it.unitPrice,
       notes: it.notes,
     }));
-    onOpenNewSaleForCustomer(currentCustomer.id, itemsList);
+    if (onOpenNewSaleForCustomer) onOpenNewSaleForCustomer(currentCustomer.id, itemsList);
   };
 
   // Handle Save Machine (with automatic inventory cross-ref and machine sync)

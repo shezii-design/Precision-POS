@@ -1,58 +1,66 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/ProductCard.tsx', 'utf-8');
-
-const helper = `
-// Helper to find older cost tiers
-const getOldCostTiers = (product: Product) => {
-  if (!product.costBatches || product.costBatches.length === 0) return [];
-  // Sort oldest first
-  const sortedBatches = [...product.costBatches].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-  
-  // Group remaining quantities by unitCost, but only for costs DIFFERENT from the current costPrice
-  const tiers: Record<number, number> = {};
-  for (const batch of sortedBatches) {
-    if ((batch.remainingQuantity || 0) > 0) {
-      if (batch.unitCost !== product.costPrice) {
-        tiers[batch.unitCost] = (tiers[batch.unitCost] || 0) + batch.remainingQuantity;
-      }
-    }
-  }
-  
-  return Object.entries(tiers).map(([costStr, qty]) => ({
-    cost: Number(costStr),
-    qty,
-  }));
-};
-`;
+let code = fs.readFileSync('src/components/ProductCard.tsx', 'utf8');
 
 code = code.replace(
-  "const ProductCard: React.FC<ProductCardProps> = ({",
-  helper + "\nconst ProductCard: React.FC<ProductCardProps> = ({"
+  /<button\s+onClick=\{\(\) => \{\s*setShowMenu\(false\);\s*onDuplicate\(product\);\s*\}\}[\s\S]*?<\/button>/,
+  `{onDuplicate && (<button
+                      onClick={() => { setShowMenu(false); onDuplicate(product); }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+                    >
+                      <Copy className="w-3.5 h-3.5" /> Duplicate
+                    </button>)}`
 );
 
-const oldTiersCall = `  const oldTiers = getOldCostTiers(product);`;
 code = code.replace(
-  "const isLowStock = !isOutOfStock && stockQty <= alertThreshold;",
-  "const isLowStock = !isOutOfStock && stockQty <= alertThreshold;\n" + oldTiersCall
+  /<button\s+onClick=\{\(\) => \{\s*setShowMenu\(false\);\s*onEdit\(product\);\s*\}\}[\s\S]*?<\/button>/,
+  `{onEdit && (<button
+                      onClick={() => { setShowMenu(false); onEdit(product); }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" /> Edit details
+                    </button>)}`
 );
 
-const pricingSection = `{/* PRICING SECTION (Cost in Red + Wholesale in Yellow + Retail Tiers in Progressive Green) */}
-        <div className="pt-2 border-t border-slate-100 space-y-2.5">
-          {oldTiers.length > 0 && (
-            <div className="flex flex-col gap-1 px-1">
-              {oldTiers.map(t => (
-                <div key={t.cost} className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/60 inline-block w-fit">
-                  {t.qty} item{t.qty !== 1 ? 's' : ''} in stock at {formatPKR(t.cost)}
-                </div>
-              ))}
-            </div>
-          )}`;
+code = code.replace(
+  /<button\s+onClick=\{\(\) => \{\s*setShowMenu\(false\);\s*onDelete\(product\.id\);\s*\}\}[\s\S]*?<\/button>/,
+  `{onDelete && (<button
+                      onClick={() => { setShowMenu(false); onDelete(product.id); }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete product
+                    </button>)}`
+);
 
 code = code.replace(
-  "{/* PRICING SECTION (Cost in Red + Wholesale in Yellow + Retail Tiers in Progressive Green) */}\n        <div className=\"pt-2 border-t border-slate-100 space-y-2.5\">",
-  pricingSection
+  /<button\s+onClick=\{\(\) => \{\s*setShowMenu\(false\);\s*onPrintLabel\(product\);\s*\}\}[\s\S]*?<\/button>/,
+  `{onPrintLabel && (<button
+                      onClick={() => { setShowMenu(false); onPrintLabel(product); }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+                    >
+                      <Printer className="w-3.5 h-3.5" /> Print barcode
+                    </button>)}`
+);
+
+code = code.replace(
+  /<button\s+onClick=\{\(\) => \{\s*setShowMenu\(false\);\s*onAdjustStock\(product\);\s*\}\}[\s\S]*?<\/button>/,
+  `{onAdjustStock && (<button
+                      onClick={() => { setShowMenu(false); onAdjustStock(product); }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-2"
+                    >
+                      <ArrowRightLeft className="w-3.5 h-3.5" /> Adjust Stock
+                    </button>)}`
+);
+
+// We need to also patch the main stock adjust block which might be inline
+code = code.replace(
+  /onClick=\{\(\) => onAdjustStock\(product\)\}/g,
+  `onClick={onAdjustStock ? () => onAdjustStock(product) : undefined}`
+);
+
+// We need to patch the main quick edit block which might be inline
+code = code.replace(
+  /onClick=\{\(\) => onEdit\(product\)\}/g,
+  `onClick={onEdit ? () => onEdit(product) : undefined}`
 );
 
 fs.writeFileSync('src/components/ProductCard.tsx', code);

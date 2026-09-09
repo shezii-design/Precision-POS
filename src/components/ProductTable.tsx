@@ -19,12 +19,12 @@ import {
 interface ProductTableProps {
   products: Product[];
   pricingSettings: GlobalPricingSettings;
-  onEdit: (product: Product) => void;
-  onDelete: (id: string) => void;
-  onDuplicate: (product: Product) => void;
-  onPrintLabel: (product: Product) => void;
-  onAdjustStock: (product: Product) => void;
-  onQuickUpdateCost: (productId: string, newCost: number) => void;
+  onEdit?: (product: Product) => void;
+  onDelete?: (id: string) => void;
+  onDuplicate?: (product: Product) => void;
+  onPrintLabel?: (product: Product) => void;
+  onAdjustStock?: (product: Product) => void;
+  onQuickUpdateCost?: (productId: string, newCost: number) => void;
   onViewHistory?: (product: Product) => void;
 }
 
@@ -192,7 +192,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                   {/* Stock */}
                   <td className="py-3 px-3">
                     <div
-                      onClick={() => onAdjustStock(p)}
+                      onClick={onAdjustStock ? () => onAdjustStock(p) : undefined}
                       className={`inline-flex font-mono text-xs font-black px-2 py-1 rounded cursor-pointer hover:opacity-80 transition-opacity ${
                         isOutOfStock
                           ? 'bg-red-100 text-red-700'
@@ -328,38 +328,38 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                           <History className="w-4 h-4 text-red-600" />
                         </button>
                       )}
-                      <button
+                      {onPrintLabel && (<button
                         type="button"
                         onClick={() => onPrintLabel(p)}
-                        className="p-1.5 text-slate-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                        title="Print Label"
+                        className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                        title="Print Barcode Label"
                       >
                         <Printer className="w-4 h-4" />
-                      </button>
-                      <button
+                      </button>)}
+                      {onDuplicate && (<button
                         type="button"
                         onClick={() => onDuplicate(p)}
-                        className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                         title="Duplicate"
                       >
                         <Copy className="w-4 h-4" />
-                      </button>
-                      <button
+                      </button>)}
+                      {onEdit && (<button
                         type="button"
                         onClick={() => onEdit(p)}
                         className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Edit"
                       >
                         <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
+                      </button>)}
+                      {onDelete && (<button
                         type="button"
                         onClick={() => onDelete(p.id)}
                         className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </button>)}
                     </div>
                   </td>
               </>

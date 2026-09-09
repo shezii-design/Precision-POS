@@ -1,29 +1,40 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/CustomerDetailsPage.tsx', 'utf-8');
+let code = fs.readFileSync('src/components/CustomerDetailsPage.tsx', 'utf8');
 
-const functionsToPatch = [
-  'handleSaveMachine',
-  'handleDeleteMachine',
-  'handleSavePayment',
-  'handleDeletePaymentEntry',
-  'handleSaveCustomerProfile'
-];
+code = code.replace(/onOpenNewSaleForCustomer: \(customerId: string, presetItems\?: InitialSaleItemPreset\[\]\) => void;/g, 
+  "onOpenNewSaleForCustomer?: (customerId: string, presetItems?: InitialSaleItemPreset[]) => void;");
 
-let injected = false;
-functionsToPatch.forEach(fn => {
-  const regex = new RegExp(`(const ${fn} = \\([^)]*\\)(?: *: *[^=]+)? *=> *{)`);
-  if (regex.test(code)) {
-    if (!code.includes('useOnlineStatus')) {
-       code = `import { useOnlineStatus } from '../hooks/useOnlineStatus';\n` + code;
-    }
-    if (!injected) {
-       // Insert the hook inside the component
-       code = code.replace(`const [activeTab, setActiveTab] = useState<'details' | 'ledger' | 'machines'>('ledger');`, `const [activeTab, setActiveTab] = useState<'details' | 'ledger' | 'machines'>('ledger');\n  const isOnline = useOnlineStatus();`);
-       injected = true;
-    }
-    code = code.replace(regex, `$1\n    if (!isOnline) { alert('Offline Mode (Read-Only)\\nCannot perform write/edit actions while offline.'); return; }`);
-  }
-});
+code = code.replace(
+  /<button\s+onClick=\{\(\) => onOpenNewSaleForCustomer\(currentCustomer\.id\)\}[\s\S]*?<\/button>/,
+  `{onOpenNewSaleForCustomer && (<button
+            onClick={() => onOpenNewSaleForCustomer(currentCustomer.id)}
+            className="flex-1 sm:flex-initial justify-center px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+          >
+            <ShoppingCart className="w-4 h-4 stroke-[3]" />
+            New Sale
+          </button>)}`
+);
+
+code = code.replace(
+  /<button\s+onClick=\{\(\) => onOpenNewSaleForCustomer\(currentCustomer\.id\)\}[\s\S]*?<\/button>/,
+  `{onOpenNewSaleForCustomer && (<button
+              onClick={() => onOpenNewSaleForCustomer(currentCustomer.id)}
+              className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl text-xs font-black shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer select-none"
+            >
+              <ShoppingCart className="w-4 h-4 stroke-[3]" />
+              New Sale Invoice
+            </button>)}`
+);
+
+code = code.replace(
+  /onOpenNewSaleForCustomer\(currentCustomer\.id, selectedItemsToRecord\);/g,
+  "if (onOpenNewSaleForCustomer) onOpenNewSaleForCustomer(currentCustomer.id, selectedItemsToRecord);"
+);
+
+code = code.replace(
+  /onOpenNewSaleForCustomer\(currentCustomer\.id, itemsList\);/g,
+  "if (onOpenNewSaleForCustomer) onOpenNewSaleForCustomer(currentCustomer.id, itemsList);"
+);
 
 fs.writeFileSync('src/components/CustomerDetailsPage.tsx', code);
-console.log('patched CustomerDetailsPage.tsx handlers');
+console.log("Patched CustomerDetailsPage.tsx");

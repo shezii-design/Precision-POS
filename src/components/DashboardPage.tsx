@@ -77,11 +77,11 @@ interface DashboardPageProps {
   customerLedger: CustomerLedgerEntry[];
   vendorLedger: VendorLedgerEntry[];
   expenses: Expense[];
-  onOpenNewSale: () => void;
-  onOpenNewPurchase: (vendorId?: string) => void;
-  onOpenCreatePO: () => void;
-  onOpenCreateDemand: () => void;
-  onOpenAddProduct: () => void;
+  onOpenNewSale?: () => void;
+  onOpenNewPurchase?: (vendorId?: string) => void;
+  onOpenCreatePO?: () => void;
+  onOpenCreateDemand?: () => void;
+  onOpenAddProduct?: () => void;
   onOpenAddExpense?: () => void;
   onGoToView: (view: AppWorkspaceView) => void;
   onViewInvoice: (sale: Sale) => void;
@@ -735,7 +735,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             )}
 
             {/* Quick Action: Make POS Sale */}
-            <button
+            {onOpenNewSale && (<button
               type="button"
               onClick={onOpenNewSale}
               className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
@@ -743,10 +743,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             >
               <Plus className="w-3.5 h-3.5 stroke-[3]" />
               <span>New Sale</span>
-              <kbd className="hidden sm:inline-block text-[9px] bg-black/20 px-1 py-0.2 rounded font-mono font-bold">
-                F5
-              </kbd>
-            </button>
+            </button>)}
 
             {/* Quick Action: Income Statement Link */}
             <button
