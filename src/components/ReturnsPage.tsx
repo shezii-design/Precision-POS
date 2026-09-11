@@ -42,11 +42,11 @@ interface ReturnsPageProps {
   vendors: Vendor[];
   sales: Sale[];
   purchases: Purchase[];
-  onOpenCustomerReturnModal: (returnDoc?: CustomerReturn) => void;
-  onOpenVendorReturnModal: (returnDoc?: VendorReturn) => void;
+  onOpenCustomerReturnModal?: (returnDoc?: CustomerReturn) => void;
+  onOpenVendorReturnModal?: (returnDoc?: VendorReturn) => void;
   onViewVoucher: (returnDoc: CustomerReturn | VendorReturn, type: 'customer' | 'vendor') => void;
-  onDeleteCustomerReturn: (returnId: string) => void;
-  onDeleteVendorReturn: (returnId: string) => void;
+  onDeleteCustomerReturn?: (returnId: string) => void;
+  onDeleteVendorReturn?: (returnId: string) => void;
 }
 
 type ActiveTab = 'customer' | 'vendor';
@@ -281,23 +281,23 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
 
           {/* Quick Action Buttons */}
           <div className="flex items-center gap-2 flex-wrap">
-            <button
+            {onOpenCustomerReturnModal ? <button
               type="button"
               onClick={() => onOpenCustomerReturnModal()}
               className="px-3.5 sm:px-4 py-2 text-xs font-black text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>+ Customer Return</span>
-            </button>
+            </button> : null}
 
-            <button
+            {onOpenVendorReturnModal ? <button
               type="button"
               onClick={() => onOpenVendorReturnModal()}
               className="px-3.5 sm:px-4 py-2 text-xs font-black text-slate-800 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-300 rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4 text-red-600" />
               <span>+ Vendor Return (Debit Note)</span>
-            </button>
+            </button> : null}
           </div>
         </div>
 
@@ -598,14 +598,14 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
                     ? 'No return records matched your search filters. Try adjusting your criteria.'
                     : 'No sales returns have been recorded yet. Click below to record your first customer return.'}
                 </p>
-                <button
+                {onOpenCustomerReturnModal ? <button
                   type="button"
                   onClick={() => onOpenCustomerReturnModal()}
                   className="px-4 py-2 text-xs font-black text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Record Customer Return</span>
-                </button>
+                </button> : null}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -729,14 +729,14 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
                             >
                               <Printer className="w-4 h-4" />
                             </button>
-                            <button
+                            {onOpenCustomerReturnModal ? <button
                               type="button"
                               onClick={() => onOpenCustomerReturnModal(ret)}
                               className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                               title="Edit Return"
                             >
                               <Edit className="w-4 h-4" />
-                            </button>
+                            </button> : null}
                             <button
                               type="button"
                               onClick={() => setDeleteConfirm({ id: ret.id, number: ret.returnNumber, type: 'customer' })}
@@ -779,14 +779,14 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
                     ? 'No return records matched your search filters. Try adjusting your criteria.'
                     : 'No supplier purchase returns have been recorded yet. Click below to record your first vendor debit note.'}
                 </p>
-                <button
+                {onOpenVendorReturnModal ? <button
                   type="button"
                   onClick={() => onOpenVendorReturnModal()}
                   className="px-4 py-2 text-xs font-black text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Plus className="w-4 h-4 text-red-500" />
                   <span>Record Vendor Return (Debit Note)</span>
-                </button>
+                </button> : null}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -898,14 +898,14 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
                             >
                               <Printer className="w-4 h-4" />
                             </button>
-                            <button
+                            {onOpenVendorReturnModal ? <button
                               type="button"
                               onClick={() => onOpenVendorReturnModal(ret)}
                               className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                               title="Edit Return"
                             >
                               <Edit className="w-4 h-4" />
-                            </button>
+                            </button> : null}
                             <button
                               type="button"
                               onClick={() => setDeleteConfirm({ id: ret.id, number: ret.returnNumber, type: 'vendor' })}

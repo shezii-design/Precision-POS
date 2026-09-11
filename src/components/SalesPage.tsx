@@ -614,16 +614,14 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                         {/* 7. Actions */}
                         <td className="py-3.5 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-center gap-1">
-                            {onOpenCustomerReturn && !isFullyReturned && (
-                              <button
+                            {onOpenCustomerReturn && !isFullyReturned && ( onOpenCustomerReturn ? <button
                                 type="button"
                                 onClick={() => onOpenCustomerReturn(sale)}
                                 className="p-1.5 bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 rounded-lg transition-colors cursor-pointer"
                                 title="Process Customer Return for this Sale"
                               >
                                 <RotateCcw className="w-4 h-4" />
-                              </button>
-                            )}
+                              </button> : null )}
                             {onEditSale && (
                               <button
                                 type="button"

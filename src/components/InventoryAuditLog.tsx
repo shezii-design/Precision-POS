@@ -989,8 +989,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                             <History className="w-4 h-4" />
                           </button>
 
-                          {onOpenAdjustModal && (
-                            <button
+                          {onOpenAdjustModal && (<button
                               id={`btn-adjust-from-audit-${log.productId}`}
                               onClick={() => {
                                 const prod = products.find(p => p.id === log.productId);
@@ -1000,8 +999,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                               className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                             >
                               <SlidersHorizontal className="w-4 h-4" />
-                            </button>
-                          )}
+                            </button>)}
                         </div>
                       </td>
                     </tr>

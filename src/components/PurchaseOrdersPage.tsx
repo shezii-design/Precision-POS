@@ -27,11 +27,11 @@ interface PurchaseOrdersPageProps {
   purchaseOrders: PurchaseOrder[];
   vendors: Vendor[];
   products: Product[];
-  onOpenCreatePO: (vendorId?: string) => void;
-  onOpenReceiveCargo: (po: PurchaseOrder) => void;
+  onOpenCreatePO?: (vendorId?: string) => void;
+  onOpenReceiveCargo?: (po: PurchaseOrder) => void;
   onViewPO: (po: PurchaseOrder) => void;
   onEditPO: (po: PurchaseOrder) => void;
-  onDeletePO: (poId: string) => void;
+  onDeletePO?: (poId: string) => void;
   onSelectVendor?: (vendor: Vendor) => void;
 }
 
@@ -125,7 +125,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto">
-          <button
+          {onOpenCreatePO ? <button
             type="button"
             id="btn-create-po"
             onClick={() => onOpenCreatePO()}
@@ -133,7 +133,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>New Purchase Order</span>
-          </button>
+          </button> : null}
         </div>
       </div>
 
@@ -327,14 +327,14 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
               Create your first purchase order to track vendor orders, cargo receipts, and proportional freight allocations.
             </p>
           </div>
-          <button
+          {onOpenCreatePO ? <button
             type="button"
             onClick={() => onOpenCreatePO()}
             className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl shadow-xs transition-colors inline-flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>Create Purchase Order</span>
-          </button>
+          </button> : null}
         </div>
       ) : (
         <div className="space-y-3.5">
@@ -473,30 +473,25 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                 {/* Right: Quick Action Controls */}
                 <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end shrink-0">
                   {/* Primary CTA depends on state */}
-                  {isPendingBill && (
-                    <button
+                  {isPendingBill && ( onOpenReceiveCargo ? <button
                       type="button"
                       onClick={() => onOpenReceiveCargo(po)}
                       className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-black rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer select-none"
                     >
                       <DollarSign className="w-3.5 h-3.5 stroke-[2.5]" />
                       <span>Finalize Bill Costs</span>
-                    </button>
-                  )}
+                    </button> : null )}
 
-                  {isOrdered && (
-                    <button
+                  {isOrdered && ( onOpenReceiveCargo ? <button
                       type="button"
                       onClick={() => onOpenReceiveCargo(po)}
                       className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer select-none"
                     >
                       <Truck className="w-3.5 h-3.5 stroke-[2.5]" />
                       <span>Receive Cargo</span>
-                    </button>
-                  )}
+                    </button> : null )}
 
-                  {isCompleted && (
-                    <button
+                  {isCompleted && ( onOpenReceiveCargo ? <button
                       type="button"
                       onClick={() => onOpenReceiveCargo(po)}
                       className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
@@ -504,8 +499,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit Receiving</span>
-                    </button>
-                  )}
+                    </button> : null )}
 
                   <button
                     type="button"

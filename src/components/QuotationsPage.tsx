@@ -40,10 +40,10 @@ interface QuotationsPageProps {
   quotations: Quotation[];
   products: Product[];
   customers: Customer[];
-  onOpenCreateQuotation: () => void;
+  onOpenCreateQuotation?: () => void;
   onViewQuotation: (quotation: Quotation) => void;
-  onEditQuotation: (quotation: Quotation) => void;
-  onDeleteQuotation: (quotationId: string) => void;
+  onEditQuotation?: (quotation: Quotation) => void;
+  onDeleteQuotation?: (quotationId: string) => void;
   onConvertToSale: (quotation: Quotation) => void;
   onRenewValidity: (quotationId: string, days?: number) => void;
 }
@@ -182,7 +182,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
 
         {/* Create Quotation Button */}
         <div className="flex items-center gap-2 shrink-0">
-          <button
+          {onOpenCreateQuotation ? <button
             type="button"
             id="create-quotation-btn"
             onClick={onOpenCreateQuotation}
@@ -190,7 +190,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>Create New Quotation</span>
-          </button>
+          </button> : null}
         </div>
       </div>
 
@@ -408,14 +408,14 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
               : 'Create your first price quotation for walk-in customers or corporate companies with automated 7-day rate validity.'}
           </p>
           <div className="pt-2">
-            <button
+            {onOpenCreateQuotation ? <button
               type="button"
               onClick={onOpenCreateQuotation}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-sm transition-colors inline-flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span>Create First Quotation</span>
-            </button>
+            </button> : null}
           </div>
         </div>
       ) : (
@@ -564,14 +564,14 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
                           )}
 
                           {/* Edit Button */}
-                          <button
+                          {onEditQuotation ? <button
                             type="button"
                             title="Edit Quotation"
                             onClick={() => onEditQuotation(quotation)}
                             className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                           >
                             <Edit3 className="w-4 h-4" />
-                          </button>
+                          </button> : null}
 
                           {/* Delete Button */}
                           <button

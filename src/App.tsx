@@ -1262,18 +1262,10 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 1. F5 Global Shortcut: Open Sales System from anywhere
-      if (e.key === 'F5') {
-        e.preventDefault();
-        handleOpenNewSale();
-        return;
-      }
+      if (e.key === 'F5') { e.preventDefault(); if (isActionAllowed(currentEmployee, 'canCreateSales')) handleOpenNewSale(); return; }
 
       // 2. F6 Global Shortcut: Create New Quotation
-      if (e.key === 'F6') {
-        e.preventDefault();
-        handleOpenCreateQuotation();
-        return;
-      }
+      if (e.key === 'F6') { e.preventDefault(); if (isActionAllowed(currentEmployee, 'canManageQuotations')) handleOpenCreateQuotation(); return; }
 
       // Support Windows/PC Ctrl and macOS Command
       const isCtrl = e.ctrlKey || e.metaKey;
@@ -2021,7 +2013,7 @@ export default function App() {
             products={products}
             expenses={expenses}
             onSaveExpense={handleSaveExpense}
-            onDeleteExpense={handleDeleteExpense}
+            onDeleteExpense={isActionAllowed(currentEmployee, 'canManageExpenses') ? handleDeleteExpense : undefined}
             onGoToView={(view) => setCurrentView(view)}
             onViewInvoice={handleViewInvoice}
             onViewPurchase={(purchase) => {
@@ -2045,7 +2037,7 @@ export default function App() {
             logs={stockLogs}
             products={products}
             onRefresh={() => setStockLogs(getStoredStockLogs())}
-            onOpenAdjustModal={(product) => handleOpenStockAdjust(product)}
+            onOpenAdjustModal={isActionAllowed(currentEmployee, 'canAdjustStock') ? (product) => handleOpenStockAdjust(product) : undefined}
           />
         ) : currentView === 'demands' ? (
           <DemandsPage
@@ -2053,10 +2045,10 @@ export default function App() {
             products={products}
             customers={customers}
             sales={sales}
-            onOpenAddDemand={handleOpenCreateDemand}
-            onEditDemand={handleOpenEditDemand}
+            onOpenAddDemand={isActionAllowed(currentEmployee, 'canManageDemands') ? handleOpenCreateDemand : undefined}
+            onEditDemand={isActionAllowed(currentEmployee, 'canManageDemands') ? handleOpenEditDemand : undefined}
             onFulfillWithSale={handleFulfillDemand}
-            onDeleteDemand={handleDeleteDemand}
+            onDeleteDemand={isActionAllowed(currentEmployee, 'canManageDemands') ? handleDeleteDemand : undefined}
             onUpdateDemandStatus={handleUpdateDemandStatus}
             onViewInvoice={(sale) => {
               setActiveSaleForInvoice(sale);
@@ -2092,11 +2084,11 @@ export default function App() {
             vendors={vendors}
             products={products}
             purchases={purchases}
-            onOpenCreatePO={handleOpenCreatePO}
-            onOpenEditPO={handleOpenEditPO}
-            onOpenReceiveCargo={handleOpenReceiveCargo}
+            onOpenCreatePO={isActionAllowed(currentEmployee, 'canCreatePurchaseOrders') ? handleOpenCreatePO : undefined}
+            onOpenEditPO={isActionAllowed(currentEmployee, 'canCreatePurchaseOrders') ? handleOpenEditPO : undefined}
+            onOpenReceiveCargo={isActionAllowed(currentEmployee, 'canReceivePurchaseOrders') ? handleOpenReceiveCargo : undefined}
             onViewPO={handleViewPO}
-            onDeletePO={handleDeletePO}
+            onDeletePO={isActionAllowed(currentEmployee, 'canCreatePurchaseOrders') ? handleDeletePO : undefined}
             onSelectVendor={(v) => {
               setSelectedVendorForDetails(v);
               setCurrentView('vendors');
@@ -2111,21 +2103,21 @@ export default function App() {
             vendors={vendors}
             sales={sales}
             purchases={purchases}
-            onOpenCustomerReturnModal={handleOpenCustomerReturnModal}
-            onOpenVendorReturnModal={handleOpenVendorReturnModal}
+            onOpenCustomerReturnModal={isActionAllowed(currentEmployee, 'canProcessReturns') ? handleOpenCustomerReturnModal : undefined}
+            onOpenVendorReturnModal={isActionAllowed(currentEmployee, 'canProcessReturns') ? handleOpenVendorReturnModal : undefined}
             onViewVoucher={handleViewReturnVoucher}
-            onDeleteCustomerReturn={handleDeleteCustomerReturn}
-            onDeleteVendorReturn={handleDeleteVendorReturn}
+            onDeleteCustomerReturn={isActionAllowed(currentEmployee, 'canProcessReturns') ? handleDeleteCustomerReturn : undefined}
+            onDeleteVendorReturn={isActionAllowed(currentEmployee, 'canProcessReturns') ? handleDeleteVendorReturn : undefined}
           />
         ) : currentView === 'quotations' ? (
           <QuotationsPage
             quotations={quotations}
             products={products}
             customers={customers}
-            onOpenCreateQuotation={handleOpenCreateQuotation}
+            onOpenCreateQuotation={isActionAllowed(currentEmployee, 'canManageQuotations') ? handleOpenCreateQuotation : undefined}
             onViewQuotation={handleViewQuotation}
-            onEditQuotation={handleEditQuotation}
-            onDeleteQuotation={handleDeleteQuotation}
+            onEditQuotation={isActionAllowed(currentEmployee, 'canManageQuotations') ? handleEditQuotation : undefined}
+            onDeleteQuotation={isActionAllowed(currentEmployee, 'canManageQuotations') ? handleDeleteQuotation : undefined}
             onConvertToSale={handleConvertToSaleFromQuotation}
             onRenewValidity={handleRenewQuotationValidity}
           />
@@ -2135,7 +2127,7 @@ export default function App() {
             products={products}
             sales={sales}
             customerLedger={customerLedger}
-            onOpenNewSale={(cId, items) => handleOpenNewSale(cId, items)}
+            onOpenNewSale={isActionAllowed(currentEmployee, 'canCreateSales') ? (cId, items) => handleOpenNewSale(cId, items) : undefined}
             onUpdateCustomers={setCustomers}
             onUpdateLedger={setCustomerLedger}
             onUpdateProducts={setProducts}
@@ -2153,15 +2145,15 @@ export default function App() {
               products={products}
               purchaseOrders={purchaseOrders}
               onBack={handleBackFromVendorDetails}
-              onOpenCashModal={handleOpenCashModal}
-              onOpenPurchaseModal={handleOpenPurchaseModal}
-              onOpenCreatePO={handleOpenCreatePO}
-              onOpenReceivePO={handleOpenReceiveCargo}
+              onOpenCashModal={isActionAllowed(currentEmployee, 'canRecordVendorPayments') ? handleOpenCashModal : undefined}
+              onOpenPurchaseModal={isActionAllowed(currentEmployee, 'canCreatePurchases') ? handleOpenPurchaseModal : undefined}
+              onOpenCreatePO={isActionAllowed(currentEmployee, 'canCreatePurchaseOrders') ? handleOpenCreatePO : undefined}
+              onOpenReceivePO={isActionAllowed(currentEmployee, 'canReceivePurchaseOrders') ? handleOpenReceiveCargo : undefined}
               onViewPO={handleViewPO}
               onOpenConfigureLinksModal={isActionAllowed(currentEmployee, 'canManageVendors') ? handleOpenConfigureLinksModal : undefined}
-              onOpenEditVendorModal={handleOpenEditVendorModal}
+              onOpenEditVendorModal={isActionAllowed(currentEmployee, 'canManageVendors') ? handleOpenEditVendorModal : undefined}
               onEditSale={isActionAllowed(currentEmployee, 'canEditSales') ? handleEditSale : undefined}
-              onDeleteLedgerEntry={handleDeleteLedgerEntry}
+              onDeleteLedgerEntry={isActionAllowed(currentEmployee, 'canRecordVendorPayments') ? handleDeleteLedgerEntry : undefined}
               onDeletePurchase={isActionAllowed(currentEmployee, 'canDeletePurchases') ? handleDeletePurchase : undefined}
               onViewInvoice={handleViewInvoice}
               onViewPurchase={(purchase) => {
@@ -2177,9 +2169,9 @@ export default function App() {
               ledgerEntries={ledgerEntries}
               products={products}
               onSelectVendor={handleSelectVendor}
-              onOpenAddVendorModal={handleOpenAddVendorModal}
-              onOpenEditVendorModal={handleOpenEditVendorModal}
-              onOpenCashModal={handleOpenCashModal}
+              onOpenAddVendorModal={isActionAllowed(currentEmployee, 'canManageVendors') ? handleOpenAddVendorModal : undefined}
+              onOpenEditVendorModal={isActionAllowed(currentEmployee, 'canManageVendors') ? handleOpenEditVendorModal : undefined}
+              onOpenCashModal={isActionAllowed(currentEmployee, 'canRecordVendorPayments') ? handleOpenCashModal : undefined}
               onOpenConfigureLinksModal={isActionAllowed(currentEmployee, 'canManageVendors') ? handleOpenConfigureLinksModal : undefined}
               onDeleteVendor={isActionAllowed(currentEmployee, 'canManageVendors') ? handleDeleteVendor : undefined}
             />

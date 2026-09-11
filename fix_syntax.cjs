@@ -1,44 +1,31 @@
 const fs = require('fs');
 
-let code = fs.readFileSync('src/App.tsx', 'utf-8');
+const pages = [
+  'ProductTable.tsx', 'DashboardPage.tsx', 'SalesPage.tsx', 'ProductCard.tsx',
+  'PurchaseOrdersPage.tsx', 'VendorDetailsPage.tsx', 'QuotationsPage.tsx'
+];
 
-// The faulty code has:
-//   const handleOpenAddProduct = () => {
-//     ...
-//     setShowProductModal(true);
-//   }, [isOnline]);
-// 
-//   const handleEditProduct = useCallback((prod: Product) => {
-//     ...
-//     setShowProductModal(true);
-//   };
+// Wait, I need to check how to fix `{prop && ({prop ? <button ... : null})}`.
+// The easiest way is to use a regex replacement to undo the `{prop ? <button ... : null}` where it's wrapped.
+// Or just let's see what exactly was written by replacing `<button` with `{prop ? <button`.
 
-code = code.replace(
-  `  // Handlers for Product Management
-  const handleOpenAddProduct = () => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
-    setEditingProduct(null);
-    setShowProductModal(true);
-  }, [isOnline]);
+// Actually, I can just use a regex on the entire file content:
+// `\{([a-zA-Z]+)\s*&&\s*\(\{\1\s*\?\s*(<button[\s\S]*?<\/button>)\s*:\s*null\}\)\}`
+// and replace it with `{\1 && (\2)}`
+// Let's test this logic!
 
-  const handleEditProduct = useCallback((prod: Product) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
-    setEditingProduct(prod);
-    setShowProductModal(true);
-  };`,
-  `  // Handlers for Product Management
-  const handleOpenAddProduct = useCallback(() => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
-    setEditingProduct(null);
-    setShowProductModal(true);
-  }, [isOnline]);
+for (let file of fs.readdirSync('src/components/')) {
+  if (!file.endsWith('.tsx')) continue;
+  let code = fs.readFileSync(`src/components/${file}`, 'utf8');
 
-  const handleEditProduct = useCallback((prod: Product) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
-    setEditingProduct(prod);
-    setShowProductModal(true);
-  }, [isOnline]);`
-);
+  // Fix 1: {prop && ({prop ? <button ... : null})} -> {prop && (<button ... />)}
+  const regex = /\{([a-zA-Z]+)\s*&&\s*\(\{\1\s*\?\s*(<button[\s\S]*?<\/button>)\s*:\s*null\}\)\}/g;
+  code = code.replace(regex, '{$1 && ($2)}');
+  
+  // Fix 2: What about the ones not wrapped in parenthesis? `{prop && {prop ? <button ... : null}}`
+  const regex2 = /\{([a-zA-Z]+)\s*&&\s*\{\1\s*\?\s*(<button[\s\S]*?<\/button>)\s*:\s*null\}\}/g;
+  code = code.replace(regex2, '{$1 && ($2)}');
 
-fs.writeFileSync('src/App.tsx', code);
-console.log('Fixed syntax error');
+  fs.writeFileSync(`src/components/${file}`, code);
+}
+console.log("Fixed syntax");

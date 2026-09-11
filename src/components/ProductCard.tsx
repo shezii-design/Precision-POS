@@ -163,47 +163,47 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                   View Item History
                 </button>
               )}
-              <button
+              {onEdit ? <button
                 type="button"
                 onClick={() => { setShowMenu(false); onEdit(product); }}
                 className="w-full px-3 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
               >
                 <Edit3 className="w-3.5 h-3.5 text-blue-600" />
                 Edit Product
-              </button>
-              <button
+              </button> : null}
+              {onAdjustStock ? <button
                 type="button"
                 onClick={() => { setShowMenu(false); onAdjustStock(product); }}
                 className="w-full px-3 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
               >
                 <Box className="w-3.5 h-3.5 text-emerald-600" />
                 Adjust Stock (+ / -)
-              </button>
-              <button
+              </button> : null}
+              {onPrintLabel ? <button
                 type="button"
                 onClick={() => { setShowMenu(false); onPrintLabel(product); }}
                 className="w-full px-3 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
               >
                 <Printer className="w-3.5 h-3.5 text-purple-600" />
                 Print Shelf / Tag Label
-              </button>
-              <button
+              </button> : null}
+              {onDuplicate ? <button
                 type="button"
                 onClick={() => { setShowMenu(false); onDuplicate(product); }}
                 className="w-full px-3 py-1.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
               >
                 <Copy className="w-3.5 h-3.5 text-amber-600" />
                 Duplicate Item
-              </button>
+              </button> : null}
               <div className="border-t border-slate-100 my-1" />
-              <button
+              {onDelete ? <button
                 type="button"
                 onClick={() => { setShowMenu(false); onDelete(product.id); }}
                 className="w-full px-3 py-1.5 text-left text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2"
               >
                 <Trash2 className="w-3.5 h-3.5 text-red-600" />
                 Delete Product
-              </button>
+              </button> : null}
             </div>
           )}
         </div>
@@ -272,13 +272,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 ) : null}
               </div>
 
-              <button
+              {onAdjustStock ? <button
                 type="button"
                 onClick={onAdjustStock ? () => onAdjustStock(product) : undefined}
                 className="text-[11px] text-red-600 hover:text-red-700 font-bold hover:underline"
               >
                 Adjust
-              </button>
+              </button> : null}
             </div>
           </div>
         </div>
@@ -577,14 +577,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       {/* Card Footer Actions */}
       <div className="p-3 bg-slate-50/90 border-t border-slate-100 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <button
+          {onPrintLabel ? <button
             type="button"
             onClick={() => onPrintLabel(product)}
             className="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition-colors flex items-center gap-1.5 shadow-2xs"
           >
             <Printer className="w-3.5 h-3.5 text-slate-500" />
             Label
-          </button>
+          </button> : null}
           {onViewHistory && (
             <button
               type="button"

@@ -181,7 +181,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
 
           {/* Header Actions */}
           <div className="flex items-center gap-2.5 flex-wrap">
-            <button
+            {onOpenCashModal ? <button
               type="button"
               id="btn-vendors-record-cash"
               onClick={() => onOpenCashModal()}
@@ -189,9 +189,9 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
             >
               <ArrowUpRight className="w-4 h-4 text-amber-600" />
               <span>+ Cash Payment / Receipt</span>
-            </button>
+            </button> : null}
 
-            <button
+            {onOpenAddVendorModal ? <button
               type="button"
               id="btn-add-new-vendor-top"
               onClick={onOpenAddVendorModal}
@@ -199,7 +199,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
             >
               <Plus className="w-4 h-4" />
               <span>+ Add New Vendor</span>
-            </button>
+            </button> : null}
           </div>
         </div>
 
@@ -384,14 +384,14 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
             <p className="text-xs text-neutral-500 max-w-md mx-auto">
               No vendor records matched your search query. Try adjusting your filters or add a new vendor.
             </p>
-            <button
+            {onOpenAddVendorModal ? <button
               type="button"
               onClick={onOpenAddVendorModal}
               className="mt-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors inline-flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               <span>Add New Vendor</span>
-            </button>
+            </button> : null}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -430,14 +430,14 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                        <button
+                        {onOpenEditVendorModal ? <button
                           type="button"
                           onClick={() => onOpenEditVendorModal(vendor)}
                           className="p-1.5 rounded-lg text-neutral-400 hover:text-amber-700 hover:bg-neutral-100 transition-colors"
                           title="Edit vendor profile"
                         >
                           <Edit className="w-4 h-4" />
-                        </button>
+                        </button> : null}
                       </div>
                     </div>
 
@@ -502,7 +502,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
                           Linked Inventory ({linkedProds.length})
                         </span>
 
-                        <button
+                        {onOpenConfigureLinksModal ? <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -511,7 +511,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
                           className="text-[11px] font-bold text-amber-700 hover:underline"
                         >
                           Configure →
-                        </button>
+                        </button> : null}
                       </div>
 
                       {linkedProds.length === 0 ? (
@@ -557,7 +557,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
                         <span>PDF</span>
                       </button>
 
-                      <button
+                      {onOpenCashModal ? <button
                         type="button"
                         id={`btn-card-add-cash-${vendor.id}`}
                         onClick={() => onOpenCashModal(vendor.id)}
@@ -565,7 +565,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
                         title="Add cash entry for this vendor"
                       >
                         + Cash
-                      </button>
+                      </button> : null}
 
                       <button
                         type="button"

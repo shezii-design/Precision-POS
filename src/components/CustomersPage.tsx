@@ -281,7 +281,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
 
         {/* Quick Add Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
+          {isActionAllowed(currentEmployee, 'canRecordCustomerPayments') && <button
             type="button"
             onClick={() => {
               setPaymentPreselectedCustomer(null);
@@ -291,9 +291,9 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
           >
             <Wallet className="w-4 h-4" />
             <span>Receive Payment</span>
-          </button>
+          </button>}
 
-          <button
+          {isActionAllowed(currentEmployee, 'canManageCustomers') && <button
             type="button"
             onClick={() => {
               setEditingCustomer(null);
@@ -304,9 +304,9 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
           >
             <User className="w-4 h-4 text-slate-500" />
             <span>+ Add Customer</span>
-          </button>
+          </button>}
 
-          <button
+          {isActionAllowed(currentEmployee, 'canManageCustomers') && <button
             type="button"
             onClick={() => {
               setEditingCustomer(null);
@@ -317,7 +317,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
           >
             <Building2 className="w-4 h-4" />
             <span>+ Add Company (Demand Tab)</span>
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -502,7 +502,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
             Try adjusting your search keywords or filter criteria, or add a new customer or company.
           </p>
           <div className="pt-2 flex items-center justify-center gap-2">
-            <button
+            {isActionAllowed(currentEmployee, 'canManageCustomers') && <button
               type="button"
               onClick={() => {
                 setEditingCustomer(null);
@@ -512,7 +512,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-xs transition-all cursor-pointer"
             >
               + Add {activeTab === 'companies' ? 'Company' : 'Customer'}
-            </button>
+            </button>}
           </div>
         </div>
       ) : (
@@ -562,7 +562,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
 
                     {/* Quick Edit/Delete Dropdown */}
                     <div className="flex items-center gap-1">
-                      <button
+                      {isActionAllowed(currentEmployee, 'canManageCustomers') && <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -574,15 +574,15 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                         title="Edit details"
                       >
                         <Edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button
+                      </button>}
+                      {isActionAllowed(currentEmployee, 'canManageCustomers') && <button
                         type="button"
                         onClick={(e) => handleDeleteCustomer(cust.id, e)}
                         className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                         title="Delete customer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </button>}
                     </div>
                   </div>
 
@@ -677,7 +677,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                       <span>PDF</span>
                     </button>
 
-                    <button
+                    {isActionAllowed(currentEmployee, 'canRecordCustomerPayments') && <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -689,9 +689,9 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                     >
                       <Wallet className="w-3 h-3" />
                       <span>Payment</span>
-                    </button>
+                    </button>}
 
-                    <button
+                    {onOpenNewSale ? <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -702,7 +702,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                     >
                       <ShoppingCart className="w-3 h-3" />
                       <span>Sale</span>
-                    </button>
+                    </button> : null}
                   </div>
                 </div>
               </div>

@@ -1,18 +1,53 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/components/CustomersPage.tsx', 'utf8');
 
+// 1. Add Customer (line 298 block) - canManageCustomers
 code = code.replace(
-  /<button\s+onClick=\{\(\) => setShowCustomerModal\(true\)\}[\s\S]*?<\/button>/g,
-  `{isActionAllowed(currentEmployee, 'canManageCustomers') && (<button
-              onClick={() => setShowCustomerModal(true)}
-              className="flex-1 sm:flex-initial justify-center px-4 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs sm:text-sm font-black rounded-xl shadow-xs transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
-              <span className="whitespace-nowrap">Add Customer / Company</span>
-            </button>)}`
+  /<button[^>]*onClick=\{\(\) => \{\s*setEditingCustomer\(null\);\s*setCustomerModalType\('customer'\);\s*setShowCustomerModal\(true\);\s*\}\}[\s\S]*?<\/button>/g,
+  (match) => `{isActionAllowed(currentEmployee, 'canManageCustomers') && ${match}}`
 );
 
-// We have multiple setShowCustomerModal(true) buttons. 
-// Some are edit buttons, some are Add. The above regex might override edits with "Add Customer / Company".
+// 2. Add Company (line 311 block) - canManageCustomers
+code = code.replace(
+  /<button[^>]*onClick=\{\(\) => \{\s*setEditingCustomer\(null\);\s*setCustomerModalType\('company'\);\s*setShowCustomerModal\(true\);\s*\}\}[\s\S]*?<\/button>/g,
+  (match) => `{isActionAllowed(currentEmployee, 'canManageCustomers') && ${match}}`
+);
 
-fs.writeFileSync('src/components/CustomersPage.tsx.temp', code);
+// 3. Add Customer/Company (Empty State) (line 507 block) - canManageCustomers
+code = code.replace(
+  /<button[^>]*onClick=\{\(\) => \{\s*setEditingCustomer\(null\);\s*setCustomerModalType\(activeTab === 'companies' \? 'company' : 'customer'\);\s*setShowCustomerModal\(true\);\s*\}\}[\s\S]*?<\/button>/g,
+  (match) => `{isActionAllowed(currentEmployee, 'canManageCustomers') && ${match}}`
+);
+
+// 4. Edit details (line 568 block) - canManageCustomers
+code = code.replace(
+  /<button[^>]*onClick=\{\(e\) => \{\s*e\.stopPropagation\(\);\s*setEditingCustomer\(cust\);\s*setCustomerModalType\(cust\.type \|\| 'customer'\);\s*setShowCustomerModal\(true\);\s*\}\}[\s\S]*?<\/button>/g,
+  (match) => `{isActionAllowed(currentEmployee, 'canManageCustomers') && ${match}}`
+);
+
+// 5. Delete Customer (line 580 block) - canManageCustomers
+// Wait, I already did this one in patch_customers_permissions.cjs, let's verify if it was patched!
+// If not, we'll patch it.
+code = code.replace(
+  /<button[^>]*onClick=\{\(e\) => handleDeleteCustomer\(cust\.id, e\)\}[\s\S]*?<\/button>/g,
+  (match) => {
+    if (match.includes('{isActionAllowed')) return match;
+    return `{isActionAllowed(currentEmployee, 'canManageCustomers') && ${match}}`;
+  }
+);
+
+// 6. Record Payment (line 285 block) - canRecordCustomerPayments
+code = code.replace(
+  /<button[^>]*onClick=\{\(\) => \{\s*setPaymentPreselectedCustomer\(null\);\s*setShowPaymentModal\(true\);\s*\}\}[\s\S]*?<\/button>/g,
+  (match) => `{isActionAllowed(currentEmployee, 'canRecordCustomerPayments') && ${match}}`
+);
+
+// 7. Receive Payment (line 682 block) - canRecordCustomerPayments
+code = code.replace(
+  /<button[^>]*onClick=\{\(e\) => \{\s*e\.stopPropagation\(\);\s*setPaymentPreselectedCustomer\(cust\);\s*setShowPaymentModal\(true\);\s*\}\}[\s\S]*?<\/button>/g,
+  (match) => `{isActionAllowed(currentEmployee, 'canRecordCustomerPayments') && ${match}}`
+);
+
+
+fs.writeFileSync('src/components/CustomersPage.tsx', code);
+console.log("Patched CustomersPage.tsx Buttons!");

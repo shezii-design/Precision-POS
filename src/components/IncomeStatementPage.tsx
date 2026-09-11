@@ -49,7 +49,7 @@ interface IncomeStatementPageProps {
   products: Product[];
   expenses: Expense[];
   onSaveExpense: (expense: Partial<Expense>) => void;
-  onDeleteExpense: (expenseId: string) => void;
+  onDeleteExpense?: (expenseId: string) => void;
   onGoToView: (view: AppWorkspaceView) => void;
   onViewInvoice?: (sale: Sale) => void;
   onViewPurchase?: (purchase: Purchase) => void;

@@ -38,9 +38,9 @@ interface DemandsPageProps {
   customers: Customer[];
   products: Product[];
   sales: Sale[];
-  onOpenAddDemand: () => void;
-  onEditDemand: (demand: Demand) => void;
-  onDeleteDemand: (demandId: string) => void;
+  onOpenAddDemand?: () => void;
+  onEditDemand?: (demand: Demand) => void;
+  onDeleteDemand?: (demandId: string) => void;
   onUpdateDemandStatus: (
     demandId: string, 
     status: DemandStatus, 
@@ -297,7 +297,7 @@ export const DemandsPage: React.FC<DemandsPageProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
-            <button
+            {onOpenAddDemand ? <button
               type="button"
               id="demands-log-new-btn"
               onClick={onOpenAddDemand}
@@ -305,7 +305,7 @@ export const DemandsPage: React.FC<DemandsPageProps> = ({
             >
               <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3] text-red-600 group-hover:rotate-90 transition-transform duration-200" />
               <span>Log New Demand</span>
-            </button>
+            </button> : null}
           </div>
         </div>
       </div>
@@ -571,16 +571,14 @@ export const DemandsPage: React.FC<DemandsPageProps> = ({
             >
               Reset Filters
             </button>
-          ) : (
-            <button
+          ) : ( onOpenAddDemand ? <button
               type="button"
               onClick={onOpenAddDemand}
               className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-md transition-colors cursor-pointer inline-flex items-center gap-2"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               Log First Demand
-            </button>
-          )}
+            </button> : null )}
         </div>
       ) : (
         <div className="space-y-3.5">
@@ -819,7 +817,7 @@ export const DemandsPage: React.FC<DemandsPageProps> = ({
 
                     {/* Edit & Print & Delete Bar */}
                     <div className="flex items-center gap-1.5 w-full">
-                      <button
+                      {onEditDemand ? <button
                         type="button"
                         onClick={() => onEditDemand(demand)}
                         className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer"
@@ -827,7 +825,7 @@ export const DemandsPage: React.FC<DemandsPageProps> = ({
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                         <span>Edit</span>
-                      </button>
+                      </button> : null}
 
                       <button
                         type="button"
@@ -876,7 +874,7 @@ export const DemandsPage: React.FC<DemandsPageProps> = ({
               >
                 Cancel
               </button>
-              <button
+              {onDeleteDemand ? <button
                 type="button"
                 onClick={() => {
                   onDeleteDemand(deleteConfirmId);
@@ -885,7 +883,7 @@ export const DemandsPage: React.FC<DemandsPageProps> = ({
                 className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl shadow-md transition-colors cursor-pointer"
               >
                 Delete
-              </button>
+              </button> : null}
             </div>
           </div>
         </div>

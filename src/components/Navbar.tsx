@@ -641,14 +641,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span>PKR Markup & Selling Formulas</span>
                       </button>
                     )}
-                    <button
+                    {canImportExport && <button
                       type="button"
                       onClick={() => { setShowToolsMenu(false); onOpenCategories(); }}
                       className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-red-50 text-slate-700 rounded-xl flex items-center gap-2.5 cursor-pointer"
                     >
                       <Layers className="w-4 h-4 text-red-600 shrink-0" />
                       <span>Categories & Cabins</span>
-                    </button>
+                    </button>}
                     {canImportExport && (
                       <>
                         <button
