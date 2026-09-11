@@ -218,7 +218,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             {product.image ? (
               <div
                 onClick={() => setShowImageZoom(true)}
-                className="w-16 h-16 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer relative group/img shadow-2xs hover:ring-2 hover:ring-red-400"
+                className="w-28 h-28 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer relative group/img shadow-2xs hover:ring-2 hover:ring-red-400"
               >
                 <img
                   src={product.image}
@@ -228,15 +228,15 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 />
               </div>
             ) : (
-              <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-slate-400">
-                <ImageIcon className="w-6 h-6 stroke-1" />
+              <div className="w-28 h-28 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-slate-400">
+                <ImageIcon className="w-8 h-8 stroke-1" />
                 <span className="text-[9px] font-bold text-slate-400 mt-0.5">NO IMG</span>
               </div>
             )}
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-black text-slate-900 truncate tracking-tight">
+            <h3 className="text-xl font-black text-slate-900 truncate tracking-tight">
               {product.name}
             </h3>
 
@@ -457,7 +457,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           )}
           {/* Editable Cost Price - Highlighted in Red */}
           <div className="flex items-center justify-between bg-red-950 text-white px-3 py-2 rounded-xl border border-red-900 shadow-2xs">
-            <span className="text-xs font-bold text-red-200 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-sm font-bold text-red-200 uppercase tracking-widest tracking-wider flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
               Cost Price:
             </span>
@@ -467,7 +467,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                   type="number"
                   value={costInput}
                   onChange={(e) => setCostInput(e.target.value)}
-                  className="w-20 px-2 py-0.5 bg-red-900 border border-red-500 rounded text-xs font-black text-red-100 text-right focus:outline-hidden focus:ring-1 focus:ring-red-400"
+                  className="w-20 px-2 py-0.5 bg-red-900 border border-red-500 rounded text-sm font-black text-red-100 text-right focus:outline-hidden focus:ring-1 focus:ring-red-400"
                   autoFocus
                 />
                 <button
@@ -484,7 +484,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 className="flex items-center gap-1.5 cursor-pointer group/cost hover:opacity-90"
                 title="Click to edit cost price (Red)"
               >
-                <span className="font-mono font-black text-sm tracking-tight text-red-400 group-hover/cost:text-red-300 drop-shadow-xs">
+                <span className="font-mono font-black text-base tracking-tight text-white group-hover/cost:text-red-300 drop-shadow-xs">
                   {formatPKR(product.costPrice)}
                 </span>
                 <Edit3 className="w-3 h-3 text-red-400/80 group-hover/cost:text-red-300" />
@@ -499,18 +499,18 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
               return (
                 <div
                   key={sp.tierId || idx}
-                  className={`p-2 rounded-xl border transition-colors ${theme.cardBg} ${theme.border}`}
+                  className={`p-3 rounded-xl border-2 transition-colors ${theme.cardBg} ${theme.border}`}
                 >
-                  <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
-                    <span className="truncate flex items-center gap-1">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-600 mb-0.5">
+                    <span className="truncate flex items-center gap-1.5">
                       <span className={`w-1.5 h-1.5 rounded-full ${theme.dotColor}`}></span>
                       <span>{sp.tierName}</span>
                     </span>
-                    <span className={`px-1.5 py-0.2 rounded text-[10px] ${theme.markupBadge}`}>
+                    <span className={`px-1.5 py-0.5 rounded text-[11px] ${theme.markupBadge}`}>
                       {sp.tierId === 'tier-general' || sp.tierName.toLowerCase().includes('general') ? 'Fix' : `${sp.markupPercent}%`}
                     </span>
                   </div>
-                  <div className={`font-mono font-black text-xs tracking-tight ${theme.textColor}`}>
+                  <div className={`font-mono font-black text-base sm:text-lg tracking-tight ${theme.textColor}`}>
                     {formatPKR(sp.price)}
                   </div>
                 </div>
