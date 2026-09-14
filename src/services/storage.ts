@@ -2577,21 +2577,44 @@ export function updatePurchaseAndUpdateAll(
   const updatedPurchases = currentPurchases.map(p => (p.id === editedPurchase.id ? { ...editedPurchase, updatedAt: new Date().toISOString() } : p));
 
   // 3. Update cash entry if amountPaid changed
-  const updatedLedger = currentLedger.map(e => {
-    if (e.referenceId === editedPurchase.id && e.type === 'cash_sent') {
-      return {
-        ...e,
+  let updatedLedger = [...currentLedger];
+  const cashEntryIndex = updatedLedger.findIndex(e => e.referenceId === editedPurchase.id && e.type === 'cash_sent');
+  
+  if (editedPurchase.amountPaid > 0) {
+    if (cashEntryIndex >= 0) {
+      updatedLedger[cashEntryIndex] = {
+        ...updatedLedger[cashEntryIndex],
         vendorId: editedPurchase.vendorId,
-        date: editedPurchase.date || e.date,
+        date: editedPurchase.date || updatedLedger[cashEntryIndex].date,
         billNumber: editedPurchase.billNumber,
         amount: editedPurchase.amountPaid,
         debit: editedPurchase.amountPaid,
         description: `Cash payment made against bill #${editedPurchase.billNumber || editedPurchase.id}`,
         updatedAt: new Date().toISOString(),
       };
+    } else {
+      updatedLedger.push({
+        id: `CSH-${Date.now()}`,
+        vendorId: editedPurchase.vendorId,
+        date: editedPurchase.date || new Date().toISOString(),
+        type: 'cash_sent',
+        entryCode: 'Cash',
+        billNumber: editedPurchase.billNumber,
+        referenceId: editedPurchase.id,
+        description: `Cash payment made against bill #${editedPurchase.billNumber || editedPurchase.id}`,
+        debit: editedPurchase.amountPaid,
+        credit: 0,
+        amount: editedPurchase.amountPaid,
+        paymentMethod: 'Cash',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
     }
-    return e;
-  });
+  } else {
+    if (cashEntryIndex >= 0) {
+      updatedLedger.splice(cashEntryIndex, 1);
+    }
+  }
 
   saveStoredProducts(updatedProducts);
   saveStoredPurchases(updatedPurchases);
