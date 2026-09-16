@@ -583,8 +583,11 @@ CREATE TABLE IF NOT EXISTS customer_returns (
   customer_name TEXT NOT NULL,
   date TEXT NOT NULL,
   items JSONB NOT NULL,
+  subtotal NUMERIC DEFAULT 0,
+  deduction_or_restock_fee NUMERIC DEFAULT 0,
   total_refund_amount NUMERIC DEFAULT 0,
   refund_method TEXT DEFAULT 'cash',
+  refund_status TEXT DEFAULT 'completed',
   reason TEXT,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -634,6 +637,8 @@ CREATE TABLE IF NOT EXISTS vendor_returns (
   vendor_name TEXT NOT NULL,
   date TEXT NOT NULL,
   items JSONB NOT NULL,
+  subtotal NUMERIC DEFAULT 0,
+  deduction_or_restock_fee NUMERIC DEFAULT 0,
   total_refund_amount NUMERIC DEFAULT 0,
   settlement_type TEXT DEFAULT 'cash',
   notes TEXT,
@@ -4306,6 +4311,33 @@ BEGIN
     END;
 END $$;
 
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN subtotal NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN deduction_or_restock_fee NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN refund_status TEXT DEFAULT 'completed';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
 -- Upgrading table: vendors
 CREATE TABLE IF NOT EXISTS vendors (id TEXT PRIMARY KEY);
 
@@ -4643,6 +4675,33 @@ DO $$
 BEGIN 
     BEGIN
         ALTER TABLE vendor_returns ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN total_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN settlement_method TEXT DEFAULT 'cash_refund';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN settlement_status TEXT DEFAULT 'completed';
     EXCEPTION
         WHEN duplicate_column THEN null;
     END;
