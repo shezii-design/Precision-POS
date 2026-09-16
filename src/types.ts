@@ -403,6 +403,7 @@ export interface SaleItem {
   productId: string;
   internalId: string; // e.g. "KFH-2501"
   productName: string; // e.g. "sfc-5706"
+  customName?: string; // Custom overwritten name for this sale only
   brandName?: string;
   typeName?: string;
   locationId?: string;
@@ -429,7 +430,7 @@ export interface SaleItem {
 
 export type PaymentType = 'cash' | 'credit' | 'partial';
 
-export type InvoiceNamingPreference = 'product_name' | 'internal_id' | 'both';
+export type InvoiceNamingPreference = 'product_name' | 'internal_id' | 'both' | 'custom';
 
 export interface Sale {
   id: string; // e.g. "INV-1001" or "SALE-2501"

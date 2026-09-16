@@ -4,9 +4,12 @@ import { InvoiceNamingPreference, Sale, SaleFilterOptions, SaleItem } from '../t
  * Formats line item title according to invoice naming preference
  */
 export function formatItemInvoiceName(
-  item: { productName: string; internalId: string },
+  item: { productName: string; internalId: string; customName?: string },
   preference: InvoiceNamingPreference = 'product_name'
 ): string {
+  if (preference === 'custom' && item.customName) {
+    return item.customName;
+  }
   if (preference === 'internal_id') {
     return item.internalId || item.productName;
   }

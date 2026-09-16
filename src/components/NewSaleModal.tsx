@@ -79,6 +79,7 @@ interface DraftSaleItem {
   productId: string;
   internalId: string;
   productName: string;
+  customName?: string;
   brandName: string;
   typeName: string;
   locationId: string;
@@ -809,6 +810,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
       productId: item.productId,
       internalId: item.internalId,
       productName: item.productName,
+      customName: item.customName,
       brandName: item.brandName,
       typeName: item.typeName,
       locationId: item.locationId,
@@ -2112,6 +2114,49 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                 }`}>
                   {namingChoice === 'both' && <CheckCircle2 className="w-4 h-4" />}
                 </div>
+              </label>
+
+              {/* Option 4: Custom Naming */}
+              <label 
+                onClick={() => setNamingChoice('custom')}
+                className={`p-3.5 rounded-2xl border-2 cursor-pointer flex flex-col transition-all ${
+                  namingChoice === 'custom' 
+                    ? 'border-red-600 bg-red-50/70 text-red-900 shadow-xs' 
+                    : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-black">Custom (For this sale only)</div>
+                    <div className="text-[11px] text-slate-500 font-mono">Manually override item names below</div>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                    namingChoice === 'custom' ? 'border-red-600 bg-red-600 text-white' : 'border-slate-300'
+                  }`}>
+                    {namingChoice === 'custom' && <CheckCircle2 className="w-4 h-4" />}
+                  </div>
+                </div>
+                
+                {namingChoice === 'custom' && (
+                  <div className="mt-3 pt-3 border-t border-red-200/60 space-y-2 max-h-40 overflow-y-auto pr-1">
+                    {saleItems.map((item, idx) => (
+                      <div key={item.id} className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold text-red-800/80">Item {idx + 1}: {item.productName}</span>
+                        <input
+                          type="text"
+                          value={item.customName || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSaleItems(prev => prev.map(i => i.id === item.id ? { ...i, customName: val } : i));
+                          }}
+                          placeholder={`Rename "${item.productName}"...`}
+                          className="w-full px-2 py-1.5 text-[11px] border border-red-200 rounded text-slate-800 font-bold focus:outline-none focus:border-red-400 bg-white"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </label>
             </div>
 
