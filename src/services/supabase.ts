@@ -482,21 +482,24 @@ CREATE TABLE IF NOT EXISTS inventory_categories (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   item_count NUMERIC DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS inventory_brands (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   item_count NUMERIC DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS inventory_locations (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   cabins JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 3. CUSTOMER CRM & LEDGERS
@@ -536,7 +539,8 @@ CREATE TABLE IF NOT EXISTS customer_ledger (
   payment_method TEXT,
   receipt_number TEXT,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 3B. POS SALES & CUSTOMER RETURNS
@@ -592,7 +596,8 @@ CREATE TABLE IF NOT EXISTS customer_returns (
   refund_status TEXT DEFAULT 'completed',
   reason TEXT,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 4. VENDORS & PURCHASING
@@ -628,7 +633,8 @@ CREATE TABLE IF NOT EXISTS vendor_ledger (
   payment_method TEXT,
   receipt_number TEXT,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS vendor_returns (
@@ -644,7 +650,8 @@ CREATE TABLE IF NOT EXISTS vendor_returns (
   total_refund_amount NUMERIC DEFAULT 0,
   settlement_type TEXT DEFAULT 'cash',
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS purchase_orders (
@@ -697,7 +704,8 @@ CREATE TABLE IF NOT EXISTS purchases (
   transporter_name TEXT,
   cargo_cost NUMERIC DEFAULT 0,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 5. QUOTATIONS & ESTIMATES (7-Day Validity)
@@ -795,7 +803,8 @@ CREATE TABLE IF NOT EXISTS employee_accounts (
   last_login_at TEXT,
   last_login_device_id TEXT,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS registered_devices (
@@ -839,7 +848,8 @@ CREATE TABLE IF NOT EXISTS stock_logs (
   reason TEXT,
   user_id TEXT,
   user_name TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 10. GLOBAL PRICING & ERP SETTINGS
@@ -1046,7 +1056,8 @@ CREATE TABLE IF NOT EXISTS customer_ledger (
   payment_method TEXT,
   receipt_number TEXT,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public full access customers" ON customers FOR ALL USING (true);
@@ -1067,7 +1078,8 @@ CREATE TABLE IF NOT EXISTS vendors (
   opening_balance NUMERIC DEFAULT 0,
   linked_product_ids JSONB,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS purchase_orders (
   id TEXT PRIMARY KEY,
@@ -1094,7 +1106,8 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
   is_stock_received BOOLEAN DEFAULT FALSE,
   is_billed BOOLEAN DEFAULT FALSE,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS purchases (
   id TEXT PRIMARY KEY,
@@ -1115,7 +1128,8 @@ CREATE TABLE IF NOT EXISTS purchases (
   transporter_name TEXT,
   cargo_cost NUMERIC DEFAULT 0,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public full access vendors" ON vendors FOR ALL USING (true);
@@ -1224,7 +1238,8 @@ CREATE TABLE IF NOT EXISTS employee_accounts (
   last_login_at TEXT,
   last_login_device_id TEXT,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS registered_devices (
@@ -1267,7 +1282,8 @@ CREATE TABLE IF NOT EXISTS stock_logs (
   reason TEXT,
   user_id TEXT,
   user_name TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
@@ -4651,6 +4667,16 @@ END $$;
 
 
 
+
+DO $ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $;
+
 -- Upgrading table: vendors
 CREATE TABLE IF NOT EXISTS vendors (id TEXT PRIMARY KEY);
 
@@ -5099,6 +5125,16 @@ BEGIN
 END $$;
 
 
+
+
+DO $ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $;
 
 -- Upgrading table: purchase_orders
 CREATE TABLE IF NOT EXISTS purchase_orders (id TEXT PRIMARY KEY);
@@ -5589,6 +5625,16 @@ BEGIN
 END $$;
 
 
+
+
+DO $ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $;
 
 -- Upgrading table: quotations
 CREATE TABLE IF NOT EXISTS quotations (id TEXT PRIMARY KEY);
