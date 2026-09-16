@@ -45,6 +45,7 @@ import {
   syncAllModulesToSupabase,
   fetchAllFromSupabase,
   SCHEMA_FULL_DATABASE,
+  SCHEMA_IDEMPOTENT_UPDATE,
   SCHEMA_PRODUCTS_ONLY,
   SCHEMA_CUSTOMERS_LEDGER,
   SCHEMA_VENDORS_PURCHASING,
@@ -162,7 +163,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
 
   // UI Navigation
   const [activeTab, setActiveTab] = useState<'connection' | 'sync' | 'schema' | 'guide' | 'columns'>('connection');
-  const [selectedSchemaTab, setSelectedSchemaTab] = useState<'full' | 'products' | 'customers' | 'vendors' | 'quotations' | 'expenses'>('full');
+  const [selectedSchemaTab, setSelectedSchemaTab] = useState<'full' | 'upgrade' | 'products' | 'customers' | 'vendors' | 'quotations' | 'expenses'>('full');
   const [copiedSql, setCopiedSql] = useState<boolean>(false);
 
   // On initial open, run a quiet connection test if credentials exist
@@ -185,6 +186,12 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     if (!targetUrl || !targetKey) {
       setIsTesting(false);
       setSyncFeedback({ success: false, message: 'Please provide both Supabase URL and Anon Key.' });
+      return;
+    }
+
+    if (targetUrl.includes('api.supabase.com') || targetUrl.includes('supabase.com')) {
+      setIsTesting(false);
+      setSyncFeedback({ success: false, message: 'Invalid URL. Project URLs must end in .supabase.co (not .com). You can find this in your Project Settings -> API.' });
       return;
     }
 
@@ -451,6 +458,8 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
         return SCHEMA_QUOTATIONS_DEMANDS;
       case 'expenses':
         return SCHEMA_EXPENSES_STAFF;
+      case 'upgrade':
+        return SCHEMA_IDEMPOTENT_UPDATE;
       case 'full':
       default:
         return SCHEMA_FULL_DATABASE;
@@ -1219,6 +1228,15 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     }`}
                   >
                     All 15 Tables (Master)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSchemaTab('upgrade')}
+                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                      selectedSchemaTab === 'upgrade' ? 'bg-white text-indigo-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Idempotent Upgrade Script (Safe)
                   </button>
                   <button
                     type="button"

@@ -38,10 +38,31 @@ async function exactSyncRows(
       }
     }
     
-    if (rows.length > 0) {
-      for (let i = 0; i < rows.length; i += 100) {
-        const { error: upsertErr } = await client.from(tableName).upsert(rows.slice(i, i + 100), { onConflict: idCol });
-        if (upsertErr) throw upsertErr;
+    let maxRetries = 20;
+    let retry = true;
+    while (retry && maxRetries > 0) {
+      retry = false;
+      try {
+        if (rows.length > 0) {
+          for (let i = 0; i < rows.length; i += 100) {
+            const { error: upsertErr } = await client.from(tableName).upsert(rows.slice(i, i + 100), { onConflict: idCol });
+            if (upsertErr) throw upsertErr;
+          }
+        }
+      } catch (upsertErr: any) {
+        const msg = upsertErr.message || String(upsertErr);
+        const match = msg.match(/Could not find the '([^']+)' column/);
+        if (match && match[1]) {
+          const missingCol = match[1];
+          // Strip this column from all rows to allow the rest of the sync to succeed
+          rows.forEach(r => {
+            delete r[missingCol];
+          });
+          retry = true;
+          maxRetries--;
+        } else {
+          throw upsertErr;
+        }
       }
     }
     
@@ -558,14 +579,19 @@ CREATE TABLE IF NOT EXISTS sales (
   total_cost NUMERIC DEFAULT 0,
   total_profit NUMERIC DEFAULT 0,
   amount_received NUMERIC DEFAULT 0,
-  change_returned NUMERIC DEFAULT 0,
+  change_given NUMERIC DEFAULT 0,
+  change_given NUMERIC DEFAULT 0,
   balance_due NUMERIC DEFAULT 0,
   payment_type TEXT DEFAULT 'cash',
-  status TEXT DEFAULT 'completed',
-  return_status TEXT DEFAULT 'none',
-  total_refund_amount NUMERIC DEFAULT 0,
-  net_sale_amount NUMERIC DEFAULT 0,
-  return_summaries JSONB,
+  payment_status TEXT DEFAULT 'paid',
+  has_returns BOOLEAN DEFAULT FALSE,
+  total_returned_amount NUMERIC DEFAULT 0,
+  net_amount NUMERIC DEFAULT 0,
+  net_change_given NUMERIC DEFAULT 0,
+  balance_due NUMERIC DEFAULT 0,
+  returned_items_count NUMERIC DEFAULT 0,
+  returns_list JSONB,
+  invoice_naming_preference TEXT,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -680,6 +706,7 @@ CREATE TABLE IF NOT EXISTS purchases (
   discount_amount NUMERIC DEFAULT 0,
   total_amount NUMERIC DEFAULT 0,
   amount_paid NUMERIC DEFAULT 0,
+  change_given NUMERIC DEFAULT 0,
   balance_due NUMERIC DEFAULT 0,
   payment_status TEXT DEFAULT 'unpaid',
   bilty_number TEXT,
@@ -804,6 +831,22 @@ CREATE TABLE IF NOT EXISTS stock_logs (
   product_id TEXT NOT NULL,
   product_name TEXT NOT NULL,
   type TEXT NOT NULL,
+  internal_id TEXT,
+  brand_name TEXT,
+  type_name TEXT,
+  unit TEXT,
+  change NUMERIC,
+  previous_stock NUMERIC,
+  new_stock NUMERIC,
+  movement_type TEXT,
+  reference_number TEXT,
+  entity_name TEXT,
+  unit_rate NUMERIC,
+  total_movement_value NUMERIC,
+  location_name TEXT,
+  cabin_number TEXT,
+  timestamp TEXT,
+  notes TEXT,
   quantity_change NUMERIC NOT NULL,
   new_quantity NUMERIC NOT NULL,
   reference_id TEXT,
@@ -1076,6 +1119,7 @@ CREATE TABLE IF NOT EXISTS purchases (
   discount_amount NUMERIC DEFAULT 0,
   total_amount NUMERIC DEFAULT 0,
   amount_paid NUMERIC DEFAULT 0,
+  change_given NUMERIC DEFAULT 0,
   balance_due NUMERIC DEFAULT 0,
   payment_status TEXT DEFAULT 'unpaid',
   bilty_number TEXT,
@@ -1210,6 +1254,22 @@ CREATE TABLE IF NOT EXISTS stock_logs (
   product_id TEXT NOT NULL,
   product_name TEXT NOT NULL,
   type TEXT NOT NULL,
+  internal_id TEXT,
+  brand_name TEXT,
+  type_name TEXT,
+  unit TEXT,
+  change NUMERIC,
+  previous_stock NUMERIC,
+  new_stock NUMERIC,
+  movement_type TEXT,
+  reference_number TEXT,
+  entity_name TEXT,
+  unit_rate NUMERIC,
+  total_movement_value NUMERIC,
+  location_name TEXT,
+  cabin_number TEXT,
+  timestamp TEXT,
+  notes TEXT,
   quantity_change NUMERIC NOT NULL,
   new_quantity NUMERIC NOT NULL,
   reference_id TEXT,
@@ -2950,3 +3010,2960 @@ export async function syncAllModulesToSupabase(
     errors: errors.length > 0 ? errors : undefined,
   };
 }
+
+export const SCHEMA_IDEMPOTENT_UPDATE = `-- IDEMPOTENT SUPABASE SCHEMA UPDATE SCRIPT
+-- This script safely adds missing columns to existing tables without throwing errors.
+
+-- Sales updates
+DO $$ BEGIN
+    BEGIN ALTER TABLE sales ADD COLUMN change_given NUMERIC; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE sales ADD COLUMN payment_status TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE sales ADD COLUMN has_returns BOOLEAN; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE sales ADD COLUMN total_returned_amount NUMERIC; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE sales ADD COLUMN net_amount NUMERIC; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE sales ADD COLUMN net_balance_due NUMERIC; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE sales ADD COLUMN returned_items_count NUMERIC; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE sales ADD COLUMN returns_list JSONB; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE sales ADD COLUMN invoice_naming_preference TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+END $$;
+
+NOTIFY pgrst, 'reload schema';
+
+-- Stock Logs updates
+DO $$ 
+BEGIN
+    ALTER TABLE stock_logs ALTER COLUMN type DROP NOT NULL;
+EXCEPTION WHEN OTHERS THEN null; END $$;
+
+DO $$ 
+BEGIN
+    ALTER TABLE stock_logs ALTER COLUMN quantity_change DROP NOT NULL;
+EXCEPTION WHEN OTHERS THEN null; END $$;
+
+DO $$ 
+BEGIN
+    ALTER TABLE stock_logs ALTER COLUMN new_quantity DROP NOT NULL;
+EXCEPTION WHEN OTHERS THEN null; END $$;
+DO $$ BEGIN
+    BEGIN ALTER TABLE stock_logs ADD COLUMN internal_id TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN brand_name TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN type_name TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN unit TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN change NUMERIC; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN previous_stock NUMERIC; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN new_stock NUMERIC; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN movement_type TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN reference_number TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN entity_name TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN unit_rate NUMERIC; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN total_movement_value NUMERIC; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN location_name TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN cabin_number TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN timestamp TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+    BEGIN ALTER TABLE stock_logs ADD COLUMN notes TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
+END $$;
+
+-- Upgrading table: inventory_products
+CREATE TABLE IF NOT EXISTS inventory_products (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN internal_id TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN image TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN type_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN type_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN brand_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN brand_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN location_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN location_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN cabin_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN stock_quantity NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN min_stock_alert NUMERIC DEFAULT 5;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN unit TEXT DEFAULT 'Pcs';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN cost_price NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN last_purchase_price NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN last_purchase_date TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN wholesale_price NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN retail_price NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier1_name TEXT DEFAULT 'Wholesale';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier1_price NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier1_markup NUMERIC DEFAULT 10;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier2_name TEXT DEFAULT 'Retail';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier2_price NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier2_markup NUMERIC DEFAULT 25;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier3_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier3_price NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier3_markup NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier4_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier4_price NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier4_markup NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier5_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier5_price NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN tier5_markup NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN height_inch NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN height_mm NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN outer_dia_inch NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN outer_dia_mm NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN inner_dia_inch NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN inner_dia_mm NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN dimension_input_unit TEXT DEFAULT 'inch';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN thread TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN gasket_od_inch NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN gasket_od_mm NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN gasket_id_inch NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN gasket_id_mm NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN label_height TEXT DEFAULT 'H';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN label_outer_dia TEXT DEFAULT 'OD';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN label_inner_dia TEXT DEFAULT 'ID';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN machine_names TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN cross_references TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN vendor_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN vendor_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN cost_batches JSONB;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_products ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: inventory_categories
+CREATE TABLE IF NOT EXISTS inventory_categories (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_categories ADD COLUMN name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_categories ADD COLUMN item_count NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_categories ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: inventory_brands
+CREATE TABLE IF NOT EXISTS inventory_brands (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_brands ADD COLUMN name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_brands ADD COLUMN item_count NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_brands ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: inventory_locations
+CREATE TABLE IF NOT EXISTS inventory_locations (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_locations ADD COLUMN name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_locations ADD COLUMN cabins JSONB;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE inventory_locations ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: customers
+CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN type TEXT DEFAULT 'customer';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN contact_person TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN phone TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN secondary_phone TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN email TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN address TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN city TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN ntn TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN strn TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN opening_balance NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN total_purchases NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN machines JSONB;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customers ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: customer_ledger
+CREATE TABLE IF NOT EXISTS customer_ledger (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN customer_id TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN customer_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN date TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN type TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN entry_code TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN bill_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN reference_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN description TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN debit NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN credit NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN payment_method TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN receipt_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_ledger ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: sales
+CREATE TABLE IF NOT EXISTS sales (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN date TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN customer_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN customer_name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN customer_phone TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN vendor_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN vendor_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN is_vendor_sale BOOLEAN DEFAULT FALSE;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN items JSONB NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN subtotal NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN discount_type TEXT DEFAULT 'amount';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN discount_value NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN discount_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN total_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN total_cost NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN total_profit NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN amount_received NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN change_given NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN balance_due NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN payment_type TEXT DEFAULT 'cash';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN payment_status TEXT DEFAULT 'paid';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN has_returns BOOLEAN DEFAULT FALSE;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN total_returned_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN net_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN net_balance_due NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN returned_items_count NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN returns_list JSONB;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN invoice_naming_preference TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE sales ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: customer_returns
+CREATE TABLE IF NOT EXISTS customer_returns (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN return_number TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN credit_note_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN sale_id TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN customer_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN customer_name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN date TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN items JSONB NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN total_refund_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN refund_method TEXT DEFAULT 'cash';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN reason TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: vendors
+CREATE TABLE IF NOT EXISTS vendors (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN business_name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN contact_person TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN phone TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN secondary_phone TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN email TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN address TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN city TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN opening_balance NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN linked_product_ids JSONB;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendors ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: vendor_ledger
+CREATE TABLE IF NOT EXISTS vendor_ledger (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN vendor_id TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN vendor_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN date TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN type TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN entry_code TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN bill_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN reference_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN description TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN debit NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN credit NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN payment_method TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN receipt_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_ledger ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: vendor_returns
+CREATE TABLE IF NOT EXISTS vendor_returns (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN return_number TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN purchase_id TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN vendor_id TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN vendor_name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN date TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN items JSONB NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN total_refund_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN settlement_type TEXT DEFAULT 'cash';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE vendor_returns ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: purchase_orders
+CREATE TABLE IF NOT EXISTS purchase_orders (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN po_number TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN vendor_id TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN vendor_name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN vendor_phone TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN vendor_address TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN order_date TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN expected_delivery_date TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN receiving_date TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN costs_finalized_date TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN status TEXT DEFAULT 'draft';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN items JSONB NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN total_ordered_qty NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN total_received_qty NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN cargo_cost NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN cargo_cost_per_unit NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN subtotal_base_cost NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN total_landed_cost NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN bill_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN bilty_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN transporter_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN amount_paid NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN payment_status TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN is_stock_received BOOLEAN DEFAULT FALSE;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN is_billed BOOLEAN DEFAULT FALSE;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchase_orders ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: purchases
+CREATE TABLE IF NOT EXISTS purchases (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN bill_number TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN po_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN vendor_id TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN vendor_name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN date TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN items JSONB NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN subtotal NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN discount_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN total_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN amount_paid NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN balance_due NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN payment_status TEXT DEFAULT 'unpaid';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN bilty_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN transporter_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN cargo_cost NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE purchases ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: quotations
+CREATE TABLE IF NOT EXISTS quotations (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN quotation_number TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN customer_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN customer_type TEXT DEFAULT 'customer';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN customer_name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN contact_person TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN customer_phone TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN customer_email TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN customer_address TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN customer_city TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN customer_ntn TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN customer_strn TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN date TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN valid_until TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN validity_days NUMERIC DEFAULT 7;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN items JSONB NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN subtotal NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN discount_type TEXT DEFAULT 'amount';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN discount_value NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN discount_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN tax_percent NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN tax_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN total_amount NUMERIC DEFAULT 0;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN status TEXT DEFAULT 'active';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN terms_and_conditions TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN converted_sale_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN converted_at TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE quotations ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: demands
+CREATE TABLE IF NOT EXISTS demands (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN demand_number TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN customer_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN customer_name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN customer_phone TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN location TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN item_name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN product_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN item_details TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN quantity NUMERIC DEFAULT 1;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN unit TEXT DEFAULT 'Pcs';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN target_price NUMERIC;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN required_date TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN status TEXT DEFAULT 'pending';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN unfulfillable_reason TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN cancellation_reason TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN fulfilled_sale_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN fulfilled_at TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE demands ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: expenses
+CREATE TABLE IF NOT EXISTS expenses (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN expense_number TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN title TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN category TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN amount NUMERIC NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN date TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN payment_method TEXT DEFAULT 'Cash';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN paid_to TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN receipt_number TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE expenses ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: employee_accounts
+CREATE TABLE IF NOT EXISTS employee_accounts (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN email TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN phone TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN pin TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN password TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN role TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN designation TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN status TEXT DEFAULT 'active';
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN permissions JSONB;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN restrict_to_devices BOOLEAN DEFAULT FALSE;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN allowed_device_ids JSONB;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN avatar_color TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN last_login_at TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN last_login_device_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: registered_devices
+CREATE TABLE IF NOT EXISTS registered_devices (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE registered_devices ADD COLUMN name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE registered_devices ADD COLUMN os TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE registered_devices ADD COLUMN device_type TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE registered_devices ADD COLUMN browser TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE registered_devices ADD COLUMN user_agent TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE registered_devices ADD COLUMN registered_at TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE registered_devices ADD COLUMN last_seen_at TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE registered_devices ADD COLUMN is_trusted BOOLEAN DEFAULT TRUE;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE registered_devices ADD COLUMN notes TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: stock_logs
+CREATE TABLE IF NOT EXISTS stock_logs (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE stock_logs ADD COLUMN product_id TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE stock_logs ADD COLUMN product_name TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE stock_logs ADD COLUMN type TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE stock_logs ADD COLUMN quantity_change NUMERIC NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE stock_logs ADD COLUMN new_quantity NUMERIC NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE stock_logs ADD COLUMN reference_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE stock_logs ADD COLUMN reason TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE stock_logs ADD COLUMN user_id TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE stock_logs ADD COLUMN user_name TEXT;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE stock_logs ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+-- Upgrading table: pricing_settings
+CREATE TABLE IF NOT EXISTS pricing_settings (id TEXT PRIMARY KEY);
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE pricing_settings ADD COLUMN settings JSONB NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE pricing_settings ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;`;
+
