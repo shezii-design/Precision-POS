@@ -3019,7 +3019,9 @@ DO $$ BEGIN
     BEGIN ALTER TABLE sales ADD COLUMN invoice_naming_preference TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
 END $$;
 
-NOTIFY pgrst, 'reload schema';
+
+
+
 
 -- Stock Logs updates
 DO $$ 
@@ -3027,15 +3029,21 @@ BEGIN
     ALTER TABLE stock_logs ALTER COLUMN type DROP NOT NULL;
 EXCEPTION WHEN OTHERS THEN null; END $$;
 
+
+
 DO $$ 
 BEGIN
     ALTER TABLE stock_logs ALTER COLUMN quantity_change DROP NOT NULL;
 EXCEPTION WHEN OTHERS THEN null; END $$;
 
+
+
 DO $$ 
 BEGIN
     ALTER TABLE stock_logs ALTER COLUMN new_quantity DROP NOT NULL;
 EXCEPTION WHEN OTHERS THEN null; END $$;
+
+
 DO $$ BEGIN
     BEGIN ALTER TABLE stock_logs ADD COLUMN internal_id TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
     BEGIN ALTER TABLE stock_logs ADD COLUMN brand_name TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
@@ -3055,6 +3063,8 @@ DO $$ BEGIN
     BEGIN ALTER TABLE stock_logs ADD COLUMN notes TEXT; EXCEPTION WHEN duplicate_column THEN null; END;
 END $$;
 
+
+
 -- Upgrading table: inventory_products
 CREATE TABLE IF NOT EXISTS inventory_products (id TEXT PRIMARY KEY);
 
@@ -3067,6 +3077,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3075,6 +3087,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3085,6 +3099,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3093,6 +3109,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3103,6 +3121,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3111,6 +3131,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3121,6 +3143,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3129,6 +3153,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3139,6 +3165,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3147,6 +3175,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3157,6 +3187,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3165,6 +3197,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3175,6 +3209,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3183,6 +3219,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3193,6 +3231,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3201,6 +3241,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3211,6 +3253,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3219,6 +3263,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3229,6 +3275,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3237,6 +3285,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3247,6 +3297,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3255,6 +3307,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3265,6 +3319,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3273,6 +3329,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3283,6 +3341,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3291,6 +3351,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3301,6 +3363,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3309,6 +3373,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3319,6 +3385,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3327,6 +3395,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3337,6 +3407,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3345,6 +3417,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3355,6 +3429,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3363,6 +3439,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3373,6 +3451,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3381,6 +3461,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3391,6 +3473,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3399,6 +3483,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3409,6 +3495,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3417,6 +3505,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3427,6 +3517,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3435,6 +3527,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3445,6 +3539,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3453,6 +3549,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3463,6 +3561,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3471,6 +3571,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3481,6 +3583,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3489,6 +3593,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3499,6 +3605,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3507,6 +3615,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3517,6 +3627,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3525,6 +3637,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3535,6 +3649,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3543,6 +3659,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3553,6 +3671,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3561,6 +3681,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: inventory_categories
 CREATE TABLE IF NOT EXISTS inventory_categories (id TEXT PRIMARY KEY);
@@ -3574,6 +3696,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3583,6 +3707,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3591,6 +3717,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: inventory_brands
 CREATE TABLE IF NOT EXISTS inventory_brands (id TEXT PRIMARY KEY);
@@ -3604,6 +3732,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3613,6 +3743,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3621,6 +3753,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: inventory_locations
 CREATE TABLE IF NOT EXISTS inventory_locations (id TEXT PRIMARY KEY);
@@ -3634,6 +3768,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3643,6 +3779,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3651,6 +3789,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: customers
 CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY);
@@ -3664,6 +3804,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3672,6 +3814,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3682,6 +3826,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3690,6 +3836,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3700,6 +3848,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3708,6 +3858,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3718,6 +3870,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3726,6 +3880,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3736,6 +3892,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3744,6 +3902,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3754,6 +3914,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3762,6 +3924,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3772,6 +3936,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3780,6 +3946,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3790,6 +3958,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3798,6 +3968,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: customer_ledger
 CREATE TABLE IF NOT EXISTS customer_ledger (id TEXT PRIMARY KEY);
@@ -3811,6 +3983,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3819,6 +3993,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3829,6 +4005,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3837,6 +4015,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3847,6 +4027,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3855,6 +4037,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3865,6 +4049,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3873,6 +4059,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3883,6 +4071,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3891,6 +4081,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3901,6 +4093,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3909,6 +4103,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3919,6 +4115,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3928,6 +4126,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3936,6 +4136,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: sales
 CREATE TABLE IF NOT EXISTS sales (id TEXT PRIMARY KEY);
@@ -3949,6 +4151,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3957,6 +4161,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3967,6 +4173,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3975,6 +4183,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -3985,6 +4195,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -3993,6 +4205,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4003,6 +4217,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4011,6 +4227,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4021,6 +4239,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4029,6 +4249,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4039,6 +4261,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4047,6 +4271,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4057,6 +4283,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4065,6 +4293,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4075,6 +4305,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4083,6 +4315,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4093,6 +4327,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4101,6 +4337,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4111,6 +4349,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4119,6 +4359,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4129,6 +4371,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4137,6 +4381,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4147,6 +4393,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4155,6 +4403,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4165,6 +4415,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4173,6 +4425,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4183,6 +4437,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4191,6 +4447,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4201,6 +4459,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4209,6 +4469,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: customer_returns
 CREATE TABLE IF NOT EXISTS customer_returns (id TEXT PRIMARY KEY);
@@ -4222,6 +4484,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4230,6 +4494,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4240,6 +4506,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4248,6 +4516,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4258,6 +4528,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4266,6 +4538,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4276,6 +4550,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4284,6 +4560,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4294,6 +4572,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4302,6 +4582,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4312,6 +4594,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4320,6 +4604,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4330,6 +4616,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4338,6 +4626,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4348,6 +4638,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4356,6 +4648,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: vendors
 CREATE TABLE IF NOT EXISTS vendors (id TEXT PRIMARY KEY);
@@ -4369,6 +4663,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4377,6 +4673,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4387,6 +4685,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4395,6 +4695,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4405,6 +4707,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4413,6 +4717,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4423,6 +4729,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4431,6 +4739,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4441,6 +4751,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4449,6 +4761,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4459,6 +4773,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4467,6 +4783,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: vendor_ledger
 CREATE TABLE IF NOT EXISTS vendor_ledger (id TEXT PRIMARY KEY);
@@ -4480,6 +4798,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4488,6 +4808,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4498,6 +4820,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4506,6 +4830,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4516,6 +4842,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4524,6 +4852,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4534,6 +4864,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4542,6 +4874,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4552,6 +4886,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4560,6 +4896,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4570,6 +4908,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4578,6 +4918,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4588,6 +4930,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4597,6 +4941,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4605,6 +4951,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: vendor_returns
 CREATE TABLE IF NOT EXISTS vendor_returns (id TEXT PRIMARY KEY);
@@ -4618,6 +4966,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4626,6 +4976,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4636,6 +4988,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4644,6 +4998,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4654,6 +5010,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4662,6 +5020,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4672,6 +5032,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4680,6 +5042,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4690,6 +5054,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4698,6 +5064,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4708,6 +5076,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4717,6 +5087,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4725,6 +5097,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: purchase_orders
 CREATE TABLE IF NOT EXISTS purchase_orders (id TEXT PRIMARY KEY);
@@ -4738,6 +5112,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4746,6 +5122,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4756,6 +5134,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4764,6 +5144,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4774,6 +5156,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4782,6 +5166,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4792,6 +5178,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4800,6 +5188,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4810,6 +5200,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4818,6 +5210,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4828,6 +5222,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4836,6 +5232,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4846,6 +5244,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4854,6 +5254,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4864,6 +5266,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4872,6 +5276,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4882,6 +5288,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4890,6 +5298,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4900,6 +5310,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4908,6 +5320,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4918,6 +5332,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4926,6 +5342,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4936,6 +5354,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4944,6 +5364,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -4954,6 +5376,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4963,6 +5387,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4971,6 +5397,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: purchases
 CREATE TABLE IF NOT EXISTS purchases (id TEXT PRIMARY KEY);
@@ -4984,6 +5412,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -4992,6 +5422,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5002,6 +5434,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5010,6 +5444,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5020,6 +5456,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5028,6 +5466,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5038,6 +5478,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5046,6 +5488,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5056,6 +5500,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5064,6 +5510,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5074,6 +5522,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5082,6 +5532,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5092,6 +5544,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5100,6 +5554,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5110,6 +5566,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5119,6 +5577,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5127,6 +5587,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: quotations
 CREATE TABLE IF NOT EXISTS quotations (id TEXT PRIMARY KEY);
@@ -5140,6 +5602,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5148,6 +5612,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5158,6 +5624,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5166,6 +5634,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5176,6 +5646,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5184,6 +5656,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5194,6 +5668,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5202,6 +5678,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5212,6 +5690,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5220,6 +5700,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5230,6 +5712,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5238,6 +5722,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5248,6 +5734,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5256,6 +5744,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5266,6 +5756,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5274,6 +5766,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5284,6 +5778,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5292,6 +5788,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5302,6 +5800,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5310,6 +5810,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5320,6 +5822,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5328,6 +5832,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5338,6 +5844,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5346,6 +5854,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5356,6 +5866,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5364,6 +5876,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5374,6 +5888,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5383,6 +5899,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5391,6 +5909,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: demands
 CREATE TABLE IF NOT EXISTS demands (id TEXT PRIMARY KEY);
@@ -5404,6 +5924,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5412,6 +5934,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5422,6 +5946,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5430,6 +5956,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5440,6 +5968,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5448,6 +5978,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5458,6 +5990,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5466,6 +6000,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5476,6 +6012,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5484,6 +6022,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5494,6 +6034,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5502,6 +6044,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5512,6 +6056,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5520,6 +6066,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5530,6 +6078,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5538,6 +6088,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5548,6 +6100,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5556,6 +6110,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5566,6 +6122,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5574,6 +6132,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: expenses
 CREATE TABLE IF NOT EXISTS expenses (id TEXT PRIMARY KEY);
@@ -5587,6 +6147,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5595,6 +6157,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5605,6 +6169,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5613,6 +6179,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5623,6 +6191,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5631,6 +6201,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5641,6 +6213,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5649,6 +6223,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5659,6 +6235,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5668,6 +6246,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5676,6 +6256,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: employee_accounts
 CREATE TABLE IF NOT EXISTS employee_accounts (id TEXT PRIMARY KEY);
@@ -5689,6 +6271,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5697,6 +6281,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5707,6 +6293,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5715,6 +6303,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5725,6 +6315,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5733,6 +6325,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5743,6 +6337,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5751,6 +6347,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5761,6 +6359,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5769,6 +6369,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5779,6 +6381,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5787,6 +6391,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5797,6 +6403,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5805,6 +6413,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5815,6 +6425,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5823,6 +6435,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: registered_devices
 CREATE TABLE IF NOT EXISTS registered_devices (id TEXT PRIMARY KEY);
@@ -5836,6 +6450,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5844,6 +6460,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5854,6 +6472,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5862,6 +6482,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5872,6 +6494,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5880,6 +6504,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5890,6 +6516,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5899,6 +6527,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5907,6 +6537,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: stock_logs
 CREATE TABLE IF NOT EXISTS stock_logs (id TEXT PRIMARY KEY);
@@ -5920,6 +6552,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5928,6 +6562,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5938,6 +6574,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5946,6 +6584,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5956,6 +6596,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5964,6 +6606,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5974,6 +6618,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -5982,6 +6628,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 DO $$ 
 BEGIN 
@@ -5992,6 +6640,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -6000,6 +6650,8 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+
 
 -- Upgrading table: pricing_settings
 CREATE TABLE IF NOT EXISTS pricing_settings (id TEXT PRIMARY KEY);
@@ -6013,6 +6665,8 @@ BEGIN
     END;
 END $$;
 
+
+
 DO $$ 
 BEGIN 
     BEGIN
@@ -6020,5 +6674,8 @@ BEGIN
     EXCEPTION
         WHEN duplicate_column THEN null;
     END;
-END $$;`;
+END $;
+
+NOTIFY pgrst, 'reload schema';
+`;
 
