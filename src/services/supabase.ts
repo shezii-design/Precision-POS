@@ -38,31 +38,10 @@ async function exactSyncRows(
       }
     }
     
-    let maxRetries = 20;
-    let retry = true;
-    while (retry && maxRetries > 0) {
-      retry = false;
-      try {
-        if (rows.length > 0) {
-          for (let i = 0; i < rows.length; i += 100) {
-            const { error: upsertErr } = await client.from(tableName).upsert(rows.slice(i, i + 100), { onConflict: idCol });
-            if (upsertErr) throw upsertErr;
-          }
-        }
-      } catch (upsertErr: any) {
-        const msg = upsertErr.message || String(upsertErr);
-        const match = msg.match(/Could not find the '([^']+)' column/);
-        if (match && match[1]) {
-          const missingCol = match[1];
-          // Strip this column from all rows to allow the rest of the sync to succeed
-          rows.forEach(r => {
-            delete r[missingCol];
-          });
-          retry = true;
-          maxRetries--;
-        } else {
-          throw upsertErr;
-        }
+    if (rows.length > 0) {
+      for (let i = 0; i < rows.length; i += 100) {
+        const { error: upsertErr } = await client.from(tableName).upsert(rows.slice(i, i + 100), { onConflict: idCol });
+        if (upsertErr) throw upsertErr;
       }
     }
     
@@ -580,15 +559,13 @@ CREATE TABLE IF NOT EXISTS sales (
   total_profit NUMERIC DEFAULT 0,
   amount_received NUMERIC DEFAULT 0,
   change_given NUMERIC DEFAULT 0,
-  change_given NUMERIC DEFAULT 0,
   balance_due NUMERIC DEFAULT 0,
   payment_type TEXT DEFAULT 'cash',
   payment_status TEXT DEFAULT 'paid',
   has_returns BOOLEAN DEFAULT FALSE,
   total_returned_amount NUMERIC DEFAULT 0,
   net_amount NUMERIC DEFAULT 0,
-  net_change_given NUMERIC DEFAULT 0,
-  balance_due NUMERIC DEFAULT 0,
+  net_balance_due NUMERIC DEFAULT 0,
   returned_items_count NUMERIC DEFAULT 0,
   returns_list JSONB,
   invoice_naming_preference TEXT,
