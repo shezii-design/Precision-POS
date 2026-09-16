@@ -430,6 +430,7 @@ CREATE TABLE IF NOT EXISTS inventory_products (
   cost_price NUMERIC DEFAULT 0,
   last_purchase_price NUMERIC,
   last_purchase_date TEXT,
+  cost_batches JSONB,
 
   wholesale_price NUMERIC DEFAULT 0,
   retail_price NUMERIC DEFAULT 0,
@@ -471,7 +472,6 @@ CREATE TABLE IF NOT EXISTS inventory_products (
   vendor_id TEXT,
   vendor_name TEXT,
   notes TEXT,
-  cost_batches JSONB,
 
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -546,6 +546,7 @@ CREATE TABLE IF NOT EXISTS sales (
   customer_id TEXT,
   customer_name TEXT NOT NULL,
   customer_phone TEXT,
+  customer_phone TEXT,
   vendor_id TEXT,
   vendor_name TEXT,
   is_vendor_sale BOOLEAN DEFAULT FALSE,
@@ -581,6 +582,7 @@ CREATE TABLE IF NOT EXISTS customer_returns (
   sale_id TEXT NOT NULL,
   customer_id TEXT,
   customer_name TEXT NOT NULL,
+  customer_phone TEXT,
   date TEXT NOT NULL,
   items JSONB NOT NULL,
   subtotal NUMERIC DEFAULT 0,
@@ -705,6 +707,7 @@ CREATE TABLE IF NOT EXISTS quotations (
   customer_id TEXT,
   customer_type TEXT DEFAULT 'customer',
   customer_name TEXT NOT NULL,
+  customer_phone TEXT,
   contact_person TEXT,
   customer_phone TEXT,
   customer_email TEXT,
@@ -738,6 +741,7 @@ CREATE TABLE IF NOT EXISTS demands (
   demand_number TEXT NOT NULL,
   customer_id TEXT,
   customer_name TEXT NOT NULL,
+  customer_phone TEXT,
   customer_phone TEXT,
   location TEXT,
   item_name TEXT NOT NULL,
@@ -958,6 +962,9 @@ CREATE TABLE IF NOT EXISTS inventory_products (
   min_stock_alert NUMERIC DEFAULT 5,
   unit TEXT DEFAULT 'Pcs',
   cost_price NUMERIC DEFAULT 0,
+  last_purchase_price NUMERIC,
+  last_purchase_date TEXT,
+  cost_batches JSONB,
   wholesale_price NUMERIC DEFAULT 0,
   retail_price NUMERIC DEFAULT 0,
   tier1_name TEXT DEFAULT 'Wholesale',
@@ -1125,6 +1132,7 @@ CREATE TABLE IF NOT EXISTS quotations (
   customer_id TEXT,
   customer_type TEXT DEFAULT 'customer',
   customer_name TEXT NOT NULL,
+  customer_phone TEXT,
   contact_person TEXT,
   customer_phone TEXT,
   customer_email TEXT,
@@ -1157,6 +1165,7 @@ CREATE TABLE IF NOT EXISTS demands (
   demand_number TEXT NOT NULL,
   customer_id TEXT,
   customer_name TEXT NOT NULL,
+  customer_phone TEXT,
   customer_phone TEXT,
   location TEXT,
   item_name TEXT NOT NULL,
@@ -2032,6 +2041,7 @@ export async function syncCustomerReturnsToSupabase(
       sale_id: r.saleId,
       customer_id: r.customerId || null,
       customer_name: r.customerName,
+      customer_phone: r.customerPhone || null,
       date: r.date,
       items: r.items || [],
       subtotal: Number(r.subtotal) || 0,
@@ -4252,6 +4262,15 @@ DO $$
 BEGIN 
     BEGIN
         ALTER TABLE customer_returns ADD COLUMN date TEXT NOT NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+END $$;
+
+DO $$ 
+BEGIN 
+    BEGIN
+        ALTER TABLE customer_returns ADD COLUMN customer_phone TEXT;
     EXCEPTION
         WHEN duplicate_column THEN null;
     END;
