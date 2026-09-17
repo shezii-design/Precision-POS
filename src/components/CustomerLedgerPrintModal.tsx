@@ -214,7 +214,7 @@ export const CustomerLedgerPrintModal: React.FC<CustomerLedgerPrintModalProps> =
           </div>
 
           {/* Customer Details Box & Balance Highlight */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-100 p-4 rounded-2xl border border-slate-200">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-200 p-4 rounded-2xl border border-slate-200">
             <div className="sm:col-span-2 space-y-1">
               <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                 Customer / Company Account
@@ -284,7 +284,7 @@ export const CustomerLedgerPrintModal: React.FC<CustomerLedgerPrintModalProps> =
                   </tr>
                 ) : (
                   statementRows.map((row) => (
-                    <tr key={row.id} className={row.id === 'period-opening-bf' ? 'bg-amber-50/60 font-semibold' : 'hover:bg-slate-100'}>
+                    <tr key={row.id} className={row.id === 'period-opening-bf' ? 'bg-amber-50/60 font-semibold' : 'hover:bg-slate-300'}>
                       <td className="py-2 px-3 text-slate-600 border-r border-slate-200 text-[11px]">
                         {new Date(row.date).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
@@ -314,7 +314,7 @@ export const CustomerLedgerPrintModal: React.FC<CustomerLedgerPrintModalProps> =
                   ))
                 )}
               </tbody>
-              <tfoot className="bg-slate-100 font-black border-t-2 border-slate-300">
+              <tfoot className="bg-slate-200 font-black border-t-2 border-slate-300">
                 <tr>
                   <td colSpan={3} className="py-2.5 px-3 text-slate-900 uppercase tracking-wider text-[11px]">
                     Period Total & Closing Balance:

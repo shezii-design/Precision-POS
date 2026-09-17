@@ -283,7 +283,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
           )}
 
           {/* Section 1: Customer / Person Info */}
-          <div className="bg-slate-100/80 rounded-2xl p-4 border border-slate-200/80 space-y-3.5">
+          <div className="bg-slate-200/80 rounded-2xl p-4 border border-slate-200/80 space-y-3.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-red-600" />
@@ -309,13 +309,13 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                     setCustomerDropdownOpen(true);
                   }}
                   onFocus={() => setCustomerDropdownOpen(true)}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
+                  className="w-full px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                 />
 
                 {/* Customer Autocomplete Dropdown */}
                 {customerDropdownOpen && customerSuggestions.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden py-1 max-h-48 overflow-y-auto">
-                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 border-b border-slate-100">
+                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-200 border-b border-slate-100">
                       Existing Customers
                     </div>
                     {customerSuggestions.map(c => (
@@ -329,7 +329,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                           <div className="font-bold text-slate-900">{c.name}</div>
                           <div className="text-[10px] text-slate-500">{c.phone || c.city || 'No phone recorded'}</div>
                         </div>
-                        <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-1.5 py-0.5 rounded">
                           Select
                         </span>
                       </button>
@@ -349,7 +349,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   placeholder="e.g. 0300-8452199"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
+                  className="w-full px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                 />
               </div>
 
@@ -364,14 +364,14 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   placeholder="e.g. Badami Bagh, Lahore"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
+                  className="w-full px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                 />
               </div>
             </div>
           </div>
 
           {/* Section 2: Item Requested & Specifications */}
-          <div className="bg-slate-100/80 rounded-2xl p-4 border border-slate-200/80 space-y-3.5">
+          <div className="bg-slate-200/80 rounded-2xl p-4 border border-slate-200/80 space-y-3.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <Package className="w-3.5 h-3.5 text-red-600" />
@@ -397,13 +397,13 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                     setProductDropdownOpen(true);
                   }}
                   onFocus={() => setProductDropdownOpen(true)}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
+                  className="w-full px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                 />
 
                 {/* Product Autocomplete Dropdown */}
                 {productDropdownOpen && productSuggestions.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden py-1 max-h-48 overflow-y-auto">
-                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 border-b border-slate-100 flex items-center justify-between">
+                    <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-200 border-b border-slate-100 flex items-center justify-between">
                       <span>Inventory Catalog Match</span>
                       <span className="text-slate-400 font-normal">Auto-populates specs</span>
                     </div>
@@ -442,7 +442,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   placeholder="e.g. Size: OD 280mm, ID 150mm, Height 410mm, Thread 1-3/8-12 UNF, Heavy Duty Mesh"
                   value={itemDetails}
                   onChange={(e) => setItemDetails(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
+                  className="w-full px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                 />
               </div>
 
@@ -457,14 +457,14 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   placeholder="e.g. Urgent machine halted on site. Customer prefers Japanese or Genuine Sakura only. Promised 5% trade discount."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm resize-none"
+                  className="w-full px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm resize-none"
                 />
               </div>
             </div>
           </div>
 
           {/* Section 3: Quantity, Target Price & Fulfillment Date */}
-          <div className="bg-slate-100/80 rounded-2xl p-4 border border-slate-200/80 space-y-3.5">
+          <div className="bg-slate-200/80 rounded-2xl p-4 border border-slate-200/80 space-y-3.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-red-600" />
@@ -486,12 +486,12 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                     required
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-20 px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm"
+                    className="w-20 px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm"
                   />
                   <select
                     value={unit}
                     onChange={(e) => setUnit(e.target.value as QuantityUnit)}
-                    className="flex-1 px-2.5 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer"
+                    className="flex-1 px-2.5 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer"
                   >
                     <option value="Pcs">Pcs</option>
                     <option value="Box">Box</option>
@@ -519,7 +519,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                     placeholder="e.g. 4500 (Optional)"
                     value={targetPrice}
                     onChange={(e) => setTargetPrice(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm"
+                    className="w-full pl-8 pr-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm"
                   />
                 </div>
               </div>
@@ -534,7 +534,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   type="date"
                   value={requiredDate}
                   onChange={(e) => setRequiredDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer"
+                  className="w-full px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer"
                 />
 
                 {/* Quick Date Buttons */}
@@ -573,7 +573,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
           </div>
 
           {/* Section 4: Status Configuration */}
-          <div className="bg-slate-100/80 rounded-2xl p-4 border border-slate-200/80 space-y-3.5">
+          <div className="bg-slate-200/80 rounded-2xl p-4 border border-slate-200/80 space-y-3.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-red-600" />
@@ -590,7 +590,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                 className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                   status === 'pending'
                     ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-500/20 text-amber-900 shadow-sm'
-                    : 'bg-white border-slate-200 hover:bg-slate-100 text-slate-700'
+                    : 'bg-white border-slate-200 hover:bg-slate-300 text-slate-700'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -607,7 +607,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                 className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                   status === 'fulfilled'
                     ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-500/20 text-emerald-900 shadow-sm'
-                    : 'bg-white border-slate-200 hover:bg-slate-100 text-slate-700'
+                    : 'bg-white border-slate-200 hover:bg-slate-300 text-slate-700'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -624,7 +624,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                 className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                   status === 'unfulfillable'
                     ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-500/20 text-rose-900 shadow-sm'
-                    : 'bg-white border-slate-200 hover:bg-slate-100 text-slate-700'
+                    : 'bg-white border-slate-200 hover:bg-slate-300 text-slate-700'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -641,7 +641,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                 className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                   status === 'cancelled'
                     ? 'bg-slate-200 border-slate-400 ring-2 ring-slate-500/20 text-slate-900 shadow-sm'
-                    : 'bg-white border-slate-200 hover:bg-slate-100 text-slate-700'
+                    : 'bg-white border-slate-200 hover:bg-slate-300 text-slate-700'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -670,7 +670,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
 
             {/* Cancellation Reason Input */}
             {status === 'cancelled' && (
-              <div className="p-3 bg-slate-100 border border-slate-300 rounded-xl space-y-1.5 animate-in fade-in">
+              <div className="p-3 bg-slate-200 border border-slate-300 rounded-xl space-y-1.5 animate-in fade-in">
                 <label className="block text-xs font-bold text-slate-800">
                   Reason for Cancellation:
                 </label>
@@ -679,7 +679,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   placeholder="e.g. Customer purchased from another city; project postponed."
                   value={cancellationReason}
                   onChange={(e) => setCancellationReason(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  className="w-full px-3 py-1.5 bg-slate-200 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500"
                 />
               </div>
             )}
@@ -687,11 +687,11 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
         </form>
 
         {/* Modal Footer Actions */}
-        <div className="px-6 py-3.5 bg-slate-100 border-t border-slate-200 flex items-center justify-between shrink-0">
+        <div className="px-6 py-3.5 bg-slate-200 border-t border-slate-200 flex items-center justify-between shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-white hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition-colors cursor-pointer"
+            className="px-4 py-2 bg-white hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 transition-colors cursor-pointer"
           >
             Cancel
           </button>

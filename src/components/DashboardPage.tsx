@@ -670,7 +670,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     <div className="space-y-5 animate-in fade-in duration-200">
       
       {/* 1. TOP EXECUTIVE HEADER & TIMEFRAME CONTROLS */}
-      <section className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm">
+      <section className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-300 shadow-lg">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           
           {/* Executive Overview Titles */}
@@ -700,7 +700,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <select
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value as DashboardTimeframe)}
-                className="pl-3 pr-8 py-2 bg-slate-100 hover:bg-slate-200/80 border border-slate-300 rounded-xl text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500/20 cursor-pointer transition-all shadow-sm"
+                className="pl-3 pr-8 py-2 bg-slate-200 hover:bg-slate-300/80 border border-slate-300 rounded-xl text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500/20 cursor-pointer transition-all shadow-sm"
               >
                 <option value="today">Today</option>
                 <option value="yesterday">Yesterday</option>
@@ -717,19 +717,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
             {/* Custom Range Inputs if custom selected */}
             {timeframe === 'custom' && (
-              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+              <div className="flex items-center gap-1.5 bg-slate-200 p-1 rounded-xl border border-slate-200 text-xs">
                 <input
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="px-2 py-1 bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700"
+                  className="px-2 py-1 bg-slate-200 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700"
                 />
                 <span className="text-slate-400 font-bold">to</span>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="px-2 py-1 bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700"
+                  className="px-2 py-1 bg-slate-200 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700"
                 />
               </div>
             )}
@@ -783,7 +783,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
         {/* Metric 1: Net Sales Revenue */}
-        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition-all flex flex-col justify-between">
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-300 shadow-lg hover:border-slate-300 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
@@ -813,13 +813,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
 
         {/* Metric 2: FIFO Cost of Goods Sold (COGS) */}
-        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition-all flex flex-col justify-between">
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-300 shadow-lg hover:border-slate-300 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
                 Cost of Goods Sold (COGS)
               </span>
-              <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-sm border border-slate-200">
+              <div className="w-8 h-8 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-sm border border-slate-200">
                 <Package className="w-4 h-4" />
               </div>
             </div>
@@ -843,7 +843,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
 
         {/* Metric 3: Gross Profit & Margin */}
-        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-slate-300 transition-all flex flex-col justify-between">
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-300 shadow-lg hover:border-slate-300 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
@@ -918,7 +918,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Metric 5: Current Inventory Asset Valuation */}
         <div 
           onClick={() => onGoToView('inventory')}
-          className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-red-300 cursor-pointer transition-all flex flex-col justify-between group"
+          className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-300 shadow-lg hover:border-red-300 cursor-pointer transition-all flex flex-col justify-between group"
           title="Click to view full Inventory Catalog"
         >
           <div>
@@ -952,7 +952,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Metric 6: Customer Receivables (Khata Balance) */}
         <div 
           onClick={() => onGoToView('customers')}
-          className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-amber-300 cursor-pointer transition-all flex flex-col justify-between group"
+          className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-300 shadow-lg hover:border-amber-300 cursor-pointer transition-all flex flex-col justify-between group"
           title="Click to view Customer Accounts & Ledgers"
         >
           <div>
@@ -986,7 +986,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Metric 7: Vendor Payables (Supplier Credit) */}
         <div 
           onClick={() => onGoToView('vendors')}
-          className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm hover:border-red-300 cursor-pointer transition-all flex flex-col justify-between group"
+          className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-300 shadow-lg hover:border-red-300 cursor-pointer transition-all flex flex-col justify-between group"
           title="Click to view Vendor Accounts & Supplier Bills"
         >
           <div>
@@ -1061,7 +1061,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* Main Trend Graph: Sales, COGS & Gross Profit (Takes 2 Columns on Large Screens) */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+        <div className="lg:col-span-2 bg-white rounded-3xl p-4 sm:p-6 border border-slate-300 shadow-lg space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-slate-100">
             <div>
               <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -1074,7 +1074,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
 
             {/* Chart Mode Toggle */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold self-start sm:self-auto">
+            <div className="flex items-center gap-1 bg-slate-200 p-1 rounded-xl border border-slate-200 text-xs font-bold self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => setChartMetric('revenue_profit')}
@@ -1160,7 +1160,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 )}
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-xs text-slate-400 font-semibold bg-slate-100 rounded-2xl border border-dashed border-slate-200">
+              <div className="h-full flex items-center justify-center text-xs text-slate-400 font-semibold bg-slate-200 rounded-2xl border border-dashed border-slate-200">
                 No transaction data available in selected period
               </div>
             )}
@@ -1168,7 +1168,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
 
         {/* Category Breakdown Donut / Radial Chart */}
-        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-300 shadow-lg flex flex-col justify-between space-y-4">
           <div>
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -1236,7 +1236,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* Top 5 Best-Selling Parts */}
-        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-300 shadow-lg space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -1261,7 +1261,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               productPerformance.topByRevenue.map((item, idx) => (
                 <div 
                   key={item.product.id}
-                  className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200/80 flex items-center justify-between gap-3 transition-colors"
+                  className="p-2.5 rounded-2xl bg-slate-200 hover:bg-slate-300/80 border border-slate-200/80 flex items-center justify-between gap-3 transition-colors"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="w-6 h-6 rounded-lg bg-red-100 text-red-800 flex items-center justify-center text-xs font-black shrink-0">
@@ -1293,7 +1293,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
               ))
             ) : (
-              <div className="py-8 text-center text-xs text-slate-400 font-semibold bg-slate-100 rounded-2xl border border-dashed border-slate-200">
+              <div className="py-8 text-center text-xs text-slate-400 font-semibold bg-slate-200 rounded-2xl border border-dashed border-slate-200">
                 No sales recorded in this period
               </div>
             )}
@@ -1301,7 +1301,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
 
         {/* Top Customers by Billing Volume */}
-        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-300 shadow-lg space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -1330,7 +1330,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <div 
                   key={cust.id}
                   onClick={() => onSelectCustomer ? onSelectCustomer(cust) : onGoToView('customers')}
-                  className="p-2.5 rounded-2xl bg-slate-100 hover:bg-red-50/50 border border-slate-200/80 flex items-center justify-between gap-3 transition-colors cursor-pointer group"
+                  className="p-2.5 rounded-2xl bg-slate-200 hover:bg-red-50/50 border border-slate-200/80 flex items-center justify-between gap-3 transition-colors cursor-pointer group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-xl bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0 group-hover:bg-red-600 group-hover:text-white transition-colors">
@@ -1361,7 +1361,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
 
         {/* Operational Watchlist / Urgent Action Alerts */}
-        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-300 shadow-lg space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
               <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -1464,7 +1464,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       </section>
 
       {/* 5. RECENT ACTIVITY LEDGER STREAM */}
-      <section className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
+      <section className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-300 shadow-lg space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <div>
             <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -1505,14 +1505,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 else if (act.type === 'po') onGoToView('purchase_orders');
                 else if (act.type === 'demand') onGoToView('demands');
               }}
-              className="py-3 px-2 rounded-2xl hover:bg-slate-100 flex items-center justify-between gap-3 transition-colors cursor-pointer group"
+              className="py-3 px-2 rounded-2xl hover:bg-slate-300 flex items-center justify-between gap-3 transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                   act.type === 'sale' ? 'bg-emerald-100 text-emerald-700' :
                   act.type === 'purchase' ? 'bg-amber-100 text-amber-700' :
                   act.type === 'customer_return' ? 'bg-purple-100 text-purple-700' :
-                  act.type === 'po' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'
+                  act.type === 'po' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-700'
                 }`}>
                   {act.type === 'sale' && <Receipt className="w-4 h-4" />}
                   {act.type === 'purchase' && <ShoppingBag className="w-4 h-4" />}
@@ -1531,7 +1531,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                         act.statusColor === 'emerald' ? 'bg-emerald-100 text-emerald-800' :
                         act.statusColor === 'amber' ? 'bg-amber-100 text-amber-800' :
                         act.statusColor === 'purple' ? 'bg-purple-100 text-purple-800' :
-                        act.statusColor === 'blue' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'
+                        act.statusColor === 'blue' ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-800'
                       }`}>
                         {act.statusBadge}
                       </span>

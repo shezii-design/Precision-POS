@@ -146,7 +146,7 @@ export const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
 
         {/* Transaction Type Toggle */}
         <div className="p-6 space-y-5">
-          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
+          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-200 rounded-2xl">
             <button
               type="button"
               onClick={() => setEntryType('payment_received')}
@@ -197,7 +197,7 @@ export const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
               <select
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 outline-hidden transition-all"
+                className="w-full px-3.5 py-2.5 bg-slate-200 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 outline-hidden transition-all"
                 required
               >
                 <option value="" disabled>Select customer...</option>
@@ -227,7 +227,7 @@ export const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
                     placeholder="0"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full pl-8 pr-3.5 py-2.5 bg-slate-100 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-black text-slate-900 outline-hidden transition-all"
+                    className="w-full pl-8 pr-3.5 py-2.5 bg-slate-200 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-black text-slate-900 outline-hidden transition-all"
                     required
                     autoFocus
                   />
@@ -243,7 +243,7 @@ export const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 outline-hidden transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-200 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 outline-hidden transition-all"
                   required
                 />
               </div>
@@ -259,7 +259,7 @@ export const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 outline-hidden transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-200 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 outline-hidden transition-all"
                 >
                   <option value="Cash">Cash at Counter</option>
                   <option value="Bank Transfer">Bank Transfer / Online</option>
@@ -279,7 +279,7 @@ export const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
                   placeholder="e.g. RCP-1029 / HBL-991"
                   value={receiptNumber}
                   onChange={(e) => setReceiptNumber(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                  className="w-full px-3.5 py-2.5 bg-slate-200 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -295,7 +295,7 @@ export const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
                 placeholder="e.g. Payment for Excavator filter service invoice #INV-1002"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400 resize-none"
+                className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-sm font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400 resize-none"
               />
             </div>
 
@@ -304,7 +304,7 @@ export const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-all cursor-pointer"
               >
                 Cancel
               </button>

@@ -342,7 +342,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
         </div>
 
         {/* Dead Stock */}
-        <div className="lg:col-span-1 bg-slate-100 border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[500px]">
+        <div className="lg:col-span-1 bg-slate-200 border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[500px]">
           <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
             <div>
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -369,7 +369,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
                       className="bg-white p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-slate-300 transition-colors flex items-center justify-between group"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 bg-slate-200 rounded-lg flex items-center justify-center shrink-0">
                           {p.image ? (
                             <img src={p.image} className="w-full h-full object-cover rounded-lg opacity-70 group-hover:opacity-100 transition-opacity" alt="" />
                           ) : (

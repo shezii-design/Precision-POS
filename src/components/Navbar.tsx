@@ -457,7 +457,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="button"
                   id="navbar-add-product-btn"
                   onClick={onOpenAddProduct}
-                  className="px-2 sm:px-2.5 py-1.5 bg-white hover:bg-slate-100 text-red-700 text-xs font-bold rounded-xl border border-white shadow-sm transition-colors flex items-center gap-1 cursor-pointer h-8 sm:h-8.5 shrink-0"
+                  className="px-2 sm:px-2.5 py-1.5 bg-white hover:bg-slate-300 text-red-700 text-xs font-bold rounded-xl border border-white shadow-sm transition-colors flex items-center gap-1 cursor-pointer h-8 sm:h-8.5 shrink-0"
                   title="Add New Inventory Product"
                 >
                   <Plus className="w-3.5 h-3.5 stroke-[3] shrink-0" />
@@ -570,7 +570,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     
                     {/* User Profile Header in Menu */}
                     {currentEmployee && (
-                      <div className="p-2.5 mb-1 bg-slate-100 rounded-xl border border-slate-100">
+                      <div className="p-2.5 mb-1 bg-slate-200 rounded-xl border border-slate-100">
                         <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Current Operator</div>
                         <div className="text-xs font-bold text-slate-900 mt-0.5">{currentEmployee.name}</div>
                         <div className="text-[10px] text-slate-500">{currentEmployee.designation} • {currentEmployee.role.toUpperCase()}</div>
@@ -619,7 +619,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       {supabaseConfig.enabled ? (
                         <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md font-bold shrink-0">Connected</span>
                       ) : (
-                        <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md shrink-0">Setup</span>
+                        <span className="text-[10px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-md shrink-0">Setup</span>
                       )}
                     </button>
 
@@ -670,7 +670,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <button
                           type="button"
                           onClick={() => { setShowToolsMenu(false); onExportCSV(); }}
-                          className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-slate-100 text-slate-700 rounded-xl flex items-center gap-2.5 cursor-pointer"
+                          className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-slate-300 text-slate-700 rounded-xl flex items-center gap-2.5 cursor-pointer"
                         >
                           <FileText className="w-4 h-4 text-slate-600 shrink-0" />
                           <span>Export Inventory (.csv)</span>
@@ -682,7 +682,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <button
                         type="button"
                         onClick={() => { setShowToolsMenu(false); onOpenSecuritySettings(); }}
-                        className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-slate-100 text-slate-700 rounded-xl flex items-center gap-2.5 cursor-pointer"
+                        className="w-full px-3 py-2 text-left text-xs font-bold hover:bg-slate-300 text-slate-700 rounded-xl flex items-center gap-2.5 cursor-pointer"
                       >
                         <Shield className="w-4 h-4 text-slate-600 shrink-0" />
                         <span>Security & PIN Config</span>
@@ -803,7 +803,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Menu Search Bar */}
-            <div className="p-3 sm:p-4 bg-slate-100 border-b border-slate-200 flex items-center gap-2">
+            <div className="p-3 sm:p-4 bg-slate-200 border-b border-slate-200 flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -818,7 +818,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Grid of Allowed Tabs */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-slate-100/50">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 bg-slate-200/50">
               {filteredWorkspaceTabs.map(tab => {
                 const Icon = tab.icon;
                 const isActive = currentView === tab.id;
@@ -831,17 +831,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                     className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer group ${
                       isActive 
                         ? 'bg-red-50 border-red-300 ring-2 ring-red-500/20 shadow-sm' 
-                        : 'bg-white hover:bg-slate-100 border-slate-200 hover:border-slate-300 shadow-sm'
+                        : 'bg-white hover:bg-slate-300 border-slate-200 hover:border-slate-300 shadow-sm'
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                          isActive ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-700 group-hover:bg-red-100 group-hover:text-red-700'
+                          isActive ? 'bg-red-600 text-white' : 'bg-slate-200 text-slate-700 group-hover:bg-red-100 group-hover:text-red-700'
                         }`}>
                           <Icon className="w-5 h-5" />
                         </div>
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-slate-200 text-slate-600 rounded-md">
                           {tab.shortcut}
                         </span>
                       </div>
@@ -875,7 +875,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setShowAppMenu(false)}
-                className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Close Menu
               </button>

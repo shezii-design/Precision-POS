@@ -65,7 +65,7 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
               <button
                 type="button"
                 onClick={handleClear}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100"
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-300"
                 title="Clear size query"
               >
                 <X className="w-3.5 h-3.5" />
@@ -75,14 +75,14 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
             <button
               type="button"
               onClick={() => setShowHelp(!showHelp)}
-              className="text-slate-400 hover:text-red-600 p-1 rounded-md hover:bg-slate-100"
+              className="text-slate-400 hover:text-red-600 p-1 rounded-md hover:bg-slate-300"
               title="How size search works"
             >
               <HelpCircle className="w-3.5 h-3.5" />
             </button>
 
             <kbd 
-              className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 text-slate-500 border border-slate-200 rounded shadow-sm select-none"
+              className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-200 text-slate-500 border border-slate-200 rounded shadow-sm select-none"
               title="Keyboard shortcut: Ctrl + E"
             >
               Ctrl+E
@@ -91,7 +91,7 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
         </div>
 
         {/* Unit Selector Switch */}
-        <div className="flex items-center justify-center bg-slate-100 p-0.5 rounded-xl border border-slate-300 shrink-0 self-auto">
+        <div className="flex items-center justify-center bg-slate-200 p-0.5 rounded-xl border border-slate-300 shrink-0 self-auto">
           <button
             type="button"
             onClick={() => handleUnitToggle('inch')}

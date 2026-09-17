@@ -234,7 +234,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         {/* Body */}
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[70vh] overflow-y-auto">
           {/* Download Template Bar */}
-          <div className="bg-slate-100 border border-slate-200 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="bg-slate-200 border border-slate-200 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="min-w-0">
               <span className="text-xs font-bold text-slate-800 block mb-0.5">Need a formatted template?</span>
               <span className="text-[11px] text-slate-500">
@@ -253,7 +253,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
               <button
                 type="button"
                 onClick={() => downloadSampleTemplate('csv')}
-                className="flex-1 sm:flex-initial px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                className="flex-1 sm:flex-initial px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <Download className="w-3.5 h-3.5" />
                 CSV
@@ -278,7 +278,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
               className={`border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center transition-all cursor-pointer ${
                 dragActive
                   ? 'border-red-600 bg-red-50/50 scale-[0.99]'
-                  : 'border-slate-300 hover:border-red-400 bg-slate-100/50'
+                  : 'border-slate-300 hover:border-red-400 bg-slate-200/50'
               }`}
             >
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-red-100 text-red-600 mx-auto flex items-center justify-center mb-3">
@@ -320,7 +320,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
               </div>
 
               {/* Mode Selector */}
-              <div className="bg-slate-100 p-3 sm:p-3.5 rounded-xl border border-slate-200 space-y-2">
+              <div className="bg-slate-200 p-3 sm:p-3.5 rounded-xl border border-slate-200 space-y-2">
                 <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
                   Import Action Mode
                 </label>
@@ -331,7 +331,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
                     className={`p-3 rounded-xl border text-left text-xs transition-all ${
                       importMode === 'append'
                         ? 'border-red-600 bg-white shadow-sm'
-                        : 'border-slate-200 bg-slate-100/60 text-slate-600'
+                        : 'border-slate-200 bg-slate-200/60 text-slate-600'
                     }`}
                   >
                     <span className="font-bold text-slate-900 block">Append as New Items</span>
@@ -346,7 +346,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
                     className={`p-3 rounded-xl border text-left text-xs transition-all ${
                       importMode === 'overwrite'
                         ? 'border-red-600 bg-white shadow-sm'
-                        : 'border-slate-200 bg-slate-100/60 text-slate-600'
+                        : 'border-slate-200 bg-slate-200/60 text-slate-600'
                     }`}
                   >
                     <span className="font-bold text-slate-900 block">Match & Overwrite</span>
@@ -359,12 +359,12 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
 
               {/* Sample 5 rows preview */}
               <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
-                <div className="bg-slate-100 px-3 py-2 font-bold text-slate-700 text-[11px] uppercase tracking-wider">
+                <div className="bg-slate-200 px-3 py-2 font-bold text-slate-700 text-[11px] uppercase tracking-wider">
                   Data Preview (First 5 items)
                 </div>
                 <div className="overflow-x-auto max-h-48 divide-y divide-slate-100">
                   {parsedRows.slice(0, 5).map((row, idx) => (
-                    <div key={idx} className="p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3 hover:bg-slate-100">
+                    <div key={idx} className="p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3 hover:bg-slate-300">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono font-bold text-red-600">{row.internalId || `Auto-ID`}</span>
                         <span className="font-bold text-slate-900">{row.name}</span>
@@ -385,11 +385,11 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-100 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-200 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors order-2 sm:order-1"
+            className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-200 border border-slate-300 rounded-xl hover:bg-slate-300 transition-colors order-2 sm:order-1"
           >
             Cancel
           </button>

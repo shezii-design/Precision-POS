@@ -235,7 +235,7 @@ export const QuotationViewModal: React.FC<QuotationViewModalProps> = ({
           </div>
 
           {/* BILLED TO / CUSTOMER INFORMATION */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-100 p-4 rounded-2xl border border-slate-200 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-200 p-4 rounded-2xl border border-slate-200 text-xs">
             <div className="space-y-1">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
                 Quotation Issued To:
@@ -312,7 +312,7 @@ export const QuotationViewModal: React.FC<QuotationViewModalProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {quotation.items.map((item, index) => (
-                  <tr key={item.id || index} className="even:bg-slate-100/50">
+                  <tr key={item.id || index} className="even:bg-slate-200/50">
                     <td className="py-2.5 px-3 text-center font-bold text-slate-400 align-top">
                       {index + 1}
                     </td>
@@ -361,7 +361,7 @@ export const QuotationViewModal: React.FC<QuotationViewModalProps> = ({
           {/* FINANCIAL SUMMARY & AMOUNT IN WORDS */}
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start">
             <div className="sm:col-span-7 space-y-3">
-              <div className="p-3 bg-slate-100 rounded-xl border border-slate-200">
+              <div className="p-3 bg-slate-200 rounded-xl border border-slate-200">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
                   Amount in Words:
                 </span>
@@ -372,7 +372,7 @@ export const QuotationViewModal: React.FC<QuotationViewModalProps> = ({
 
               {/* COMMERCIAL TERMS & CONDITIONS */}
               {quotation.termsAndConditions && (
-                <div className="p-3 bg-slate-100 rounded-xl border border-slate-200 text-[11px] text-slate-700 space-y-1">
+                <div className="p-3 bg-slate-200 rounded-xl border border-slate-200 text-[11px] text-slate-700 space-y-1">
                   <span className="font-black uppercase text-[10px] tracking-wider text-slate-500 block">
                     Terms & Conditions of Quotation:
                   </span>
@@ -384,7 +384,7 @@ export const QuotationViewModal: React.FC<QuotationViewModalProps> = ({
             </div>
 
             {/* Financial Summary Card */}
-            <div className="sm:col-span-5 bg-slate-100 p-4 rounded-xl border border-slate-300 space-y-2 text-xs">
+            <div className="sm:col-span-5 bg-slate-200 p-4 rounded-xl border border-slate-300 space-y-2 text-xs">
               <div className="flex items-center justify-between text-slate-600">
                 <span>Subtotal (Gross)</span>
                 <span className="font-mono font-bold text-slate-900">₨ {formatPKR(quotation.subtotal)}</span>
@@ -445,7 +445,7 @@ export const QuotationViewModal: React.FC<QuotationViewModalProps> = ({
         </div>
 
         {/* BOTTOM ACTION BAR (Hidden on Print) */}
-        <div className="p-4 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0 print:hidden">
+        <div className="p-4 bg-slate-200 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0 print:hidden">
           <div className="flex items-center gap-2">
             {onDelete && (
               <button
@@ -471,7 +471,7 @@ export const QuotationViewModal: React.FC<QuotationViewModalProps> = ({
                   onEdit(quotation);
                   onClose();
                 }}
-                className="px-3 py-2 bg-white hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
+                className="px-3 py-2 bg-white hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold border border-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Edit3 className="w-4 h-4" />
                 <span>Edit</span>

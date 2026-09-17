@@ -1899,7 +1899,7 @@ export default function App() {
   
 
   return (
-    <div className="min-h-screen bg-slate-200 flex flex-col font-sans text-slate-900 selection:bg-red-500 selection:text-white">
+    <div className="min-h-screen bg-slate-300 flex flex-col font-sans text-slate-900 selection:bg-red-500 selection:text-white">
       {/* Top Main Navbar */}
       <Navbar
         onOpenAddProduct={isActionAllowed(currentEmployee, 'canAddProducts') ? handleOpenAddProduct : undefined}

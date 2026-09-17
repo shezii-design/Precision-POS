@@ -211,7 +211,7 @@ export const LowStockNotificationBanner: React.FC<LowStockNotificationBannerProp
                       <div className="flex items-start justify-between gap-1.5">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-bold text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                            <span className="font-mono font-bold text-[11px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 border border-slate-200">
                               {product.internalId}
                             </span>
                             <span className="text-[10px] text-slate-500 truncate font-medium">

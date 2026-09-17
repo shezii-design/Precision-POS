@@ -590,7 +590,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
           className="flex-1 overflow-y-auto overscroll-contain touch-pan-y min-h-0 divide-y divide-slate-200"
         >
           {/* SUMMARY KPI CARDS */}
-          <div className="p-3 sm:p-4 bg-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+          <div className="p-3 sm:p-4 bg-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
             {/* Card 1: Purchases Summary */}
             <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
               <div className="flex items-center justify-between text-indigo-700 font-bold text-xs">
@@ -667,7 +667,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                 <span className="flex items-center gap-1">
                   <RotateCcw className="w-3.5 h-3.5 text-amber-600" /> Returns & Vouchers
                 </span>
-                <span className="font-mono text-[11px] bg-slate-100 px-1.5 py-0.2 rounded font-black text-slate-700">
+                <span className="font-mono text-[11px] bg-slate-200 px-1.5 py-0.2 rounded font-black text-slate-700">
                   {metrics.totalReturnsCount} units
                 </span>
               </div>
@@ -702,7 +702,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             {/* Top Row: Tabs + Date quick filters */}
             <div className="flex flex-wrap items-center justify-between gap-2.5">
               {/* Tab switchers */}
-              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+              <div className="flex bg-slate-200 p-1 rounded-xl border border-slate-200 text-xs font-bold">
                 <button
                   type="button"
                   onClick={() => setActiveTab('all')}
@@ -776,7 +776,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                     className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors border cursor-pointer ${
                       dateFilter === df
                         ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-300'
                     }`}
                   >
                     {df === 'all' ? 'All Time' : df === '30days' ? 'Last 30 Days' : df === '90days' ? 'Last 90 Days' : 'This Year'}
@@ -795,7 +795,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search Bill #, Sale ID, Vendor, Customer, Walk-in, or Notes..."
-                  className="w-full pl-9 pr-8 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white transition-all"
+                  className="w-full pl-9 pr-8 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white transition-all"
                 />
                 {searchQuery && (
                   <button
@@ -817,7 +817,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as ProductHistorySortOption)}
-                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white cursor-pointer"
+                  className="w-full px-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:bg-white cursor-pointer"
                 >
                   <option value="date_desc">Date: Latest to Oldest</option>
                   <option value="date_asc">Date: Oldest to Latest</option>
@@ -836,7 +836,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
           <div id="product-history-main-content" className="p-2 sm:p-4 space-y-4">
             {filteredAndSortedRows.length === 0 ? (
             <div className="py-16 text-center space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+              <div className="w-14 h-14 rounded-2xl bg-slate-200 text-slate-400 mx-auto flex items-center justify-center">
                 <Search className="w-7 h-7" />
               </div>
               <h3 className="text-base font-bold text-slate-800">
@@ -865,7 +865,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse min-w-[760px]">
-                  <thead className="bg-slate-100/90 text-slate-600 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 select-none">
+                  <thead className="bg-slate-200/90 text-slate-600 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 select-none">
                     <tr>
                       <th className="py-3 px-3.5">Type & Bill #</th>
                       <th className="py-3 px-3">Date</th>
@@ -896,7 +896,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                       return (
                         <tr 
                           key={row.id} 
-                          className="hover:bg-slate-100/80 transition-colors group"
+                          className="hover:bg-slate-300/80 transition-colors group"
                         >
                           {/* 1. Type & Bill Number */}
                           <td className="py-3 px-3.5">
@@ -960,7 +960,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                               </span>
                             </div>
                             <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                              <span className="px-1.5 py-0.2 bg-slate-100 rounded text-[9px] font-medium border border-slate-200">
+                              <span className="px-1.5 py-0.2 bg-slate-200 rounded text-[9px] font-medium border border-slate-200">
                                 {row.partyType || (isPurchase ? 'Vendor' : 'Customer')}
                               </span>
                               {row.partyPhone && (
@@ -1023,7 +1023,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                                 row.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800' :
                                 row.paymentStatus === 'partial' ? 'bg-amber-100 text-amber-800' :
                                 row.paymentStatus === 'credit' || row.paymentStatus === 'unpaid' ? 'bg-rose-100 text-rose-800' :
-                                'bg-slate-100 text-slate-700'
+                                'bg-slate-200 text-slate-700'
                               }`}>
                                 {row.paymentStatus || 'Settled'}
                               </span>
@@ -1064,7 +1064,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
               </div>
 
               {/* Table Footer summary */}
-              <div className="p-3 bg-slate-100 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-600">
+              <div className="p-3 bg-slate-200 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-600">
                 <div>
                   Showing <span className="font-bold text-slate-900">{filteredAndSortedRows.length}</span> recorded entries
                 </div>
@@ -1087,7 +1087,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
         </div>
 
         {/* MODAL FOOTER */}
-        <div className="p-3 sm:p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-3 sm:p-4 bg-slate-200 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
           <div className="text-xs text-slate-500">
             Internal ID: <strong className="text-slate-800 font-mono">{product.internalId}</strong> • 
             Part Name: <strong className="text-slate-800">{product.name}</strong>
@@ -1097,7 +1097,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             <button
               type="button"
               onClick={handleExportCSV}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 shadow-sm transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 shadow-sm transition-colors flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5 text-slate-600" />
               Download CSV

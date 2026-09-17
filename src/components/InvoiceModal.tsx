@@ -334,7 +334,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </div>
 
             <div className="sm:text-right">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 font-mono text-sm font-black text-slate-800 border border-slate-200">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-200 font-mono text-sm font-black text-slate-800 border border-slate-200">
                 <FileText className="w-4 h-4 text-red-600" />
                 <span>{sale.id}</span>
               </div>
@@ -351,7 +351,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           </div>
 
           {/* Customer & Payment Badge Block */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-100 border border-slate-200 rounded-2xl p-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-200 border border-slate-200 rounded-2xl p-4 text-xs">
             <div>
               <span className="font-bold text-slate-400 uppercase tracking-wider block mb-1 text-[10px]">
                 Customer Information
@@ -435,7 +435,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-left text-xs border-collapse">
-                <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-black uppercase tracking-wider text-[11px]">
+                <thead className="bg-slate-200 border-b border-slate-200 text-slate-700 font-black uppercase tracking-wider text-[11px]">
                   <tr>
                     <th className="py-3 px-3.5 w-10">#</th>
                     <th className="py-3 px-3.5">Item Description</th>
@@ -452,7 +452,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   const metrics = getItemMetrics(item);
 
                   return (
-                    <tr key={item.id || index} className={`hover:bg-slate-100/60 transition-colors ${metrics.isFullyReturned ? 'bg-amber-50/40' : ''}`}>
+                    <tr key={item.id || index} className={`hover:bg-slate-300/60 transition-colors ${metrics.isFullyReturned ? 'bg-amber-50/40' : ''}`}>
                       <td className="py-3 px-3.5 font-bold text-slate-400">{index + 1}</td>
                       <td className="py-3 px-3.5">
                         <div className="font-bold text-slate-900 text-sm">
@@ -476,7 +476,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                         )}
                         {/* Cross References & Machine info if enabled */}
                         {item.showDetailsOnInvoice && (
-                          <div className="mt-1 space-y-0.5 bg-slate-100 p-1.5 rounded-lg border border-slate-200/60 text-[11px]">
+                          <div className="mt-1 space-y-0.5 bg-slate-200 p-1.5 rounded-lg border border-slate-200/60 text-[11px]">
                             {item.crossReferences && (
                               <div className="text-slate-600">
                                 <strong className="text-slate-700">Cross Ref:</strong> {item.crossReferences.replace(/\n/g, ', ')}
@@ -544,7 +544,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             {/* Notes Section */}
             <div className="space-y-3">
               {sale.notes ? (
-                <div className="bg-slate-100 border border-slate-200 rounded-2xl p-3.5 text-xs">
+                <div className="bg-slate-200 border border-slate-200 rounded-2xl p-3.5 text-xs">
                   <span className="font-bold text-slate-500 uppercase tracking-wider block mb-1 text-[10px]">
                     Invoice Remarks / Notes
                   </span>
@@ -568,7 +568,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </div>
 
             {/* Calculations Box */}
-            <div className="bg-slate-100 border border-slate-200 rounded-2xl p-4 text-xs space-y-2.5 shadow-sm">
+            <div className="bg-slate-200 border border-slate-200 rounded-2xl p-4 text-xs space-y-2.5 shadow-sm">
               <div className="flex justify-between items-center text-slate-600">
                 <span className="font-semibold">Subtotal:</span>
                 <span className="font-bold text-slate-800">{formatPKR(sale.subtotal)}</span>
@@ -636,7 +636,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         </div>
 
         {/* Modal Bottom Footer (Hidden on Print) */}
-        <div className="bg-slate-100 border-t border-slate-200 px-6 py-3.5 flex justify-end gap-3 print:hidden">
+        <div className="bg-slate-200 border-t border-slate-200 px-6 py-3.5 flex justify-end gap-3 print:hidden">
           <button
             type="button"
             onClick={onClose}

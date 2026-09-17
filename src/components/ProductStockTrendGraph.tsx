@@ -301,7 +301,7 @@ export const ProductStockTrendGraph: React.FC<ProductStockTrendGraphProps> = ({
     let demandLevel: 'high' | 'moderate' | 'low' = 'low';
     let demandTitle = 'Slow Mover / Stable';
     let demandDesc = 'Minimal sales activity over this period. Stock levels remain stable.';
-    let demandColor = 'text-slate-700 bg-slate-100 border-slate-200';
+    let demandColor = 'text-slate-700 bg-slate-200 border-slate-200';
 
     if (totalSalesQty >= 15 || (dailyVelocity >= 0.5 && totalSalesQty >= 5) || (runwayDays !== null && runwayDays <= 14 && totalSalesQty >= 4)) {
       demandLevel = 'high';

@@ -566,7 +566,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 bg-slate-100 px-4 sm:px-6 pt-2 gap-1 overflow-x-auto whitespace-nowrap shrink-0">
+        <div className="flex border-b border-slate-200 bg-slate-200 px-4 sm:px-6 pt-2 gap-1 overflow-x-auto whitespace-nowrap shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('connection')}
@@ -685,7 +685,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
             <div className="space-y-4">
               
               {/* Credentials & Setup Card */}
-              <div className="bg-slate-100 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4">
+              <div className="bg-slate-200 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
                   <div>
                     <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -721,7 +721,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                         id="btn-test-supabase-connection"
                         onClick={() => handleTestConnection()}
                         disabled={isTesting}
-                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer border border-slate-200"
+                        className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer border border-slate-200"
                       >
                         <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
                         <span>{isTesting ? 'Testing Latency...' : 'Test Connection'}</span>
@@ -751,7 +751,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     </span>
                   </div>
                   {testResult && (
-                    <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">
+                    <span className="text-[11px] font-bold text-slate-600 bg-slate-200 px-2.5 py-1 rounded-lg">
                       {testResult.readyTableCount} / {testResult.totalTableCount} Tables Active
                     </span>
                   )}
@@ -783,7 +783,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                           ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
                           : t.status === 'missing'
                           ? 'bg-amber-50/70 border-amber-200 text-amber-950'
-                          : 'bg-slate-100 border-slate-200 text-slate-700'
+                          : 'bg-slate-200 border-slate-200 text-slate-700'
                       }`}
                     >
                       <div className="min-w-0">
@@ -891,7 +891,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     id="btn-full-pull-supabase"
                     onClick={handlePullAllFromCloud}
                     disabled={isPullingAll || !isCloudConfigured}
-                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-900 text-xs font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-md cursor-pointer"
+                    className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-900 text-xs font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-md cursor-pointer"
                   >
                     <ArrowDownToLine className={`w-4 h-4 ${isPullingAll ? 'animate-spin' : ''}`} />
                     <span>{isPullingAll ? 'Restoring All...' : 'Pull All from Cloud'}</span>
@@ -903,7 +903,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 
                 {/* 1. Products */}
-                <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs">
@@ -921,7 +921,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('products')}
                       disabled={!isCloudConfigured}
-                      className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="flex-1 py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-red-600" />
                       <span>Push</span>
@@ -930,7 +930,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={handlePullProducts}
                       disabled={!isCloudConfigured}
-                      className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="flex-1 py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowDownToLine className="w-3 h-3 text-slate-700" />
                       <span>Pull</span>
@@ -939,7 +939,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
 
                 {/* 2. Sales & POS Invoices */}
-                <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs">
@@ -957,7 +957,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('sales')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-emerald-600" />
                       <span>Push Sales & Invoices</span>
@@ -966,7 +966,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
 
                 {/* 3. Customers & Ledgers */}
-                <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">
@@ -984,7 +984,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('customers')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-blue-600" />
                       <span>Push Customers & Ledgers</span>
@@ -993,7 +993,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
 
                 {/* 4. Customer Returns */}
-                <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs">
@@ -1011,7 +1011,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('customerReturns')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-rose-600" />
                       <span>Push Returns</span>
@@ -1020,7 +1020,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
 
                 {/* 5. Vendors & Purchases */}
-                <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs">
@@ -1038,7 +1038,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('vendors')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-purple-600" />
                       <span>Push Vendors & Purchases</span>
@@ -1047,7 +1047,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
 
                 {/* 6. Vendor Ledger */}
-                <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
@@ -1065,7 +1065,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('vendorLedger')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-indigo-600" />
                       <span>Push Vendor Ledger</span>
@@ -1074,7 +1074,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
 
                 {/* 7. Quotations */}
-                <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs">
@@ -1092,7 +1092,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('quotations')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-amber-600" />
                       <span>Push Quotations</span>
@@ -1101,7 +1101,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
 
                 {/* 8. Expenses */}
-                <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center font-bold text-xs">
@@ -1119,7 +1119,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('expenses')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-teal-600" />
                       <span>Push Expenses</span>
@@ -1128,7 +1128,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
 
                 {/* 9. Stock Audit Logs */}
-                <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center font-bold text-xs">
@@ -1146,7 +1146,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('stockLogs')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-cyan-700" />
                       <span>Push Stock Logs</span>
@@ -1155,7 +1155,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
 
                 {/* 10. Staff & Hardware */}
-                <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2.5">
+                <div className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-slate-200 text-slate-800 flex items-center justify-center font-bold text-xs">
@@ -1173,7 +1173,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('staff')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-slate-700" />
                       <span>Push Staff & Terminals</span>
@@ -1184,7 +1184,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
               </div>
 
               {/* Local Offline JSON Backup Section */}
-              <div className="bg-slate-100 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="bg-slate-200 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <span className="text-xs font-bold text-slate-800 block">Offline Local JSON Backup</span>
                   <span className="text-[11px] text-slate-500">Export or import a complete standalone backup file of all system records</span>
@@ -1194,13 +1194,13 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                   <button
                     type="button"
                     onClick={handleExportFullJson}
-                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    className="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                   >
                     <Download className="w-3.5 h-3.5 text-slate-600" />
                     <span>Download JSON Backup</span>
                   </button>
 
-                  <label className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm">
+                  <label className="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm">
                     <Upload className="w-3.5 h-3.5 text-slate-600" />
                     <span>Restore File</span>
                     <input type="file" accept=".json" onChange={handleImportJsonFile} className="hidden" />
@@ -1219,7 +1219,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
               
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
                 {/* Script Selector Sub-tabs */}
-                <div className="flex items-center gap-1.5 overflow-x-auto bg-slate-100 p-1 rounded-xl scrollbar-thin">
+                <div className="flex items-center gap-1.5 overflow-x-auto bg-slate-200 p-1 rounded-xl scrollbar-thin">
                   <button
                     type="button"
                     onClick={() => setSelectedSchemaTab('full')}
@@ -1311,7 +1311,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </pre>
               </div>
 
-              <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl text-[11px] text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="p-3 bg-slate-200 border border-slate-200 rounded-xl text-[11px] text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span>
                   Paste this script into <strong>Supabase Dashboard &gt; SQL Editor &gt; New query</strong> and click <strong>Run</strong>.
                 </span>
@@ -1417,7 +1417,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
 
               <div className="border border-slate-200 rounded-2xl overflow-x-auto text-xs max-h-80 overflow-y-auto">
                 <table className="w-full text-left min-w-[500px]">
-                  <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0">
+                  <thead className="bg-slate-200 text-slate-700 font-bold border-b border-slate-200 sticky top-0">
                     <tr>
                       <th className="px-3 py-2">Column Name</th>
                       <th className="px-3 py-2">SQL Type</th>
@@ -1430,7 +1430,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       <td className="px-3 py-1.5 text-slate-500">TEXT</td>
                       <td className="px-3 py-1.5 font-sans text-slate-600">Unique internal code (e.g. KFH-2501)</td>
                     </tr>
-                    <tr className="bg-slate-100/50">
+                    <tr className="bg-slate-200/50">
                       <td className="px-3 py-1.5 font-bold text-red-700">name</td>
                       <td className="px-3 py-1.5 text-slate-500">TEXT</td>
                       <td className="px-3 py-1.5 font-sans text-slate-600">Part Number / Model (e.g. sfc-5706)</td>
@@ -1440,7 +1440,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       <td className="px-3 py-1.5 text-slate-500">NUMERIC</td>
                       <td className="px-3 py-1.5 font-sans text-slate-600">Height in Inches (e.g. 7.850)</td>
                     </tr>
-                    <tr className="bg-slate-100/50">
+                    <tr className="bg-slate-200/50">
                       <td className="px-3 py-1.5 font-bold text-blue-700">height_mm</td>
                       <td className="px-3 py-1.5 text-slate-500">NUMERIC</td>
                       <td className="px-3 py-1.5 font-sans text-slate-600">Height in Millimeters (e.g. 199.390)</td>
@@ -1450,7 +1450,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       <td className="px-3 py-1.5 text-slate-500">NUMERIC</td>
                       <td className="px-3 py-1.5 font-sans text-slate-600">Outer Diameter (OD / Length) in Inches</td>
                     </tr>
-                    <tr className="bg-slate-100/50">
+                    <tr className="bg-slate-200/50">
                       <td className="px-3 py-1.5 font-bold text-blue-700">inner_dia_inch</td>
                       <td className="px-3 py-1.5 text-slate-500">NUMERIC</td>
                       <td className="px-3 py-1.5 font-sans text-slate-600">Inner Diameter (ID / Width) in Inches</td>
@@ -1460,7 +1460,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       <td className="px-3 py-1.5 text-slate-500">TEXT</td>
                       <td className="px-3 py-1.5 font-sans text-slate-600">Thread pitch specification (e.g. 1"-16 UNF)</td>
                     </tr>
-                    <tr className="bg-slate-100/50">
+                    <tr className="bg-slate-200/50">
                       <td className="px-3 py-1.5 font-bold text-emerald-700">cost_price</td>
                       <td className="px-3 py-1.5 text-slate-500">NUMERIC</td>
                       <td className="px-3 py-1.5 font-sans text-slate-600">Cost Buying Price in PKR</td>
@@ -1470,7 +1470,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       <td className="px-3 py-1.5 text-slate-500">NUMERIC</td>
                       <td className="px-3 py-1.5 font-sans text-slate-600">Tier 1 Selling Price (Wholesale) in PKR</td>
                     </tr>
-                    <tr className="bg-slate-100/50">
+                    <tr className="bg-slate-200/50">
                       <td className="px-3 py-1.5 font-bold text-emerald-700">retail_price</td>
                       <td className="px-3 py-1.5 text-slate-500">NUMERIC</td>
                       <td className="px-3 py-1.5 font-sans text-slate-600">Tier 2 Selling Price (Retail) in PKR</td>
@@ -1489,7 +1489,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-5 sm:px-6 py-3.5 bg-slate-100 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+        <div className="px-5 sm:px-6 py-3.5 bg-slate-200 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
           <div className="text-xs text-slate-500 font-medium truncate flex items-center gap-2">
             <span>{products.length} Products</span>
             <span>•</span>

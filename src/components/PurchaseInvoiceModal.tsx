@@ -388,7 +388,7 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           </div>
 
           {/* Vendor Info Box */}
-          <div className="bg-slate-100 rounded-2xl p-4 sm:p-5 border border-slate-200/80 flex flex-col sm:flex-row justify-between gap-4">
+          <div className="bg-slate-200 rounded-2xl p-4 sm:p-5 border border-slate-200/80 flex flex-col sm:flex-row justify-between gap-4">
             <div>
               <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                 Purchased From (Vendor)
@@ -403,12 +403,12 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
                     Order Ref: PO #{purchase.poNumber}
                   </span>
                   {purchase.biltyNumber && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-medium">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-200 text-slate-700 border border-slate-300 rounded-lg font-medium">
                       Bilty / Tracking: {purchase.biltyNumber}
                     </span>
                   )}
                   {purchase.transporterName && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-medium">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-200 text-slate-700 border border-slate-300 rounded-lg font-medium">
                       Transporter: {purchase.transporterName}
                     </span>
                   )}
@@ -476,7 +476,7 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
+                <tr className="bg-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
                   <th className="px-3.5 py-3 w-10 text-center">#</th>
                   <th className="px-3.5 py-3">Part #</th>
                   <th className="px-3.5 py-3">Product Description</th>
@@ -490,7 +490,7 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
                 {purchase.items.map((item, idx) => {
                   const metrics = getItemMetrics(item);
                   return (
-                    <tr key={item.id || idx} className={`hover:bg-slate-100/70 ${metrics.isFullyReturned ? 'bg-amber-50/40' : ''}`}>
+                    <tr key={item.id || idx} className={`hover:bg-slate-300/70 ${metrics.isFullyReturned ? 'bg-amber-50/40' : ''}`}>
                       <td className="px-3.5 py-3 text-center text-slate-400 font-bold">{idx + 1}</td>
                       <td className="px-3.5 py-3 font-mono font-bold text-amber-900">
                         <span className="bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
@@ -567,7 +567,7 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               )}
             </div>
 
-            <div className="w-full sm:w-80 bg-slate-100 rounded-2xl p-4 border border-slate-200 space-y-2.5">
+            <div className="w-full sm:w-80 bg-slate-200 rounded-2xl p-4 border border-slate-200 space-y-2.5">
               <div className="flex justify-between text-xs text-slate-600 font-semibold">
                 <span>Original Subtotal:</span>
                 <span className="font-mono">{formatPKR(purchase.subtotal)}</span>

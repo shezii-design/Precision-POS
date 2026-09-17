@@ -375,7 +375,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
         {/* Modal Body / Form */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {/* Section 1: Order Details & Vendor Selection */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 bg-slate-100/80 p-4 rounded-2xl border border-slate-200/80">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 bg-slate-200/80 p-4 rounded-2xl border border-slate-200/80">
             {/* Vendor Selector */}
             <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
@@ -519,7 +519,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
                   }}
                   onFocus={() => setShowProductDropdown(true)}
                   placeholder="Search and click product to add to Purchase Order..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-2xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition-all shadow-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-200 border border-slate-200 rounded-2xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition-all shadow-sm"
                 />
                 {productSearchQuery && (
                   <button
@@ -547,7 +547,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
                           key={prod.id}
                           onClick={() => handleAddProduct(prod)}
                           className={`p-2.5 rounded-xl flex items-center justify-between cursor-pointer transition-colors ${
-                            isAlreadyAdded ? 'bg-amber-50/60 hover:bg-amber-100/60' : 'hover:bg-slate-100'
+                            isAlreadyAdded ? 'bg-amber-50/60 hover:bg-amber-100/60' : 'hover:bg-slate-300'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -601,7 +601,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
 
             {/* Items Table */}
             {items.length === 0 ? (
-              <div className="p-8 text-center bg-slate-100 rounded-2xl border border-dashed border-slate-300 space-y-2">
+              <div className="p-8 text-center bg-slate-200 rounded-2xl border border-dashed border-slate-300 space-y-2">
                 <Box className="w-8 h-8 text-slate-400 mx-auto" />
                 <p className="text-xs font-bold text-slate-700">No products added to this Purchase Order yet</p>
                 <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
@@ -613,7 +613,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
                 <div className="overflow-x-auto max-h-[38vh]">
                   <table className="w-full min-w-[700px] text-left border-collapse text-xs">
                     <thead>
-                      <tr className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-[11px]">
+                      <tr className="bg-slate-200/90 text-slate-700 font-bold border-b border-slate-200 text-[11px]">
                         <th className="py-2.5 px-3 w-10 text-center">#</th>
                         <th className="py-2.5 px-3">Product / Part</th>
                         <th className="py-2.5 px-3 text-center w-24">In Hand</th>
@@ -627,7 +627,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
                       {items.map((item, index) => {
                         const lineTotal = (Number(item.orderedQuantity) || 0) * (Number(item.estimatedUnitPrice) || 0);
                         return (
-                          <tr key={item.tempId} className="hover:bg-slate-100/80 transition-colors">
+                          <tr key={item.tempId} className="hover:bg-slate-300/80 transition-colors">
                             <td className="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">
                               {index + 1}
                             </td>
@@ -644,7 +644,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
                               </div>
                             </td>
                             <td className="py-2.5 px-3 text-center">
-                              <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-md">
+                              <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-[11px] font-bold rounded-md">
                                 {item.stockInHand} {item.unit}
                               </span>
                             </td>
@@ -656,7 +656,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
                                   step="1"
                                   value={item.orderedQuantity}
                                   onChange={(e) => handleUpdateItem(index, 'orderedQuantity', parseInt(e.target.value, 10) || 1)}
-                                  className="w-20 px-2 py-1 bg-slate-100 border border-slate-300 rounded-lg text-xs font-black text-center text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
+                                  className="w-20 px-2 py-1 bg-slate-200 border border-slate-300 rounded-lg text-xs font-black text-center text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                                 />
                               </div>
                             </td>
@@ -668,7 +668,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
                                   step="any"
                                   value={item.estimatedUnitPrice || ''}
                                   onChange={(e) => handleUpdateItem(index, 'estimatedUnitPrice', parseFloat(e.target.value) || 0)}
-                                  className="w-28 px-2 py-1 bg-slate-100 border border-slate-300 rounded-lg text-xs font-black text-right text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 font-mono"
+                                  className="w-28 px-2 py-1 bg-slate-200 border border-slate-300 rounded-lg text-xs font-black text-right text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 font-mono"
                                 />
                               </div>
                             </td>
@@ -706,7 +706,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Please deliver via Faisal Movers Cargo to Badami Bagh Lahore; notify upon dispatch..."
-              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition-all shadow-sm"
+              className="w-full px-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition-all shadow-sm"
             />
           </div>
 
@@ -743,11 +743,11 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
         </form>
 
         {/* Modal Footer */}
-        <div className="bg-slate-100 border-t border-slate-200 px-5 py-3.5 flex items-center justify-between gap-3 shrink-0">
+        <div className="bg-slate-200 border-t border-slate-200 px-5 py-3.5 flex items-center justify-between gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer"
+            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer"
           >
             Cancel
           </button>

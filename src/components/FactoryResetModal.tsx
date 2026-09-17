@@ -66,7 +66,7 @@ export function FactoryResetModal({ isOpen, onClose, onConfirmWipe }: FactoryRes
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder="DELETE ALL"
-              className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono text-center uppercase"
+              className="w-full px-4 py-2.5 bg-slate-200 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono text-center uppercase"
             />
           </div>
 
@@ -74,7 +74,7 @@ export function FactoryResetModal({ isOpen, onClose, onConfirmWipe }: FactoryRes
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+              className="flex-1 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-colors"
             >
               Cancel
             </button>

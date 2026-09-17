@@ -135,7 +135,7 @@ export const ReturnVoucherModal: React.FC<ReturnVoucherModalProps> = ({
           </div>
 
           {/* Party & Reference Meta */}
-          <div className="my-5 p-4 rounded-xl bg-slate-100 border border-slate-200 grid grid-cols-2 gap-4 text-xs">
+          <div className="my-5 p-4 rounded-xl bg-slate-200 border border-slate-200 grid grid-cols-2 gap-4 text-xs">
             <div>
               <div className="text-[10px] font-black uppercase text-slate-400">
                 {isCustomerReturn ? 'Customer / Company Details' : 'Supplier / Vendor Details'}
@@ -167,7 +167,7 @@ export const ReturnVoucherModal: React.FC<ReturnVoucherModalProps> = ({
           <div className="overflow-x-auto border border-slate-200 rounded-xl my-4">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-black">
+                <tr className="bg-slate-200 border-b border-slate-200 text-slate-700 font-black">
                   <th className="py-2.5 px-3 w-8">#</th>
                   <th className="py-2.5 px-3">Item Description & Part #</th>
                   <th className="py-2.5 px-3">Brand / Type</th>
@@ -184,7 +184,7 @@ export const ReturnVoucherModal: React.FC<ReturnVoucherModalProps> = ({
                     : (item as any).unitCost || 0;
                   const itemCondition = isCustomerReturn ? (item as any).condition : 'Vendor Return';
                   return (
-                    <tr key={item.id || index} className="hover:bg-slate-100/50">
+                    <tr key={item.id || index} className="hover:bg-slate-300/50">
                       <td className="py-2.5 px-3 font-bold text-slate-500">{index + 1}</td>
                       <td className="py-2.5 px-3">
                         <div className="font-bold text-slate-900">{item.productName}</div>

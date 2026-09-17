@@ -105,7 +105,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
       case 'draft':
       default:
         return (
-          <span className="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-black rounded-lg border border-slate-300/80 flex items-center gap-1.5 shadow-sm">
+          <span className="px-2.5 py-1 bg-slate-200 text-slate-700 text-xs font-black rounded-lg border border-slate-300/80 flex items-center gap-1.5 shadow-sm">
             <FileText className="w-3.5 h-3.5" />
             <span>Draft Order</span>
           </span>
@@ -230,7 +230,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
           </div>
 
           {/* Supplier & Cargo Carrier Information */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-100 p-4 rounded-2xl border border-slate-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-200 p-4 rounded-2xl border border-slate-200">
             <div>
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">
                 Supplier Details
@@ -265,7 +265,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
           <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <table className="w-full min-w-[700px] text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200 text-[11px]">
+                <tr className="bg-slate-200 text-slate-800 font-bold border-b border-slate-200 text-[11px]">
                   <th className="py-2.5 px-3 w-8 text-center">#</th>
                   <th className="py-2.5 px-3">Product / Part</th>
                   <th className="py-2.5 px-2 text-center w-18">Ordered</th>
@@ -283,7 +283,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
                   const qtyDiff = (item.receivedQuantity || 0) - (item.orderedQuantity || 0);
 
                   return (
-                    <tr key={item.id || idx} className="hover:bg-slate-100/80">
+                    <tr key={item.id || idx} className="hover:bg-slate-300/80">
                       <td className="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">
                         {idx + 1}
                       </td>
@@ -310,7 +310,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
                       </td>
                       <td className="py-2.5 px-2 text-center">
                         <span className={`px-2 py-0.5 rounded-md font-black text-xs ${
-                          po.isStockReceived ? 'bg-emerald-100 text-emerald-900' : 'bg-slate-100 text-slate-600'
+                          po.isStockReceived ? 'bg-emerald-100 text-emerald-900' : 'bg-slate-200 text-slate-600'
                         }`}>
                           {item.receivedQuantity || 0} {item.unit}
                         </span>
@@ -346,7 +346,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
             {/* Left: Notes & System Status */}
             <div className="space-y-3">
               {po.notes && (
-                <div className="bg-slate-100 p-3.5 rounded-2xl border border-slate-200 text-xs">
+                <div className="bg-slate-200 p-3.5 rounded-2xl border border-slate-200 text-xs">
                   <span className="font-bold text-slate-700 block mb-1">Order Remarks:</span>
                   <p className="text-slate-600 whitespace-pre-line">{po.notes}</p>
                 </div>
@@ -367,7 +367,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
             </div>
 
             {/* Right: Financial Totals Box */}
-            <div className="bg-slate-100 p-4 rounded-2xl border border-slate-200 space-y-2.5 text-xs">
+            <div className="bg-slate-200 p-4 rounded-2xl border border-slate-200 space-y-2.5 text-xs">
               <div className="flex justify-between items-center text-slate-600">
                 <span>Total Items / Units:</span>
                 <span className="font-bold text-slate-900">
@@ -425,11 +425,11 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-slate-100 border-t border-slate-200 px-5 py-3.5 flex items-center justify-between gap-3 shrink-0 print:hidden">
+        <div className="bg-slate-200 border-t border-slate-200 px-5 py-3.5 flex items-center justify-between gap-3 shrink-0 print:hidden">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer"
+            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer"
           >
             Close
           </button>

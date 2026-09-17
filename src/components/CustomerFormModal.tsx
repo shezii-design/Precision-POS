@@ -158,7 +158,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               <Briefcase className="w-3.5 h-3.5 text-slate-400" />
               Account Category
             </label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-200 rounded-2xl">
               <button
                 type="button"
                 onClick={() => setType('customer')}
@@ -197,7 +197,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 placeholder={type === 'company' ? 'e.g. Ahmed Heavy Machinery & Excavation Ltd.' : 'e.g. Al-Rehman Auto Workshop'}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-sm font-bold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-sm font-bold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
                 required
                 autoFocus
               />
@@ -214,7 +214,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 placeholder="e.g. Engr. Ahmed Bilal"
                 value={contactPerson}
                 onChange={(e) => setContactPerson(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
               />
             </div>
 
@@ -229,7 +229,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 placeholder="e.g. 0300-1234567"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
               />
             </div>
 
@@ -244,7 +244,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 placeholder="e.g. 041-8765432"
                 value={secondaryPhone}
                 onChange={(e) => setSecondaryPhone(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
               />
             </div>
 
@@ -259,7 +259,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 placeholder="e.g. accounts@ahmedmachinery.pk"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
               />
             </div>
 
@@ -274,7 +274,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 placeholder="e.g. Faisalabad, Lahore, Rawalpindi"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
               />
             </div>
 
@@ -298,7 +298,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                   placeholder="0"
                   value={openingBalance}
                   onChange={(e) => setOpeningBalance(e.target.value)}
-                  className="w-full pl-7 pr-3 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-bold text-slate-900 outline-hidden transition-all"
+                  className="w-full pl-7 pr-3 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-bold text-slate-900 outline-hidden transition-all"
                 />
               </div>
             </div>
@@ -316,7 +316,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     placeholder="e.g. 3349120-7"
                     value={ntn}
                     onChange={(e) => setNtn(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400 font-mono"
+                    className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400 font-mono"
                   />
                 </div>
 
@@ -330,7 +330,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                     placeholder="e.g. 17-00-3349-120-19"
                     value={strn}
                     onChange={(e) => setStrn(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400 font-mono"
+                    className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400 font-mono"
                   />
                 </div>
               </>
@@ -347,7 +347,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 placeholder="e.g. Plot 45, Industrial Estate, Samundri Road, Faisalabad"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
               />
             </div>
 
@@ -362,7 +362,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
                 placeholder="e.g. Major civil infrastructure client, fleet of excavators and Perkins generators"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400 resize-none"
+                className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400 resize-none"
               />
             </div>
           </div>
@@ -372,7 +372,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-all cursor-pointer"
             >
               Cancel
             </button>

@@ -157,7 +157,7 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
         </div>
 
         {/* Tab Header */}
-        <div className="flex border-b border-slate-200 bg-slate-100 text-xs font-bold px-3 sm:px-6 gap-1 sm:gap-2 pt-2 overflow-x-auto whitespace-nowrap">
+        <div className="flex border-b border-slate-200 bg-slate-200 text-xs font-bold px-3 sm:px-6 gap-1 sm:gap-2 pt-2 overflow-x-auto whitespace-nowrap">
           <button
             type="button"
             onClick={() => setActiveTab('types')}
@@ -207,7 +207,7 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
                   value={newTypeName}
                   onChange={(e) => setNewTypeName(e.target.value)}
                   placeholder="New product type name (e.g. Fuel Water Separator, Gasket)"
-                  className="flex-1 px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
+                  className="flex-1 px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
                 />
                 <button
                   type="submit"
@@ -219,14 +219,14 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {types.length === 0 ? (
-                  <div className="col-span-full py-8 text-center bg-slate-100 border border-dashed border-slate-300 rounded-xl text-xs text-slate-500 font-medium">
+                  <div className="col-span-full py-8 text-center bg-slate-200 border border-dashed border-slate-300 rounded-xl text-xs text-slate-500 font-medium">
                     No product types added yet. Use the field above to add your first type.
                   </div>
                 ) : (
                   types.map((t) => (
                     <div
                       key={t.id}
-                      className="p-2.5 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between hover:bg-red-50/30 transition-colors"
+                      className="p-2.5 bg-slate-200 border border-slate-200 rounded-xl flex items-center justify-between hover:bg-red-50/30 transition-colors"
                     >
                       <span className="text-xs font-bold text-slate-800">{t.name}</span>
                       <button
@@ -252,7 +252,7 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
                   value={newBrandName}
                   onChange={(e) => setNewBrandName(e.target.value)}
                   placeholder="New brand name (e.g. Baldwin, Fleetguard, Mann)"
-                  className="flex-1 px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
+                  className="flex-1 px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
                 />
                 <button
                   type="submit"
@@ -264,14 +264,14 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {brands.length === 0 ? (
-                  <div className="col-span-full py-8 text-center bg-slate-100 border border-dashed border-slate-300 rounded-xl text-xs text-slate-500 font-medium">
+                  <div className="col-span-full py-8 text-center bg-slate-200 border border-dashed border-slate-300 rounded-xl text-xs text-slate-500 font-medium">
                     No brands added yet. Use the field above to add your first brand.
                   </div>
                 ) : (
                   brands.map((b) => (
                     <div
                       key={b.id}
-                      className="p-2.5 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-between hover:bg-red-50/30 transition-colors"
+                      className="p-2.5 bg-slate-200 border border-slate-200 rounded-xl flex items-center justify-between hover:bg-red-50/30 transition-colors"
                     >
                       <span className="text-xs font-bold text-slate-800">{b.name}</span>
                       <button
@@ -292,7 +292,7 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
           {activeTab === 'locations' && (
             <div className="space-y-5">
               {/* Add Location Form */}
-              <form onSubmit={handleAddLocation} className="space-y-2 bg-slate-100 p-3.5 rounded-2xl border border-slate-200">
+              <form onSubmit={handleAddLocation} className="space-y-2 bg-slate-200 p-3.5 rounded-2xl border border-slate-200">
                 <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
                   Add New Storage Location
                 </label>
@@ -302,14 +302,14 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
                     value={newLocationName}
                     onChange={(e) => setNewLocationName(e.target.value)}
                     placeholder="Location Name (e.g. Godown 3, Main Counter)"
-                    className="flex-1 px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900"
+                    className="flex-1 px-3 py-1.5 bg-slate-200 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900"
                   />
                   <input
                     type="text"
                     value={newLocationCabin}
                     onChange={(e) => setNewLocationCabin(e.target.value)}
                     placeholder="Initial Cabin (e.g. C-01)"
-                    className="w-32 px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-mono font-semibold text-slate-900"
+                    className="w-32 px-3 py-1.5 bg-slate-200 border border-slate-300 rounded-xl text-xs font-mono font-semibold text-slate-900"
                   />
                   <button
                     type="submit"
@@ -330,7 +330,7 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
                     <select
                       value={selectedLocationId}
                       onChange={(e) => setSelectedLocationId(e.target.value)}
-                      className="px-2.5 py-1 text-xs font-bold bg-slate-100 border border-slate-300 rounded-lg text-slate-800"
+                      className="px-2.5 py-1 text-xs font-bold bg-slate-200 border border-slate-300 rounded-lg text-slate-800"
                     >
                       {locations.map((loc) => (
                         <option key={loc.id} value={loc.id}>{loc.name}</option>
@@ -344,7 +344,7 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
                       value={newCabinForLocation}
                       onChange={(e) => setNewCabinForLocation(e.target.value)}
                       placeholder="Add Cabin / Rack ID (e.g. C-15, Rack-08)"
-                      className="flex-1 px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900"
+                      className="flex-1 px-3 py-1.5 bg-slate-200 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900"
                     />
                     <button
                       type="submit"
@@ -359,12 +359,12 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
               {/* List Locations & their Cabins */}
               <div className="space-y-3 pt-2">
                 {locations.length === 0 ? (
-                  <div className="py-8 text-center bg-slate-100 border border-dashed border-slate-300 rounded-xl text-xs text-slate-500 font-medium">
+                  <div className="py-8 text-center bg-slate-200 border border-dashed border-slate-300 rounded-xl text-xs text-slate-500 font-medium">
                     No locations added yet. Use the form above to add your first warehouse or shop location.
                   </div>
                 ) : (
                   locations.map((loc) => (
-                    <div key={loc.id} className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl space-y-2">
+                    <div key={loc.id} className="p-3.5 bg-slate-200 border border-slate-200 rounded-2xl space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 font-bold text-xs text-slate-900">
                           <MapPin className="w-3.5 h-3.5 text-red-600" />
@@ -406,7 +406,7 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-100 border-t border-slate-200 flex items-center justify-end">
+        <div className="px-6 py-4 bg-slate-200 border-t border-slate-200 flex items-center justify-end">
           <button
             type="button"
             onClick={onClose}

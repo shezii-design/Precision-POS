@@ -80,7 +80,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
       {/* Table control sub-bar */}
-      <div className="p-3 bg-slate-100 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-xs font-semibold text-slate-700">
+      <div className="p-3 bg-slate-200 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-xs font-semibold text-slate-700">
         <div>
           Showing <span className="font-bold text-slate-900">{products.length}</span> items in table view
         </div>
@@ -116,21 +116,21 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
           data={products}
           components={{
             Table: (props) => <table className="w-full min-w-[920px] text-left text-xs" {...props} />,
-            TableHead: React.forwardRef((props, ref) => <thead className="bg-slate-100/90 text-slate-600 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200" {...props} ref={ref} />),
+            TableHead: React.forwardRef((props, ref) => <thead className="bg-slate-200/90 text-slate-600 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200" {...props} ref={ref} />),
             TableBody: React.forwardRef((props, ref) => <tbody className="divide-y divide-slate-100" {...props} ref={ref} />)
           }}
           fixedHeaderContent={() => (
             <tr>
-              <th className="py-3 px-3.5 bg-slate-100/90">ID / Name</th>
-              <th className="py-3 px-3 bg-slate-100/90">Brand / Type</th>
-              <th className="py-3 px-3 bg-slate-100/90">Location & Cabin</th>
-              <th className="py-3 px-3 bg-slate-100/90">Stock</th>
-              <th className="py-3 px-3 text-red-600 font-black bg-slate-100/90">Cost (PKR)</th>
-              <th className="py-3 px-3 text-amber-600 font-black bg-slate-100/90">Wholesale (PKR)</th>
-              <th className="py-3 px-3 text-emerald-700 font-black bg-slate-100/90">Retail (PKR)</th>
-              <th className="py-3 px-3 bg-slate-100/90">Dimensions ({tableUnit})</th>
-              <th className="py-3 px-3 bg-slate-100/90">Thread</th>
-              <th className="py-3 px-3 text-right bg-slate-100/90">Actions</th>
+              <th className="py-3 px-3.5 bg-slate-200/90">ID / Name</th>
+              <th className="py-3 px-3 bg-slate-200/90">Brand / Type</th>
+              <th className="py-3 px-3 bg-slate-200/90">Location & Cabin</th>
+              <th className="py-3 px-3 bg-slate-200/90">Stock</th>
+              <th className="py-3 px-3 text-red-600 font-black bg-slate-200/90">Cost (PKR)</th>
+              <th className="py-3 px-3 text-amber-600 font-black bg-slate-200/90">Wholesale (PKR)</th>
+              <th className="py-3 px-3 text-emerald-700 font-black bg-slate-200/90">Retail (PKR)</th>
+              <th className="py-3 px-3 bg-slate-200/90">Dimensions ({tableUnit})</th>
+              <th className="py-3 px-3 bg-slate-200/90">Thread</th>
+              <th className="py-3 px-3 text-right bg-slate-200/90">Actions</th>
             </tr>
           )}
           itemContent={(index, p) => {
@@ -164,7 +164,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                   {/* Brand & Type */}
                   <td className="py-3 px-3">
                     <div className="flex flex-col gap-1 items-start">
-                      <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-bold">
+                      <span className="bg-slate-200 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-bold">
                         {p.brandName}
                       </span>
                       <span className="text-[11px] text-slate-500 font-semibold truncate max-w-[120px]" title={p.typeName}>

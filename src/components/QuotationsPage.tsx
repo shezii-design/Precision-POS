@@ -301,7 +301,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
               placeholder="Search by Quotation #, Customer / Company Name, Phone, Item Name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600"
+              className="w-full pl-9 pr-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600"
             />
             {searchQuery && (
               <button
@@ -320,7 +320,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden"
+              className="px-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden"
             >
               <option value="date_desc">Newest Issued First</option>
               <option value="date_asc">Oldest Issued First</option>
@@ -349,7 +349,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
                 className={`px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer border ${
                   statusFilter === pill.id
                     ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                    : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    : 'bg-slate-200 text-slate-600 border-slate-200 hover:bg-slate-300'
                 }`}
               >
                 <span>{pill.label}</span>
@@ -363,7 +363,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
           </div>
 
           {/* Customer / Company Type Filter */}
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-[11px] font-bold">
+          <div className="flex items-center gap-1 bg-slate-200 p-0.5 rounded-xl border border-slate-200 text-[11px] font-bold">
             <button
               type="button"
               onClick={() => setTypeFilter('all')}
@@ -422,7 +422,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-left text-xs">
-              <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+              <thead className="bg-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-4">Quotation # & Date</th>
                   <th className="py-3 px-4 min-w-[200px]">Recipient (Customer / Company)</th>
@@ -442,7 +442,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
                   return (
                     <tr 
                       key={quotation.id} 
-                      className="hover:bg-slate-100/70 transition-colors group cursor-pointer"
+                      className="hover:bg-slate-300/70 transition-colors group cursor-pointer"
                       onClick={() => onViewQuotation(quotation)}
                     >
                       {/* Quotation Number & Date */}
@@ -465,7 +465,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
                             <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                           )}
                           <span className="truncate max-w-xs">{quotation.customerName}</span>
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 text-slate-600">
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-200 text-slate-600">
                             {quotation.customerType === 'company' ? 'Company' : 'Customer'}
                           </span>
                         </div>
@@ -535,7 +535,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
                             type="button"
                             title="View Full Quotation & Print"
                             onClick={() => onViewQuotation(quotation)}
-                            className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors cursor-pointer"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -568,7 +568,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
                             type="button"
                             title="Edit Quotation"
                             onClick={() => onEditQuotation(quotation)}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-300 rounded-lg transition-colors cursor-pointer"
                           >
                             <Edit3 className="w-4 h-4" />
                           </button> : null}

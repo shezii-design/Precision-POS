@@ -92,7 +92,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 value={enteredEmail}
                 onChange={(e) => setEnteredEmail(e.target.value)}
                 placeholder="Enter username or email"
-                className="w-full px-4 py-3 bg-slate-100 border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all"
+                className="w-full px-4 py-3 bg-slate-200 border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all"
               />
             </div>
 
@@ -104,7 +104,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   value={enteredPassword}
                   onChange={(e) => setEnteredPassword(e.target.value)}
                   placeholder="Enter your password or PIN"
-                  className="w-full px-4 py-3 pr-10 bg-slate-100 border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all"
+                  className="w-full px-4 py-3 pr-10 bg-slate-200 border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all"
                 />
                 <button
                   type="button"

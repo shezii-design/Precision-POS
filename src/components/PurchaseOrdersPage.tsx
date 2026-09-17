@@ -152,7 +152,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
               All active & historic
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold border border-slate-200">
+          <div className="w-10 h-10 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center font-bold border border-slate-200">
             <FileText className="w-5 h-5" />
           </div>
         </div>
@@ -257,13 +257,13 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search PO#, Supplier, Bill#, Item..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition-all shadow-sm"
+            className="w-full pl-10 pr-4 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition-all shadow-sm"
           />
         </div>
 
         {/* Status Filter Chips & Vendor Dropdown */}
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end">
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+          <div className="flex items-center gap-1 bg-slate-200 p-1 rounded-xl text-xs font-bold">
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
@@ -305,7 +305,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
           <select
             value={vendorFilter}
             onChange={(e) => setVendorFilter(e.target.value)}
-            className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-amber-600 cursor-pointer shadow-sm"
+            className="px-3 py-1.5 bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-amber-600 cursor-pointer shadow-sm"
           >
             <option value="all">All Suppliers</option>
             {vendors.map(v => (
@@ -360,7 +360,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                 {/* Left: PO Identification & Supplier */}
                 <div className="space-y-1.5 min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono font-black text-sm text-slate-900 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                    <span className="font-mono font-black text-sm text-slate-900 bg-slate-200 px-2 py-0.5 rounded-lg border border-slate-200">
                       {po.poNumber}
                     </span>
 
@@ -381,14 +381,14 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                       </span>
                     )}
                     {isDraft && (
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-md">
+                      <span className="px-2 py-0.5 bg-slate-200 text-slate-600 text-[11px] font-bold rounded-md">
                         Draft
                       </span>
                     )}
 
                     {/* Cargo / Bilty Info */}
                     {po.biltyNumber && (
-                      <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                      <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded border border-slate-200">
                         Bilty: {po.biltyNumber}
                       </span>
                     )}
@@ -426,7 +426,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                     {po.items.slice(0, 3).map((it, idx) => (
                       <span 
                         key={idx} 
-                        className="text-[10px] font-medium bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded border border-slate-200"
+                        className="text-[10px] font-medium bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded border border-slate-200"
                       >
                         {it.productName} ({po.isStockReceived ? it.receivedQuantity : it.orderedQuantity} {it.unit})
                       </span>
@@ -440,7 +440,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                 </div>
 
                 {/* Middle: Financial & Cargo Distribution Breakdown */}
-                <div className="flex items-center gap-4 sm:gap-6 bg-slate-100/90 px-4 py-2.5 rounded-2xl border border-slate-200/80 shrink-0">
+                <div className="flex items-center gap-4 sm:gap-6 bg-slate-200/90 px-4 py-2.5 rounded-2xl border border-slate-200/80 shrink-0">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase block">Cargo Freight</span>
                     <span className="text-xs font-bold text-slate-700 font-mono">
@@ -494,7 +494,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                   {isCompleted && ( onOpenReceiveCargo ? <button
                       type="button"
                       onClick={() => onOpenReceiveCargo(po)}
-                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
                       title="Edit cargo receiving or costs"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -504,7 +504,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                   <button
                     type="button"
                     onClick={() => onViewPO(po)}
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
                     title="View & Print PO"
                   >
                     <FileText className="w-3.5 h-3.5" />
@@ -515,7 +515,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                     <button
                       type="button"
                       onClick={() => onEditPO(po)}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                      className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-300 transition-colors"
                       title="Edit Order"
                     >
                       <Edit3 className="w-4 h-4" />
