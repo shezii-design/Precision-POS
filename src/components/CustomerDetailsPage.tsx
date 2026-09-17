@@ -502,14 +502,14 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-1">
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="p-3 bg-slate-100 rounded-2xl border border-slate-100">
               <span className="text-[10px] font-bold text-slate-400 uppercase">Invoices Created</span>
               <div className="text-xl font-black text-slate-900 mt-0.5">
                 {customerSales.length}
               </div>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="p-3 bg-slate-100 rounded-2xl border border-slate-100">
               <span className="text-[10px] font-bold text-slate-400 uppercase">Total Sales Value</span>
               <div className="text-base font-black text-slate-900 mt-0.5 truncate">
                 {formatPKR(customerSales.reduce((s, x) => s + (x.totalAmount || 0), 0))}
@@ -531,7 +531,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
         <div className={`p-5 rounded-3xl border shadow-sm flex flex-col justify-between ${
           netBalance > 0 
             ? 'bg-rose-50/70 border-rose-200 text-rose-950' 
-            : (netBalance < 0 ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-900')
+            : (netBalance < 0 ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950' : 'bg-slate-100 border-slate-200 text-slate-900')
         }`}>
           <div>
             <div className="flex items-center justify-between">
@@ -698,7 +698,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                   placeholder="Search machines or parts..."
                   value={machineSearchTerm}
                   onChange={(e) => setMachineSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 outline-hidden focus:border-red-500"
+                  className="w-full pl-8 pr-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 outline-hidden focus:border-red-500"
                 />
               </div>
 
@@ -768,7 +768,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                     }`}
                   >
                     {/* Machine Header Bar */}
-                    <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="p-4 sm:p-5 bg-slate-100/80 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-start gap-3">
                         {/* Selection Checkbox */}
                         <button
@@ -870,7 +870,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                                 const isLowStock = currentStock < it.quantity;
 
                                 return (
-                                  <tr key={it.id} className="hover:bg-slate-50/80">
+                                  <tr key={it.id} className="hover:bg-slate-100/80">
                                     <td className="py-2.5 px-3">
                                       <div className="font-black text-slate-900">
                                         {it.productName}
@@ -983,7 +983,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                   value={ledgerSearch}
                   onChange={(e) => setLedgerSearch(e.target.value)}
                   placeholder="Search invoice, code, remarks..."
-                  className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:bg-white"
+                  className="w-full pl-8 pr-7 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:bg-white"
                 />
                 {ledgerSearch && (
                   <button
@@ -1245,7 +1245,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                     customerSales.map((s) => (
                       <tr 
                         key={s.id} 
-                        className="hover:bg-slate-50 cursor-pointer"
+                        className="hover:bg-slate-100 cursor-pointer"
                         onDoubleClick={() => onViewInvoice?.(s)}
                         title="Double-click to view / print invoice"
                       >

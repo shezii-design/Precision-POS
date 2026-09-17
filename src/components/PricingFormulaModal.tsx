@@ -149,7 +149,7 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
                         value={tier.name}
                         onChange={(e) => handleTierNameChange(index, e.target.value)}
                         placeholder="e.g. Wholesale, Retail, Sell@20%"
-                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                        className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                       />
                     </div>
 
@@ -165,7 +165,7 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
                           min="0"
                           value={tier.markupPercent}
                           onChange={(e) => handleTierMarkupChange(index, parseFloat(e.target.value))}
-                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-bold text-red-600 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 pr-7"
+                          className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-bold text-red-600 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 pr-7"
                         />
                         <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
                           %
@@ -237,7 +237,7 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
           </div>
 
           {/* Option to recalculate existing inventory */}
-          <label className="flex items-start gap-3 p-3 sm:p-3.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100/70 transition-colors">
+          <label className="flex items-start gap-3 p-3 sm:p-3.5 bg-slate-100 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100/70 transition-colors">
             <input
               type="checkbox"
               checked={recalculateAll}
@@ -252,11 +252,11 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-100 border-t border-slate-200 flex items-center justify-end gap-2.5">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 bg-slate-50 border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors"
+            className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors"
           >
             Cancel
           </button>

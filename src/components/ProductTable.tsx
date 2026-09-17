@@ -80,7 +80,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
       {/* Table control sub-bar */}
-      <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-xs font-semibold text-slate-700">
+      <div className="p-3 bg-slate-100 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-xs font-semibold text-slate-700">
         <div>
           Showing <span className="font-bold text-slate-900">{products.length}</span> items in table view
         </div>

@@ -342,7 +342,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
         </div>
 
         {/* Dead Stock */}
-        <div className="lg:col-span-1 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[500px]">
+        <div className="lg:col-span-1 bg-slate-100 border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[500px]">
           <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
             <div>
               <h3 className="font-bold text-slate-800 flex items-center gap-2">

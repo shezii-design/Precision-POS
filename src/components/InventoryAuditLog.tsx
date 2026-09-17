@@ -387,7 +387,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                 id="btn-refresh-audit-logs"
                 onClick={onRefresh}
                 title="Refresh logs from local storage"
-                className="inline-flex items-center justify-center p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                className="inline-flex items-center justify-center p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
@@ -446,7 +446,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
 
         {/* 2. Key Audit Metrics Ribbon */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mt-6 pt-6 border-t border-slate-100">
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+          <div className="p-3.5 bg-slate-100 rounded-xl border border-slate-100">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Audits</span>
             <span className="text-lg font-black text-slate-900 mt-0.5 block">{metrics.totalMovements}</span>
             <span className="text-[11px] text-slate-500">Matching filters</span>
@@ -530,7 +530,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                 handleFilterChange();
               }}
               placeholder="Search product, ID (KFH-2501), ref #, vendor/customer..."
-              className="w-full pl-9 pr-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-slate-900"
+              className="w-full pl-9 pr-3.5 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all text-slate-900"
             />
             {searchTerm && (
               <button
@@ -554,7 +554,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                 setSelectedMovementType(e.target.value);
                 handleFilterChange();
               }}
-              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
+              className="w-full px-3 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
             >
               <option value="all">All Movement Types</option>
               <option value="sale">Customer Sales (Outflow)</option>
@@ -577,7 +577,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                 setSelectedDirection(e.target.value as any);
                 handleFilterChange();
               }}
-              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
+              className="w-full px-3 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
             >
               <option value="all">All Directions</option>
               <option value="in">Inflow Only (+)</option>
@@ -595,7 +595,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                 setDateRangePreset(e.target.value as any);
                 handleFilterChange();
               }}
-              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
+              className="w-full px-3 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
             >
               <option value="all">All Time History</option>
               <option value="today">Today</option>
@@ -619,7 +619,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                 setSelectedProductId(e.target.value);
                 handleFilterChange();
               }}
-              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
+              className="w-full px-3 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
             >
               <option value="all">All Products in Catalog ({products.length})</option>
               {products.map(p => (
@@ -639,7 +639,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                 setSelectedLocation(e.target.value);
                 handleFilterChange();
               }}
-              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
+              className="w-full px-3 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
             >
               <option value="all">All Warehouses & Locations</option>
               {availableLocations.map(loc => (
@@ -662,7 +662,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                     setStartDate(e.target.value);
                     handleFilterChange();
                   }}
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
+                  className="w-full px-3 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
                   placeholder="From Date"
                 />
               </div>
@@ -675,7 +675,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                     setEndDate(e.target.value);
                     handleFilterChange();
                   }}
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
+                  className="w-full px-3 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-slate-800 font-medium"
                   placeholder="To Date"
                 />
               </div>
@@ -687,7 +687,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
       {/* 4. Audit Trail Table & Historical Snapshots */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         {/* Table Header & Quick Sorters */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3 bg-slate-50/50">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3 bg-slate-100/50">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
               Showing {paginatedLogs.length} of {sortedLogs.length} Audit Entries
@@ -744,7 +744,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider select-none">
+                <tr className="border-b border-slate-200 bg-slate-100/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider select-none">
                   <th className="py-3 px-4">
                     <button
                       onClick={() => {
@@ -827,7 +827,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                   return (
                     <tr 
                       key={log.id} 
-                      className="hover:bg-slate-50/70 transition-colors group cursor-pointer"
+                      className="hover:bg-slate-100/70 transition-colors group cursor-pointer"
                       onClick={() => setSelectedLog(log)}
                     >
                       {/* Timestamp Column */}
@@ -1012,7 +1012,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
 
         {/* 5. Pagination Footer */}
         {sortedLogs.length > 0 && (
-          <div className="px-5 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between flex-wrap gap-3">
+          <div className="px-5 py-4 border-t border-slate-100 bg-slate-100/50 flex items-center justify-between flex-wrap gap-3">
             <div className="text-xs text-slate-500 font-medium">
               Showing <span className="font-bold text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
               <span className="font-bold text-slate-900">{Math.min(currentPage * itemsPerPage, sortedLogs.length)}</span> of{' '}
@@ -1097,7 +1097,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
             {/* Content */}
             <div className="p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               {/* Product Info Banner */}
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+              <div className="bg-slate-100 rounded-2xl p-4 border border-slate-200">
                 <div className="flex items-center gap-2">
                   {selectedLog.internalId && (
                     <span className="font-mono text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-md">
@@ -1146,23 +1146,23 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
 
               {/* Metadata Details Grid */}
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="p-3 bg-slate-100 rounded-xl border border-slate-100">
                   <span className="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">Movement Event</span>
                   <span className="font-bold text-slate-800 mt-0.5 block">{selectedLog.reason}</span>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="p-3 bg-slate-100 rounded-xl border border-slate-100">
                   <span className="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">Timestamp</span>
                   <span className="font-semibold text-slate-800 mt-0.5 block">
                     {new Date(selectedLog.timestamp).toLocaleString('en-GB')}
                   </span>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="p-3 bg-slate-100 rounded-xl border border-slate-100">
                   <span className="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">Reference Document</span>
                   <span className="font-mono font-bold text-slate-800 mt-0.5 block">
                     {selectedLog.referenceNumber || selectedLog.referenceId || 'N/A'}
                   </span>
                 </div>
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="p-3 bg-slate-100 rounded-xl border border-slate-100">
                   <span className="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">Customer / Vendor</span>
                   <span className="font-semibold text-slate-800 mt-0.5 block truncate">
                     {selectedLog.entityName || 'General / System'}
@@ -1187,7 +1187,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
 
               {/* Notes / Details */}
               {selectedLog.notes && (
-                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="p-3.5 bg-slate-100 rounded-xl border border-slate-200">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                     Audit Notes & Transaction Context
                   </span>
@@ -1251,7 +1251,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
 
             {/* Product Summary Bar */}
             {timelineProduct && (
-              <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2 text-xs shrink-0">
+              <div className="bg-slate-100 px-6 py-3 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2 text-xs shrink-0">
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">
                     {timelineProduct.internalId}
@@ -1288,7 +1288,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
                         </div>
 
                         {/* Event Card */}
-                        <div className="bg-slate-50 hover:bg-white hover:shadow-md border border-slate-200 rounded-2xl p-4 transition-all">
+                        <div className="bg-slate-100 hover:bg-white hover:shadow-md border border-slate-200 rounded-2xl p-4 transition-all">
                           <div className="flex items-center justify-between flex-wrap gap-2">
                             <div className="flex items-center gap-2">
                               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold border ${meta.bg}`}>
@@ -1341,7 +1341,7 @@ export const InventoryAuditLog: React.FC<InventoryAuditLogProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-end shrink-0">
+            <div className="bg-slate-100 px-6 py-3.5 border-t border-slate-200 flex items-center justify-end shrink-0">
               <button
                 onClick={() => setTimelineProductId(null)}
                 className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors"

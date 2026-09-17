@@ -218,7 +218,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search Invoice ID, Date, Customer Name, Phone, Item..."
-              className="w-full pl-9 sm:pl-10 pr-9 sm:pr-10 py-2.5 sm:py-3 bg-slate-50 border border-slate-300 rounded-2xl text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-colors shadow-sm"
+              className="w-full pl-9 sm:pl-10 pr-9 sm:pr-10 py-2.5 sm:py-3 bg-slate-100 border border-slate-300 rounded-2xl text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-colors shadow-sm"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2" />
             {searchQuery && (
@@ -240,7 +240,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
               className={`flex-1 sm:flex-initial justify-center px-3 py-2 sm:py-3 rounded-2xl text-xs font-bold transition-colors flex items-center gap-1.5 border cursor-pointer select-none ${
                 showFiltersDrawer || hasActiveFilters
                   ? 'bg-red-50 text-red-700 border-red-300 shadow-sm'
-                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
               }`}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -265,7 +265,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
 
         {/* Row 2: Advanced Filters Drawer (Date Range, Amount Range, Sort & Sale Type) */}
         {showFiltersDrawer && (
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 animate-in fade-in duration-150">
+          <div className="bg-slate-100 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 animate-in fade-in duration-150">
             {/* Quick Date Presets */}
             <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
               <span className="text-[11px] text-slate-500 uppercase tracking-wider mr-1">Date Presets:</span>
@@ -273,7 +273,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                 type="button"
                 onClick={() => setDatePreset('all')}
                 className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                  !startDate && !endDate ? 'bg-red-600 text-white' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  !startDate && !endDate ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 All Time
@@ -281,21 +281,21 @@ export const SalesPage: React.FC<SalesPageProps> = ({
               <button
                 type="button"
                 onClick={() => setDatePreset('today')}
-                className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                className="px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 Today
               </button>
               <button
                 type="button"
                 onClick={() => setDatePreset('7days')}
-                className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                className="px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 Last 7 Days
               </button>
               <button
                 type="button"
                 onClick={() => setDatePreset('thisMonth')}
-                className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                className="px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 This Month
               </button>
@@ -312,7 +312,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                  className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                 />
               </div>
 
@@ -325,7 +325,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                  className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                 />
               </div>
 
@@ -340,7 +340,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   value={minAmount}
                   onChange={(e) => setMinAmount(e.target.value)}
                   placeholder="e.g. 1000"
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                  className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                 />
               </div>
 
@@ -355,7 +355,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   value={maxAmount}
                   onChange={(e) => setMaxAmount(e.target.value)}
                   placeholder="e.g. 50000"
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                  className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                 />
               </div>
             </div>
@@ -369,7 +369,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   <select
                     value={paymentTypeFilter}
                     onChange={(e) => setPaymentTypeFilter(e.target.value as any)}
-                    className="px-2.5 py-1 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
+                    className="px-2.5 py-1 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
                   >
                     <option value="all">All Types</option>
                     <option value="cash">Full Cash (Paid)</option>
@@ -384,7 +384,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="px-2.5 py-1 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
+                    className="px-2.5 py-1 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
                   >
                     <option value="date_desc">Date: Latest to Oldest</option>
                     <option value="date_asc">Date: Oldest to Latest</option>
@@ -471,7 +471,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                         onDoubleClick={() => onViewInvoice ? onViewInvoice(sale) : (onEditSale && onEditSale(sale))}
                         className={`transition-colors cursor-pointer select-none group ${
                           isFullyReturned 
-                            ? 'bg-slate-50/70 hover:bg-slate-100/70 opacity-80' 
+                            ? 'bg-slate-100/70 hover:bg-slate-100/70 opacity-80' 
                             : hasReturns 
                             ? 'bg-amber-50/20 hover:bg-amber-50/40' 
                             : 'hover:bg-red-50/40'

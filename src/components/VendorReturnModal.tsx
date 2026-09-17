@@ -442,7 +442,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
           )}
 
           {/* Section 1: Vendor & Purchase Bill Reference */}
-          <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200 space-y-4">
+          <div className="bg-slate-100/80 p-4 rounded-xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <Building2 className="w-4 h-4 text-red-600" />
@@ -493,7 +493,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                           onClick={() => handleImportPurchase(pur)}
                           className={`p-2.5 text-xs flex items-center justify-between transition-colors ${
                             isFullyReturned 
-                              ? 'bg-slate-50 opacity-60 cursor-not-allowed hover:bg-slate-100' 
+                              ? 'bg-slate-100 opacity-60 cursor-not-allowed hover:bg-slate-100' 
                               : 'hover:bg-red-50/60 cursor-pointer'
                           }`}
                         >
@@ -546,7 +546,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 <select
                   value={selectedVendorId}
                   onChange={(e) => handleVendorChange(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                   required
                 >
                   <option value="">-- Choose Vendor / Supplier --</option>
@@ -567,7 +567,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                   required
                 />
               </div>
@@ -582,7 +582,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                   value={debitNoteNumber}
                   onChange={(e) => setDebitNoteNumber(e.target.value)}
                   placeholder="e.g. DN-101"
-                  className="w-full h-10 px-3 text-xs font-bold font-mono bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none uppercase"
+                  className="w-full h-10 px-3 text-xs font-bold font-mono bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none uppercase"
                 />
               </div>
 
@@ -596,7 +596,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                   value={purchaseId}
                   onChange={(e) => setPurchaseId(e.target.value)}
                   placeholder="e.g. PUR-2001 or SF-9842"
-                  className="w-full h-10 px-3 text-xs font-medium bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none uppercase"
+                  className="w-full h-10 px-3 text-xs font-medium bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none uppercase"
                 />
               </div>
             </div>
@@ -730,7 +730,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                         <select
                           value={item.productId}
                           onChange={(e) => handleProductSelect(index, e.target.value)}
-                          className="w-full h-9 px-2.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
+                          className="w-full h-9 px-2.5 text-xs font-medium bg-slate-100 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
                         >
                           <option value="">-- Choose from Inventory --</option>
                           {products.map(p => (
@@ -755,7 +755,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                           className={`w-full h-9 px-2.5 text-xs font-bold border rounded-lg focus:ring-2 focus:outline-none ${
                             isOverLimit 
                               ? 'bg-red-50 text-red-700 border-red-400 focus:ring-red-500' 
-                              : 'bg-slate-50 border-slate-200 focus:ring-red-500'
+                              : 'bg-slate-100 border-slate-200 focus:ring-red-500'
                           }`}
                           required
                         />
@@ -771,7 +771,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                           min="0"
                           value={item.unitCost}
                           onChange={(e) => handleItemChange(index, 'unitCost', e.target.value)}
-                          className="w-full h-9 px-2.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
+                          className="w-full h-9 px-2.5 text-xs font-bold bg-slate-100 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
                           required
                         />
                       </div>
@@ -796,7 +796,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                         <select
                           value={item.reason}
                           onChange={(e) => handleItemChange(index, 'reason', e.target.value as VendorReturnReason)}
-                          className="w-full h-8 px-2 text-[11px] font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"
+                          className="w-full h-8 px-2 text-[11px] font-medium bg-slate-100 border border-slate-200 rounded-lg focus:outline-none"
                         >
                           <option value="Defective / Manufacturing Fault">Defective / Manufacturing Fault</option>
                           <option value="Wrong Item / Spec Mismatch">Wrong Item / Spec Mismatch</option>
@@ -819,7 +819,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                           value={item.notes || ''}
                           onChange={(e) => handleItemChange(index, 'notes', e.target.value)}
                           placeholder="e.g. Thread defect, dented casing, wrong seal diameter"
-                          className="w-full h-8 px-2 text-[11px] font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"
+                          className="w-full h-8 px-2 text-[11px] font-medium bg-slate-100 border border-slate-200 rounded-lg focus:outline-none"
                         />
                       </div>
                     </div>
@@ -830,7 +830,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
           </div>
 
           {/* Section 3: Settlement Method & Vendor Ledger Adjustment */}
-          <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200 space-y-4">
+          <div className="bg-slate-100/80 p-4 rounded-xl border border-slate-200 space-y-4">
             <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <DollarSign className="w-4 h-4 text-red-600" />
               <span>Debit Note Settlement & Vendor Ledger</span>
@@ -845,7 +845,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 <select
                   value={settlementMethod}
                   onChange={(e) => setSettlementMethod(e.target.value as VendorReturnSettlement)}
-                  className="w-full h-10 px-3 text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-bold bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 >
                   <option value="debit_note">💳 Debit Note (Deduct from Vendor Payable Balance)</option>
                   <option value="cash_refund">💵 Cash Refund Received from Supplier</option>
@@ -868,7 +868,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 <select
                   value={settlementStatus}
                   onChange={(e) => setSettlementStatus(e.target.value as any)}
-                  className="w-full h-10 px-3 text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-bold bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 >
                   <option value="completed">Completed / Settled</option>
                   <option value="pending">Pending Supplier Confirmation</option>
@@ -887,7 +887,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Details regarding transporter/bilty number, supplier rep contact, or warranty claim RMA number..."
                 rows={2}
-                className="w-full p-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                className="w-full p-2.5 text-xs bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
               />
             </div>
 

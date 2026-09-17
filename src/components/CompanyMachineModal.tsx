@@ -240,7 +240,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
                   placeholder="e.g. Caterpillar 320D Hydraulic Excavator"
                   value={machineName}
                   onChange={(e) => setMachineName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-sm font-bold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                  className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-sm font-bold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
                   required
                 />
               </div>
@@ -256,7 +256,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
                   placeholder="e.g. Ustad Tariq Mahmood"
                   value={operatorName}
                   onChange={(e) => setOperatorName(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                  className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
                 />
               </div>
 
@@ -271,7 +271,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
                   placeholder="e.g. Plant 2 - Samundri Quarry"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                  className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
                 />
               </div>
 
@@ -284,7 +284,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
                 <select
                   value={purchaseFrequency}
                   onChange={(e) => setPurchaseFrequency(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all"
+                  className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all"
                 >
                   <option value="Every Month">Every Month (30 Days)</option>
                   <option value="Every 40 Days">Every 40 Days</option>
@@ -305,7 +305,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
                     placeholder="e.g. Every 250 Engine Operating Hours"
                     value={customFrequency}
                     onChange={(e) => setCustomFrequency(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all"
+                    className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all"
                   />
                 </div>
               ) : (
@@ -318,7 +318,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
                     placeholder="e.g. Engine 6-cylinder diesel, chassis #991"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all"
+                    className="w-full px-3.5 py-2 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all"
                   />
                 </div>
               )}
@@ -408,7 +408,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
                       setShowItemDropdown(true);
                     }}
                     onFocus={() => setShowItemDropdown(true)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-bold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-bold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
                   />
                 </div>
 
@@ -457,7 +457,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
 
             {/* Added Demand Items Table / Cards */}
             {items.length === 0 ? (
-              <div className="p-8 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+              <div className="p-8 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-100/50">
                 <Package className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                 <p className="text-xs font-bold text-slate-600">No items added to this machine yet</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
@@ -469,7 +469,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
                 {items.map((item, idx) => (
                   <div 
                     key={item.id}
-                    className="p-3.5 bg-slate-50/90 rounded-2xl border border-slate-200/90 hover:border-slate-300 transition-all space-y-3"
+                    className="p-3.5 bg-slate-100/90 rounded-2xl border border-slate-200/90 hover:border-slate-300 transition-all space-y-3"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -589,7 +589,7 @@ export const CompanyMachineModal: React.FC<CompanyMachineModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all cursor-pointer"
             >
               Cancel
             </button>

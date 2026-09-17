@@ -475,7 +475,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
                 placeholder={activeTab === 'customer' 
                   ? "Search by Customer, Return #, Credit Note, Part #, Reason..." 
                   : "Search by Vendor, Debit Note #, Bill #, Part #, Reason..."}
-                className="w-full h-10 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                className="w-full h-10 pl-9 pr-3 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
               />
             </div>
 
@@ -484,7 +484,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value as any)}
-                className="w-full h-10 px-3 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                className="w-full h-10 px-3 text-xs font-semibold bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
               >
                 <option value="all">All Dates</option>
                 <option value="today">Today</option>
@@ -499,7 +499,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
               <select
                 value={methodFilter}
                 onChange={(e) => setMethodFilter(e.target.value)}
-                className="w-full h-10 px-3 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                className="w-full h-10 px-3 text-xs font-semibold bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
               >
                 <option value="all">All Settlement Methods</option>
                 {activeTab === 'customer' ? (
@@ -526,7 +526,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
                 <select
                   value={conditionFilter}
                   onChange={(e) => setConditionFilter(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 >
                   <option value="all">All Conditions</option>
                   <option value="restock">🟢 Restocked (Sellable)</option>
@@ -541,7 +541,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="w-full h-10 px-2.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                className="w-full h-10 px-2.5 text-xs font-semibold bg-slate-100 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
               >
                 <option value="date_desc">Newest First</option>
                 <option value="date_asc">Oldest First</option>
@@ -559,14 +559,14 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="h-8 px-2.5 bg-slate-50 border border-slate-200 rounded-lg"
+                className="h-8 px-2.5 bg-slate-100 border border-slate-200 rounded-lg"
               />
               <span className="text-slate-500 font-medium">To:</span>
               <input
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="h-8 px-2.5 bg-slate-50 border border-slate-200 rounded-lg"
+                className="h-8 px-2.5 bg-slate-100 border border-slate-200 rounded-lg"
               />
             </div>
           )}
@@ -576,7 +576,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
         {activeTab === 'customer' ? (
           /* CUSTOMER RETURNS TABLE */
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
+            <div className="p-4 bg-slate-100/70 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-700">
                   Customer Sales Returns List
@@ -623,7 +623,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredCustomerReturns.map(ret => (
-                      <tr key={ret.id} className="hover:bg-slate-50/70 transition-colors">
+                      <tr key={ret.id} className="hover:bg-slate-100/70 transition-colors">
                         {/* Date & Return # */}
                         <td className="py-3.5 px-4 align-top">
                           <div className="font-black text-slate-900">{ret.returnNumber}</div>
@@ -757,7 +757,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
         ) : (
           /* VENDOR RETURNS TABLE */
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
+            <div className="p-4 bg-slate-100/70 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-700">
                   Vendor Purchase Returns & Debit Notes List
@@ -804,7 +804,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredVendorReturns.map(ret => (
-                      <tr key={ret.id} className="hover:bg-slate-50/70 transition-colors">
+                      <tr key={ret.id} className="hover:bg-slate-100/70 transition-colors">
                         {/* Date & Return # */}
                         <td className="py-3.5 px-4 align-top">
                           <div className="font-black text-slate-900">{ret.returnNumber}</div>

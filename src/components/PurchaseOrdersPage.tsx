@@ -257,7 +257,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search PO#, Supplier, Bill#, Item..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition-all shadow-sm"
+            className="w-full pl-10 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition-all shadow-sm"
           />
         </div>
 
@@ -305,7 +305,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
           <select
             value={vendorFilter}
             onChange={(e) => setVendorFilter(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-amber-600 cursor-pointer shadow-sm"
+            className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-amber-600 cursor-pointer shadow-sm"
           >
             <option value="all">All Suppliers</option>
             {vendors.map(v => (
@@ -388,7 +388,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
 
                     {/* Cargo / Bilty Info */}
                     {po.biltyNumber && (
-                      <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
+                      <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
                         Bilty: {po.biltyNumber}
                       </span>
                     )}
@@ -440,7 +440,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                 </div>
 
                 {/* Middle: Financial & Cargo Distribution Breakdown */}
-                <div className="flex items-center gap-4 sm:gap-6 bg-slate-50/90 px-4 py-2.5 rounded-2xl border border-slate-200/80 shrink-0">
+                <div className="flex items-center gap-4 sm:gap-6 bg-slate-100/90 px-4 py-2.5 rounded-2xl border border-slate-200/80 shrink-0">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase block">Cargo Freight</span>
                     <span className="text-xs font-bold text-slate-700 font-mono">

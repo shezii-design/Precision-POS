@@ -100,7 +100,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
           {/* Current vs New stock summary */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
+          <div className="bg-slate-100 border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
             <div className="text-center">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Current</span>
               <span className="text-xl font-extrabold text-slate-800">
@@ -139,7 +139,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
               className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
                 adjustmentType === 'add'
                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                  : 'bg-slate-50 text-slate-700 border-slate-200'
+                  : 'bg-slate-100 text-slate-700 border-slate-200'
               }`}
             >
               <Plus className="w-3.5 h-3.5" /> Stock In
@@ -150,7 +150,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
               className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
                 adjustmentType === 'remove'
                   ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                  : 'bg-slate-50 text-slate-700 border-slate-200'
+                  : 'bg-slate-100 text-slate-700 border-slate-200'
               }`}
             >
               <Minus className="w-3.5 h-3.5" /> Stock Out
@@ -161,7 +161,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
               className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
                 adjustmentType === 'set'
                   ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
-                  : 'bg-slate-50 text-slate-700 border-slate-200'
+                  : 'bg-slate-100 text-slate-700 border-slate-200'
               }`}
             >
               <RotateCcw className="w-3.5 h-3.5" /> Direct Set
@@ -179,7 +179,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
                 min="0"
                 value={adjustmentAmount}
                 onChange={(e) => setAdjustmentAmount(Math.max(0, Number(e.target.value)))}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
               />
               <span className="text-xs font-bold text-slate-500">{product.unit}</span>
             </div>
@@ -193,7 +193,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value as StockLog['reason'])}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
             >
               <option value="Received Stock">Received Stock (Purchase / Shipment)</option>
               <option value="Sale">Customer Sale / Dispatch</option>
@@ -213,7 +213,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Invoice #1024, Bin audit"
-              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
+              className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
             />
           </div>
 

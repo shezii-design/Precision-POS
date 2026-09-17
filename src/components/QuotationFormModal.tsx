@@ -544,7 +544,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
           {/* TOP SECTION: CUSTOMER & METADATA */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Left Col: Customer & Company Selection */}
-            <div className="lg:col-span-7 bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3.5">
+            <div className="lg:col-span-7 bg-slate-100 p-4 rounded-2xl border border-slate-200 space-y-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-red-100 text-red-700 flex items-center justify-center font-bold">
@@ -593,7 +593,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                         setShowCustomerDropdown(true);
                       }}
                       onFocus={() => setShowCustomerDropdown(true)}
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600"
+                      className="w-full pl-9 pr-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600"
                     />
                   </div>
                 </div>
@@ -643,7 +643,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                     placeholder="e.g. Engr. Kamran / Haji Tariq"
                     value={contactPerson}
                     onChange={(e) => setContactPerson(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
+                    className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
                   />
                 </div>
                 <div>
@@ -655,7 +655,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                     placeholder="e.g. 0300-1234567"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
+                    className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
                   />
                 </div>
                 <div>
@@ -667,7 +667,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                     placeholder="e.g. Lahore / Rawalpindi"
                     value={customerCity}
                     onChange={(e) => setCustomerCity(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
+                    className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
                   />
                 </div>
                 <div>
@@ -679,7 +679,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                     placeholder="e.g. procurement@company.pk"
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
+                    className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
                   />
                 </div>
                 {customerType === 'company' && (
@@ -693,7 +693,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                         placeholder="e.g. 2984712-4"
                         value={customerNtn}
                         onChange={(e) => setCustomerNtn(e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
+                        className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
                       />
                     </div>
                     <div>
@@ -705,7 +705,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                         placeholder="e.g. 07-01-2984-712-19"
                         value={customerStrn}
                         onChange={(e) => setCustomerStrn(e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
+                        className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-600"
                       />
                     </div>
                   </>
@@ -714,7 +714,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
             </div>
 
             {/* Right Col: Quotation Number, Date & 7-Day Validity Settings */}
-            <div className="lg:col-span-5 bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3.5">
+            <div className="lg:col-span-5 bg-slate-100 p-4 rounded-2xl border border-slate-200 space-y-3.5">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
                   <Calendar className="w-4 h-4" />
@@ -735,7 +735,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                     value={quotationNumber}
                     onChange={(e) => setQuotationNumber(e.target.value)}
                     placeholder="e.g. QT-1001"
-                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-slate-900 focus:outline-hidden focus:border-red-600 font-mono"
+                    className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-black text-slate-900 focus:outline-hidden focus:border-red-600 font-mono"
                   />
                 </div>
 
@@ -748,7 +748,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                     type="date"
                     value={date}
                     onChange={(e) => handleDateChange(e.target.value)}
-                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-600"
+                    className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-600"
                   />
                 </div>
 
@@ -841,7 +841,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                   {items.map((item, index) => {
                     const isSearchingThis = activeSearchIndex === index;
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                      <tr key={item.id} className="hover:bg-slate-100/70 transition-colors">
                         {/* Index */}
                         <td className="py-2.5 px-3 font-bold text-slate-400 text-center align-top pt-3">
                           {index + 1}
@@ -864,7 +864,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                                   setActiveSearchIndex(index);
                                   setItemSearchQuery(item.productName);
                                 }}
-                                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-red-500 focus:border-red-600"
+                                className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-red-500 focus:border-red-600"
                               />
                             </div>
 
@@ -922,14 +922,14 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                                 placeholder="Brand (e.g. Sure Filter)"
                                 value={item.brandName}
                                 onChange={(e) => handleUpdateItem(index, 'brandName', e.target.value)}
-                                className="px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700"
+                                className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-700"
                               />
                               <input
                                 type="text"
                                 placeholder="Machine App (e.g. CAT 320D)"
                                 value={item.machineNames}
                                 onChange={(e) => handleUpdateItem(index, 'machineNames', e.target.value)}
-                                className="px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700"
+                                className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-700"
                               />
                             </div>
                           </div>
@@ -940,7 +940,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                           <select
                             value={item.unit}
                             onChange={(e) => handleUpdateItem(index, 'unit', e.target.value as QuantityUnit)}
-                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
+                            className="w-full px-2 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
                           >
                             <option value="Pcs">Pcs</option>
                             <option value="Set">Set</option>
@@ -959,7 +959,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                             min="1"
                             value={item.quantity}
                             onChange={(e) => handleUpdateItem(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-center text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-red-500"
+                            className="w-full px-2 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-black text-center text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-red-500"
                           />
                         </td>
 
@@ -970,7 +970,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                             min="0"
                             value={item.unitPrice}
                             onChange={(e) => handleUpdateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-black text-right text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-red-500"
+                            className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-black text-right text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-red-500"
                           />
                         </td>
 
@@ -982,7 +982,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                             max="100"
                             value={item.discountPercent}
                             onChange={(e) => handleUpdateItem(index, 'discountPercent', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-center text-slate-700 focus:outline-hidden"
+                            className="w-full px-2 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-center text-slate-700 focus:outline-hidden"
                           />
                         </td>
 
@@ -1013,7 +1013,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
           {/* BOTTOM SECTION: COMMERCIAL TERMS & FINANCIAL TOTALS */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Left: Terms & Conditions */}
-            <div className="lg:col-span-7 bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+            <div className="lg:col-span-7 bg-slate-100 p-4 rounded-2xl border border-slate-200 space-y-2">
               <label className="block text-[10px] font-black uppercase text-slate-500">
                 Commercial Terms & Conditions (Included in Printout)
               </label>
@@ -1021,7 +1021,7 @@ export const QuotationFormModal: React.FC<QuotationFormModalProps> = ({
                 rows={4}
                 value={termsAndConditions}
                 onChange={(e) => setTermsAndConditions(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 font-mono leading-relaxed focus:outline-hidden focus:border-red-600"
+                className="w-full p-2.5 bg-slate-100 border border-slate-300 rounded-xl text-xs text-slate-800 font-mono leading-relaxed focus:outline-hidden focus:border-red-600"
                 placeholder="Enter quotation terms..."
               />
               <div className="flex items-center gap-1 text-[11px] text-slate-500">

@@ -301,7 +301,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
               placeholder="Search by Quotation #, Customer / Company Name, Phone, Item Name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600"
+              className="w-full pl-9 pr-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600"
             />
             {searchQuery && (
               <button
@@ -320,7 +320,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden"
+              className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden"
             >
               <option value="date_desc">Newest Issued First</option>
               <option value="date_asc">Oldest Issued First</option>
@@ -349,7 +349,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
                 className={`px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer border ${
                   statusFilter === pill.id
                     ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 <span>{pill.label}</span>
@@ -442,7 +442,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
                   return (
                     <tr 
                       key={quotation.id} 
-                      className="hover:bg-slate-50/70 transition-colors group cursor-pointer"
+                      className="hover:bg-slate-100/70 transition-colors group cursor-pointer"
                       onClick={() => onViewQuotation(quotation)}
                     >
                       {/* Quotation Number & Date */}

@@ -700,7 +700,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <select
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value as DashboardTimeframe)}
-                className="pl-3 pr-8 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-300 rounded-xl text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500/20 cursor-pointer transition-all shadow-sm"
+                className="pl-3 pr-8 py-2 bg-slate-100 hover:bg-slate-200/80 border border-slate-300 rounded-xl text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500/20 cursor-pointer transition-all shadow-sm"
               >
                 <option value="today">Today</option>
                 <option value="yesterday">Yesterday</option>
@@ -717,19 +717,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
             {/* Custom Range Inputs if custom selected */}
             {timeframe === 'custom' && (
-              <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200 text-xs">
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
                 <input
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700"
+                  className="px-2 py-1 bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700"
                 />
                 <span className="text-slate-400 font-bold">to</span>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700"
+                  className="px-2 py-1 bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700"
                 />
               </div>
             )}
@@ -1160,7 +1160,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 )}
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-xs text-slate-400 font-semibold bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <div className="h-full flex items-center justify-center text-xs text-slate-400 font-semibold bg-slate-100 rounded-2xl border border-dashed border-slate-200">
                 No transaction data available in selected period
               </div>
             )}
@@ -1261,7 +1261,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               productPerformance.topByRevenue.map((item, idx) => (
                 <div 
                   key={item.product.id}
-                  className="p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 flex items-center justify-between gap-3 transition-colors"
+                  className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200/80 flex items-center justify-between gap-3 transition-colors"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="w-6 h-6 rounded-lg bg-red-100 text-red-800 flex items-center justify-center text-xs font-black shrink-0">
@@ -1293,7 +1293,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
               ))
             ) : (
-              <div className="py-8 text-center text-xs text-slate-400 font-semibold bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <div className="py-8 text-center text-xs text-slate-400 font-semibold bg-slate-100 rounded-2xl border border-dashed border-slate-200">
                 No sales recorded in this period
               </div>
             )}
@@ -1330,7 +1330,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <div 
                   key={cust.id}
                   onClick={() => onSelectCustomer ? onSelectCustomer(cust) : onGoToView('customers')}
-                  className="p-2.5 rounded-2xl bg-slate-50 hover:bg-red-50/50 border border-slate-200/80 flex items-center justify-between gap-3 transition-colors cursor-pointer group"
+                  className="p-2.5 rounded-2xl bg-slate-100 hover:bg-red-50/50 border border-slate-200/80 flex items-center justify-between gap-3 transition-colors cursor-pointer group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-xl bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0 group-hover:bg-red-600 group-hover:text-white transition-colors">
@@ -1505,7 +1505,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 else if (act.type === 'po') onGoToView('purchase_orders');
                 else if (act.type === 'demand') onGoToView('demands');
               }}
-              className="py-3 px-2 rounded-2xl hover:bg-slate-50 flex items-center justify-between gap-3 transition-colors cursor-pointer group"
+              className="py-3 px-2 rounded-2xl hover:bg-slate-100 flex items-center justify-between gap-3 transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${

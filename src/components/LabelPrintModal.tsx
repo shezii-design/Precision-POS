@@ -103,7 +103,7 @@ export const LabelPrintModal: React.FC<LabelPrintModalProps> = ({
 
             {/* Dimensions & Thread */}
             {dims && (
-              <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
+              <div className="bg-slate-100 p-2.5 rounded-lg border border-slate-200 text-xs space-y-1">
                 <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-bold text-slate-700">
                   <span>DIMENSIONS:</span>
                   <span className="font-normal text-slate-500">Inches / mm</span>

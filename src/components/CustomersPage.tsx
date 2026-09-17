@@ -300,7 +300,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
               setCustomerModalType('customer');
               setShowCustomerModal(true);
             }}
-            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-2xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <User className="w-4 h-4 text-slate-500" />
             <span>+ Add Customer</span>
@@ -400,7 +400,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
             placeholder="Search by customer/company name, contact person, phone, city, machine model or customer item number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-red-500 focus:bg-white rounded-2xl text-xs font-bold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 focus:border-red-500 focus:bg-white rounded-2xl text-xs font-bold text-slate-900 outline-hidden transition-all placeholder:text-slate-400"
           />
         </div>
 
@@ -469,7 +469,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
             <select
               value={balanceFilter}
               onChange={(e) => setBalanceFilter(e.target.value as any)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-hidden cursor-pointer"
+              className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-hidden cursor-pointer"
             >
               <option value="all">All Balances</option>
               <option value="receivable">Receivable Only (&gt; 0)</option>
@@ -481,7 +481,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
               <select
                 value={cityFilter}
                 onChange={(e) => setCityFilter(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-hidden cursor-pointer"
+                className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-hidden cursor-pointer"
               >
                 <option value="all">All Cities</option>
                 {uniqueCities.map(city => (
@@ -631,7 +631,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                   <div className={`p-3 rounded-2xl border flex items-center justify-between ${
                     bal > 0 
                       ? 'bg-rose-50/80 border-rose-200 text-rose-950' 
-                      : (bal < 0 ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-700')
+                      : (bal < 0 ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' : 'bg-slate-100 border-slate-200 text-slate-700')
                   }`}>
                     <span className="text-[10px] font-black uppercase tracking-wider">
                       {bal > 0 ? 'Receivable (Dr)' : (bal < 0 ? 'Advance (Cr)' : 'Settled Balance')}
@@ -650,7 +650,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                 </div>
 
                 {/* Card Footer Actions */}
-                <div className="px-5 py-3 bg-slate-50/90 border-t border-slate-100 rounded-b-3xl flex items-center justify-between gap-2">
+                <div className="px-5 py-3 bg-slate-100/90 border-t border-slate-100 rounded-b-3xl flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => setSelectedCustomerId(cust.id)}

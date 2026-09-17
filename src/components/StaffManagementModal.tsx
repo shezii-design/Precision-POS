@@ -454,7 +454,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
 
         {/* Sub-Header Navigation Tabs */}
         {!isCreatingNew && (
-          <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0 flex-wrap gap-2">
+          <div className="px-6 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center justify-between shrink-0 flex-wrap gap-2">
             <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 rounded-xl">
               <button
                 type="button"
@@ -519,7 +519,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
         )}
 
         {/* Modal Main Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100/50">
           {isCreatingNew ? (
             /* CREATE / EDIT EMPLOYEE FORM */
             <form onSubmit={handleSaveEmployee} className="space-y-6 max-w-4xl mx-auto">
@@ -561,7 +561,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                       placeholder="e.g. Muhammad Bilal"
                       value={formData.name}
                       onChange={e => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     />
                   </div>
 
@@ -573,7 +573,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                       placeholder="e.g. cashier1 or bilal@shop.pk"
                       value={formData.email}
                       onChange={e => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     />
                   </div>
 
@@ -584,7 +584,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                       placeholder="e.g. 0300-1234567"
                       value={formData.phone}
                       onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     />
                   </div>
 
@@ -609,7 +609,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                         placeholder="1234"
                         value={formData.pin}
                         onChange={e => setFormData({ ...formData, pin: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold tracking-widest focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono font-bold tracking-widest focus:ring-2 focus:ring-blue-500 focus:bg-white"
                       />
                       <button
                         type="button"
@@ -629,7 +629,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                     <select
                       value={formData.role}
                       onChange={e => handleRoleChange(e.target.value as UserRole)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="cashier">Sales Cashier (Sales & POS Only)</option>
                       <option value="procurement">Purchasing Incharge (Purchases & POs Only)</option>
@@ -649,7 +649,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                       placeholder="e.g. Senior Counter Billing Staff"
                       value={formData.designation}
                       onChange={e => setFormData({ ...formData, designation: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     />
                   </div>
 
@@ -726,7 +726,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                         className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 select-none ${
                           isAllowed 
                             ? 'bg-red-50/60 border-red-200 text-slate-900 shadow-sm' 
-                            : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60 hover:opacity-90'
+                            : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60 hover:opacity-90'
                         }`}
                       >
                         <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
@@ -1084,7 +1084,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3 bg-slate-50 rounded-xl text-xs text-slate-500 flex items-center gap-2">
+                  <div className="p-3 bg-slate-100 rounded-xl text-xs text-slate-500 flex items-center gap-2">
                     <Info className="w-4 h-4 text-slate-400 shrink-0" />
                     <span>Unrestricted: This employee can log in from any computer, tablet, or terminal with their PIN.</span>
                   </div>
@@ -1137,7 +1137,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                     <div 
                       key={emp.id}
                       className={`bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between transition-all hover:shadow-md ${
-                        emp.status === 'inactive' ? 'opacity-60 bg-slate-50 border-slate-200' : 'border-slate-200'
+                        emp.status === 'inactive' ? 'opacity-60 bg-slate-100 border-slate-200' : 'border-slate-200'
                       }`}
                     >
                       <div>
@@ -1324,7 +1324,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                      <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-100 p-2.5 rounded-lg border border-slate-100">
                         <div>
                           <span className="text-slate-400 block text-[10px]">Operating System:</span>
                           <span className="font-bold text-slate-800">{device.os} {device.deviceType}</span>
@@ -1395,7 +1395,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2 text-xs">
+              <div className="bg-slate-100 p-3.5 rounded-xl border border-slate-200 space-y-2 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-medium">Employee Name:</span>
                   <span className="font-bold text-slate-900">{employeeToDelete.name}</span>
@@ -1460,7 +1460,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2 text-xs">
+              <div className="bg-slate-100 p-3.5 rounded-xl border border-slate-200 space-y-2 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-medium">Device Name:</span>
                   <span className="font-bold text-slate-900">{deviceToDelete.name}</span>

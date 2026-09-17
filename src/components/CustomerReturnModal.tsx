@@ -539,7 +539,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
           )}
 
           {/* Section 1: Customer & Invoice Reference */}
-          <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200 space-y-4">
+          <div className="bg-slate-100/80 p-4 rounded-xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <User className="w-4 h-4 text-red-600" />
@@ -590,7 +590,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                           onClick={() => handleImportSale(sale)}
                           className={`p-2.5 text-xs flex items-center justify-between transition-colors ${
                             isFullyReturned 
-                              ? 'bg-slate-50 opacity-60 cursor-not-allowed hover:bg-slate-100' 
+                              ? 'bg-slate-100 opacity-60 cursor-not-allowed hover:bg-slate-100' 
                               : 'hover:bg-red-50/60 cursor-pointer'
                           }`}
                         >
@@ -643,7 +643,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                 <select
                   value={isWalkIn ? 'walkin' : selectedCustomerId}
                   onChange={(e) => handleCustomerChange(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 >
                   <option value="">-- Select Registered Customer / Company --</option>
                   <option value="walkin">⚡ Walk-in Counter Customer (Cash/Non-Account)</option>
@@ -664,7 +664,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                   required
                 />
               </div>
@@ -679,7 +679,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="e.g. Ahmed Works or Counter Buyer"
-                  className="w-full h-10 px-3 text-xs font-medium bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-medium bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 />
               </div>
 
@@ -693,7 +693,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="e.g. 0300-1234567"
-                  className="w-full h-10 px-3 text-xs font-medium bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-medium bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 />
               </div>
 
@@ -707,7 +707,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                   value={saleId}
                   onChange={(e) => setSaleId(e.target.value)}
                   placeholder="e.g. INV-1001"
-                  className="w-full h-10 px-3 text-xs font-medium bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none uppercase"
+                  className="w-full h-10 px-3 text-xs font-medium bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none uppercase"
                 />
               </div>
             </div>
@@ -836,7 +836,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                         <select
                           value={item.productId}
                           onChange={(e) => handleProductSelect(index, e.target.value)}
-                          className="w-full h-9 px-2.5 text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
+                          className="w-full h-9 px-2.5 text-xs font-medium bg-slate-100 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
                         >
                           <option value="">-- Choose from Inventory --</option>
                           {products.map(p => (
@@ -861,7 +861,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                           className={`w-full h-9 px-2.5 text-xs font-bold border rounded-lg focus:ring-2 focus:outline-none ${
                             isOverLimit 
                               ? 'bg-red-50 text-red-700 border-red-400 focus:ring-red-500' 
-                              : 'bg-slate-50 border-slate-200 focus:ring-red-500'
+                              : 'bg-slate-100 border-slate-200 focus:ring-red-500'
                           }`}
                           required
                         />
@@ -877,7 +877,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                           min="0"
                           value={item.returnRate}
                           onChange={(e) => handleItemChange(index, 'returnRate', e.target.value)}
-                          className="w-full h-9 px-2.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
+                          className="w-full h-9 px-2.5 text-xs font-bold bg-slate-100 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
                           required
                         />
                       </div>
@@ -922,7 +922,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                         <select
                           value={item.reason}
                           onChange={(e) => handleItemChange(index, 'reason', e.target.value as CustomerReturnReason)}
-                          className="w-full h-8 px-2 text-[11px] font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"
+                          className="w-full h-8 px-2 text-[11px] font-medium bg-slate-100 border border-slate-200 rounded-lg focus:outline-none"
                         >
                           <option value="Defective / Quality Issue">Defective / Quality Issue</option>
                           <option value="Wrong Filter / Item Supplied">Wrong Filter / Item Supplied</option>
@@ -944,7 +944,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                           value={item.notes || ''}
                           onChange={(e) => handleItemChange(index, 'notes', e.target.value)}
                           placeholder="e.g. In original carton, sealed"
-                          className="w-full h-8 px-2 text-[11px] font-medium bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"
+                          className="w-full h-8 px-2 text-[11px] font-medium bg-slate-100 border border-slate-200 rounded-lg focus:outline-none"
                         />
                       </div>
                     </div>
@@ -955,7 +955,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
           </div>
 
           {/* Section 3: Financial Settlement & Refund Method */}
-          <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200 space-y-4">
+          <div className="bg-slate-100/80 p-4 rounded-xl border border-slate-200 space-y-4">
             <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <DollarSign className="w-4 h-4 text-red-600" />
               <span>Financial Refund & Ledger Settlement</span>
@@ -970,7 +970,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                 <select
                   value={refundMethod}
                   onChange={(e) => setRefundMethod(e.target.value as CustomerRefundMethod)}
-                  className="w-full h-10 px-3 text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-bold bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 >
                   <option value="khata_credit">💳 Credit Note (Deduct from Customer Khata)</option>
                   <option value="cash_refund">💵 Cash Refund (Paid at Counter)</option>
@@ -996,7 +996,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                   value={deductionFee}
                   onChange={(e) => setDeductionFee(Number(e.target.value) || 0)}
                   placeholder="0"
-                  className="w-full h-10 px-3 text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-bold bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 />
                 <span className="text-[10px] text-slate-400 mt-1 block">
                   Deducted from gross refund if applicable
@@ -1011,7 +1011,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                 <select
                   value={refundStatus}
                   onChange={(e) => setRefundStatus(e.target.value as any)}
-                  className="w-full h-10 px-3 text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-bold bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 >
                   <option value="completed">Completed / Settled</option>
                   <option value="pending">Pending Approval / Inspection</option>
@@ -1029,7 +1029,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Additional details regarding return condition, customer justification, or inspection remarks..."
                 rows={2}
-                className="w-full p-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                className="w-full p-2.5 text-xs bg-slate-100 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
               />
             </div>
 

@@ -943,7 +943,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
           <div className={`rounded-2xl p-3 sm:p-4 border transition-all ${
             isBackdated 
               ? 'bg-amber-50/90 border-amber-300 ring-2 ring-amber-500/10' 
-              : 'bg-slate-50 border-slate-200/90'
+              : 'bg-slate-100 border-slate-200/90'
           }`}>
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               {/* Left Title & Status Indicator */}
@@ -981,7 +981,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
               {/* Right Controls: Date Picker, Time Picker, and Quick Presets */}
               <div className="flex flex-wrap items-center gap-2">
                 {/* Date Input */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-500 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-300 rounded-xl px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-500 shadow-sm">
                   <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <input
                     type="date"
@@ -993,7 +993,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                 </div>
 
                 {/* Time Input */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-500 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-slate-100 border border-slate-300 rounded-xl px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-500 shadow-sm">
                   <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <input
                     type="time"
@@ -1015,7 +1015,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                       !isBackdated
                         ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                        : 'bg-slate-50 hover:bg-slate-200 text-slate-700 border-slate-300'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
                     }`}
                     title="Set to today's date and current time"
                   >
@@ -1030,7 +1030,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                       saleDate === getYesterdayDateString()
                         ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                        : 'bg-slate-50 hover:bg-slate-200 text-slate-700 border-slate-300'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
                     }`}
                     title="Set date to yesterday"
                   >
@@ -1042,7 +1042,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
           </div>
 
           {/* SECTION 1: CUSTOMER SELECTION & QUICK ENTRY */}
-          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5">
+          <div className="bg-slate-100 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 mb-3">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-red-600 shrink-0" />
@@ -1111,7 +1111,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     }}
                     onFocus={() => setShowCustomerDropdown(true)}
                     placeholder="Type to search existing customer name or phone..."
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                    className="w-full pl-9 pr-4 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                   />
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 </div>
@@ -1165,7 +1165,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     value={newCustomerName}
                     onChange={(e) => setNewCustomerName(e.target.value)}
                     placeholder="e.g. Tariq Machinery Works"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
                 <div>
@@ -1177,7 +1177,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     value={newCustomerPhone}
                     onChange={(e) => setNewCustomerPhone(e.target.value)}
                     placeholder="e.g. 0300-1234567"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
               </div>
@@ -1211,7 +1211,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   }}
                   onFocus={() => setShowProductDropdown(true)}
                   placeholder="Search inventory by Part Name (sfc-5706), ID (KFH-2501), Brand, Cross Ref..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 hover:border-slate-300 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all shadow-sm"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border-2 border-slate-200 hover:border-slate-300 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all shadow-sm"
                 />
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 {productSearchTerm && (
@@ -1300,7 +1300,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
 
             {/* List of Added Line Items */}
             {saleItems.length === 0 ? (
-              <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-50/50">
+              <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-100/50">
                 <ShoppingCart className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                 <p className="text-xs font-bold text-slate-600">No items added to this sale yet</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
@@ -1385,7 +1385,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                             min="1"
                             value={item.quantity}
                             onChange={(e) => handleUpdateItem(item.id, { quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })}
-                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
+                            className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
                           />
                         </div>
                       </div>
@@ -1400,7 +1400,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                             min="0"
                             value={item.unitPrice}
                             onChange={(e) => handleUpdateItem(item.id, { unitPrice: parseFloat(e.target.value) || 0 })}
-                            className="w-full pl-6 pr-2 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
+                            className="w-full pl-6 pr-2 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
                           />
                           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">₨</span>
                         </div>
@@ -1473,7 +1473,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     </div>
 
                     {/* Price Tier Selection Row: Autoloaded prices from inventory with clickable tier names */}
-                    <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5 space-y-2">
+                    <div className="bg-slate-100 border border-slate-200/90 rounded-xl p-2.5 space-y-2">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                         <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-600">
                           <Tag className="w-3.5 h-3.5 text-red-600" />
@@ -1498,7 +1498,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                                 isSelected
                                   ? 'bg-red-600 text-white shadow-sm ring-2 ring-red-600/30'
-                                  : 'bg-slate-50 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 shadow-sm'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 shadow-sm'
                               }`}
                               title={`Apply ${tier.tierName} price: ${formatPKR(tier.price)}`}
                             >
@@ -1556,7 +1556,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                       const activeCabins = activeLocObj?.cabins || [];
 
                       return (
-                        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5 space-y-2">
+                        <div className="bg-slate-100 border border-slate-200/90 rounded-xl p-2.5 space-y-2">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                             <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-700">
                               <MapPin className="w-3.5 h-3.5 text-red-600" />
@@ -1608,7 +1608,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                                     cabinNumber: nextCabin,
                                   });
                                 }}
-                                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
+                                className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
                               >
                                 {itemInventoryLocations.map(loc => (
                                   <option key={loc.locationId} value={loc.locationId}>
@@ -1634,7 +1634,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                                 <select
                                   value={item.cabinNumber || activeCabins[0] || ''}
                                   onChange={(e) => handleUpdateItem(item.id, { cabinNumber: e.target.value })}
-                                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
+                                  className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
                                 >
                                   {activeCabins.map((cab, cIdx) => (
                                     <option key={cIdx} value={cab}>
@@ -1652,7 +1652,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                                   value={item.cabinNumber || ''}
                                   onChange={(e) => handleUpdateItem(item.id, { cabinNumber: e.target.value })}
                                   placeholder="e.g. C-12, Bay-1"
-                                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
+                                  className="w-full px-2.5 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
                                 />
                               )}
                             </div>
@@ -1688,7 +1688,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                           value={item.crossReferences}
                           onChange={(e) => handleUpdateItem(item.id, { crossReferences: e.target.value })}
                           placeholder="Leave empty or type to add e.g. FS19732"
-                          className="w-full px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-red-500"
+                          className="w-full px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-red-500"
                         />
                       </div>
 
@@ -1703,7 +1703,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                           value={item.machineNames}
                           onChange={(e) => handleUpdateItem(item.id, { machineNames: e.target.value })}
                           placeholder="Leave empty or type to add e.g. CAT 320D"
-                          className="w-full px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-red-500"
+                          className="w-full px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:bg-white focus:outline-hidden focus:border-red-500"
                         />
                       </div>
 
@@ -1727,7 +1727,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
           </div>
 
           {/* SECTION 3: TOTALS, DISCOUNT & AMOUNT RECEIVED */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4">
+          <div className="bg-slate-100 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4">
             <div className="flex items-center gap-2">
               <Banknote className="w-4 h-4 text-red-600" />
               <span className="text-xs font-black uppercase tracking-wider text-slate-700">
@@ -1773,7 +1773,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                       value={discountValue || ''}
                       onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
                       placeholder={discountType === 'percentage' ? 'e.g. 5%' : 'e.g. 500'}
-                      className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
+                      className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
                     />
                   </div>
                   {discountAmount > 0 && (
@@ -1793,7 +1793,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     value={saleNotes}
                     onChange={(e) => setSaleNotes(e.target.value)}
                     placeholder="Optional remarks e.g. 'Delivered via Bilal Travels', 'Payment on 1st'"
-                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
               </div>
@@ -1937,7 +1937,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                       value={amountReceived}
                       onChange={(e) => setAmountReceived(e.target.value)}
                       placeholder={`e.g. ${totalAmount}`}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-black text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-sm font-black text-slate-900 focus:bg-white focus:outline-hidden focus:border-red-500"
                     />
                   </div>
 
@@ -2020,7 +2020,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-slate-50 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer text-center"
+              className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-slate-100 border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer text-center"
             >
               Cancel
             </button>
@@ -2161,7 +2161,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
             </div>
 
             {/* Invoice & Date Summary */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs space-y-1.5">
+            <div className="bg-slate-100 border border-slate-200 rounded-2xl p-3 text-xs space-y-1.5">
               <div className="flex justify-between items-center text-slate-600">
                 <span className="font-semibold">Invoice Date:</span>
                 <span className="font-bold text-slate-900 flex items-center gap-1.5">

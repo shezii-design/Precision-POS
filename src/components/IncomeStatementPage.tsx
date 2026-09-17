@@ -571,7 +571,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
             <select
               value={period}
               onChange={(e) => setPeriod(e.target.value as IncomeStatementPeriod)}
-              className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-xl text-xs font-black text-slate-800 focus:outline-none cursor-pointer"
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl text-xs font-black text-slate-800 focus:outline-none cursor-pointer"
             >
               <option value="today">Today</option>
               <option value="yesterday">Yesterday</option>
@@ -586,7 +586,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
             </select>
 
             {period === 'custom' && (
-              <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200 text-xs">
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
                 <input
                   type="date"
                   value={customStartDate}
@@ -742,14 +742,14 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
               <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                 
                 {/* ---------------- 1. REVENUE FROM OPERATIONS ---------------- */}
-                <tr className="bg-slate-50/80 font-black text-slate-900">
+                <tr className="bg-slate-100/80 font-black text-slate-900">
                   <td colSpan={compareWithPrevious ? 5 : 3} className="py-2 px-3 tracking-wide">
                     1. REVENUE FROM OPERATIONS
                   </td>
                 </tr>
 
                 {/* Gross Sales */}
-                <tr className="hover:bg-slate-50/50">
+                <tr className="hover:bg-slate-100/50">
                   <td className="py-2 px-3 pl-6">
                     <span className="font-semibold text-slate-800">Gross Sales Revenue</span>
                     <span className="text-[11px] text-slate-400 block">({statement.salesCount} Invoices generated)</span>
@@ -773,7 +773,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                 </tr>
 
                 {/* Sales Returns */}
-                <tr className="hover:bg-slate-50/50 text-slate-700">
+                <tr className="hover:bg-slate-100/50 text-slate-700">
                   <td className="py-2 px-3 pl-6">
                     <span className="text-rose-700 font-semibold">Less: Sales Returns & Allowances</span>
                     <span className="text-[11px] text-slate-400 block">({statement.customerReturnsCount} Credit notes issued to customers)</span>
@@ -792,7 +792,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
 
                 {/* Sales Discounts */}
                 {statement.salesDiscounts > 0 && (
-                  <tr className="hover:bg-slate-50/50 text-slate-700">
+                  <tr className="hover:bg-slate-100/50 text-slate-700">
                     <td className="py-2 px-3 pl-6">
                       <span className="text-rose-700 font-semibold">Less: Trade Discounts Allowed</span>
                     </td>
@@ -833,13 +833,13 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                 </tr>
 
                 {/* ---------------- 2. COST OF GOODS SOLD (COGS) ---------------- */}
-                <tr className="bg-slate-50/80 font-black text-slate-900">
+                <tr className="bg-slate-100/80 font-black text-slate-900">
                   <td colSpan={compareWithPrevious ? 5 : 3} className="py-2 px-3 tracking-wide">
                     2. COST OF GOODS SOLD (COGS)
                   </td>
                 </tr>
 
-                <tr className="hover:bg-slate-50/50">
+                <tr className="hover:bg-slate-100/50">
                   <td className="py-2 px-3 pl-6">
                     <span className="font-semibold text-slate-800">Direct FIFO Inventory Cost of Sold Parts</span>
                     <span className="text-[11px] text-slate-400 block">Weighted average cost basis per batch sold</span>
@@ -857,7 +857,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                 </tr>
 
                 {statement.damagedLoss > 0 && (
-                  <tr className="hover:bg-slate-50/50">
+                  <tr className="hover:bg-slate-100/50">
                     <td className="py-2 px-3 pl-6">
                       <span className="font-semibold text-slate-800">Damaged & Scrap Parts Written-off</span>
                     </td>
@@ -918,7 +918,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                 </tr>
 
                 {/* ---------------- 4. OPERATING EXPENSES (OPEX) ---------------- */}
-                <tr className="bg-slate-50/80 font-black text-slate-900">
+                <tr className="bg-slate-100/80 font-black text-slate-900">
                   <td colSpan={compareWithPrevious ? 5 : 3} className="py-2 px-3 tracking-wide flex items-center justify-between">
                     <span>3. OPERATING OVERHEAD EXPENSES (OPEX)</span>
                     <button
@@ -936,7 +936,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                   const priorAmt = priorStatement.expensesByCategory[cat] || 0;
 
                   return (
-                    <tr key={cat} className={`hover:bg-slate-50/50 ${amt === 0 ? 'text-slate-400' : 'text-slate-800'}`}>
+                    <tr key={cat} className={`hover:bg-slate-100/50 ${amt === 0 ? 'text-slate-400' : 'text-slate-800'}`}>
                       <td className="py-1.5 px-3 pl-6">
                         <span className="font-semibold">{cat}</span>
                       </td>
@@ -972,7 +972,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                 </tr>
 
                 {/* ---------------- 5. OPERATING INCOME (EBIT) ---------------- */}
-                <tr className="bg-slate-50/80 font-black text-slate-900 border-t border-b border-slate-300">
+                <tr className="bg-slate-100/80 font-black text-slate-900 border-t border-b border-slate-300">
                   <td className="py-2.5 px-3">
                     OPERATING INCOME / EBIT (Gross Profit - OPEX)
                     <span className="text-xs font-bold text-slate-500 block">
@@ -994,13 +994,13 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                 </tr>
 
                 {/* ---------------- 6. OTHER INCOME / ADJUSTMENTS ---------------- */}
-                <tr className="bg-slate-50/80 font-black text-slate-900">
+                <tr className="bg-slate-100/80 font-black text-slate-900">
                   <td colSpan={compareWithPrevious ? 5 : 3} className="py-2 px-3 tracking-wide">
                     4. OTHER INCOME & ADJUSTMENTS
                   </td>
                 </tr>
 
-                <tr className="hover:bg-slate-50/50">
+                <tr className="hover:bg-slate-100/50">
                   <td className="py-2 px-3 pl-6">
                     <span className="font-semibold text-slate-800">Restock & Handling Fees Collected</span>
                     <span className="text-[11px] text-slate-400 block">Fees charged on returned goods</span>
@@ -1119,14 +1119,14 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                 value={expenseSearch}
                 onChange={(e) => setExpenseSearch(e.target.value)}
                 placeholder="Search expense title, receipt #, payee..."
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-red-500"
+                className="w-full pl-9 pr-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-red-500"
               />
             </div>
 
             <select
               value={expenseCategoryFilter}
               onChange={(e) => setExpenseCategoryFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none"
+              className="px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none"
             >
               <option value="all">All Categories ({expenses.length})</option>
               {EXPENSE_CATEGORIES.map(cat => (
@@ -1151,7 +1151,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredExpenses.map((exp) => (
-                  <tr key={exp.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={exp.id} className="hover:bg-slate-100/80 transition-colors">
                     <td className="py-2.5 px-3 font-semibold text-slate-600 whitespace-nowrap">
                       {exp.date}
                     </td>
@@ -1263,7 +1263,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                   value={expenseForm.title}
                   onChange={(e) => setExpenseForm(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="e.g. Shop Rent for September, Diesel Fuel, Staff Wages"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:border-red-500 focus:bg-white"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:border-red-500 focus:bg-white"
                 />
               </div>
 
@@ -1275,7 +1275,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                   <select
                     value={expenseForm.category}
                     onChange={(e) => setExpenseForm(prev => ({ ...prev, category: e.target.value as ExpenseCategory }))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none"
                   >
                     {EXPENSE_CATEGORIES.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -1294,7 +1294,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                     value={expenseForm.amount}
                     onChange={(e) => setExpenseForm(prev => ({ ...prev, amount: e.target.value }))}
                     placeholder="e.g. 25000"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-black text-slate-900 text-sm focus:outline-none focus:border-red-500 focus:bg-white"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-black text-slate-900 text-sm focus:outline-none focus:border-red-500 focus:bg-white"
                   />
                 </div>
               </div>
@@ -1309,7 +1309,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                     required
                     value={expenseForm.date}
                     onChange={(e) => setExpenseForm(prev => ({ ...prev, date: e.target.value }))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-semibold text-slate-800 focus:outline-none"
                   />
                 </div>
 
@@ -1320,7 +1320,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                   <select
                     value={expenseForm.paymentMethod}
                     onChange={(e) => setExpenseForm(prev => ({ ...prev, paymentMethod: e.target.value as any }))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none"
                   >
                     <option value="Cash">Cash In Hand</option>
                     <option value="Bank Transfer">Bank Transfer</option>
@@ -1341,7 +1341,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                     value={expenseForm.paidTo}
                     onChange={(e) => setExpenseForm(prev => ({ ...prev, paidTo: e.target.value }))}
                     placeholder="e.g. LESCO, Landlord, Staff name"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none"
                   />
                 </div>
 
@@ -1354,7 +1354,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                     value={expenseForm.receiptNumber}
                     onChange={(e) => setExpenseForm(prev => ({ ...prev, receiptNumber: e.target.value }))}
                     placeholder="e.g. REC-8891"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-800 focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-800 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1368,7 +1368,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                   value={expenseForm.notes}
                   onChange={(e) => setExpenseForm(prev => ({ ...prev, notes: e.target.value }))}
                   placeholder="Optional details, cheque number, or remarks..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none"
                 />
               </div>
 
