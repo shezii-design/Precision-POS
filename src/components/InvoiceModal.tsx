@@ -38,6 +38,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   onSavePdfEdits,
 }) => {
   const printContainerRef = useRef<HTMLDivElement | null>(null);
+  const [activeTab, setActiveTab] = React.useState('original');
   const [isEditMode, setIsEditMode] = React.useState(false);
   const [edits, setEdits] = React.useState<Record<string, string>>({});
   
@@ -207,7 +208,8 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 <body>
   <div class="header">
     <div>
-      <h1 class="company">King Filter House</h1>
+      <h1 class="company">{activeTab === 'original' ? 'PRECISION INVENTORY' : 'King Filter House'}
+                </h1>
       <div class="sub">Your Filteration Solution<br>03226600734, 03222000734</div>
     </div>
     <div class="meta">
@@ -219,7 +221,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   </div>
 
   <div class="cust-box">
-    <strong>Billed To:</strong> ${edits["customerName"] ?? sale.customerName}<br>
+    <strong>Billed To:</strong> ${activeTab === 'original' ? sale.customerName : (edits["customerName"] ?? sale.customerName)}<br>
     ${(edits["customerPhone"] ?? sale.customerPhone) ? `<strong>Phone:</strong> ${(edits["customerPhone"] ?? sale.customerPhone)}<br>` : ''}
     ${(edits["notes"] ?? sale.notes) ? `<strong>Notes:</strong> ${(edits["notes"] ?? sale.notes)}` : ''}
   </div>
@@ -370,6 +372,22 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-slate-200 print:hidden bg-slate-50">
+          <button 
+            onClick={() => { setActiveTab('original'); setIsEditMode(false); }}
+            className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'original' ? 'text-red-600 border-b-2 border-red-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+          >
+            System Record (Original)
+          </button>
+          <button 
+            onClick={() => setActiveTab('print')}
+            className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === 'print' ? 'text-red-600 border-b-2 border-red-600 bg-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+          >
+            Print / Edit Receipt
+          </button>
+        </div>
+
         {/* Printable Invoice Container */}
         <div ref={printContainerRef} className="p-4 sm:p-8 space-y-5 sm:space-y-6 max-h-[80vh] overflow-y-auto print:max-h-none print:p-0 print:overflow-visible">
           {/* Header */}
@@ -378,11 +396,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-red-600 inline-block"></span>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                  King Filter House
+                  {activeTab === 'original' ? 'PRECISION INVENTORY' : 'King Filter House'}
                 </h1>
               </div>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Your Filteration Solution<br />03226600734, 03222000734
+                {activeTab === 'original' ? 'Automotive Filters & Precision Machinery Spares' : <span dangerouslySetInnerHTML={{ __html: 'Your Filteration Solution<br />03226600734, 03222000734' }} />}
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 Pakistan • PKR Currency Official Sales Receipt
@@ -509,7 +527,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                {aggregatedItems.map((item, index) => {
+                {(activeTab === 'original' ? sale.items : aggregatedItems).map((item, index) => {
                   const displayName = formatItemInvoiceName(item, sale.invoiceNamingPreference);
                   const metrics = getItemMetrics(item);
 
@@ -518,14 +536,14 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       <td className="py-3 px-3.5 font-bold text-slate-400">{index + 1}</td>
                       <td className="py-3 px-3.5">
                         <div contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_name_${index}`, e.currentTarget.innerText)} className={`font-bold text-slate-900 text-sm outline-none px-1 -mx-1 rounded whitespace-pre-wrap ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text min-h-[24px]" : ""}`}>
-                          {edits[`item_name_${index}`] ?? displayName}
+                          {activeTab === 'original' ? item.productName : (edits[`item_name_${index}`] ?? displayName)}
                         </div>
                         {item.typeName && (
                           <div className="text-[11px] text-slate-500 font-medium">
                             Type: {item.typeName}
                           </div>
                         )}
-                        {(item.locationName || item.cabinNumber) && (
+                        {(activeTab === 'original') && (item.locationName || item.cabinNumber) && (
                           <div className="text-[11px] text-blue-700 font-semibold flex items-center gap-1 mt-0.5 print:hidden">
                             <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
                             <span>Loc: <strong>{item.locationName || 'Main Shop'}</strong></span>
@@ -561,7 +579,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       </td>
                       
                       <td className="py-3 px-3.5 text-center font-bold text-slate-700">
-                        <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_qty_${index}`, e.currentTarget.innerText)} className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{edits[`item_qty_${index}`] ?? item.quantity}</span> <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span>
+                        <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_qty_${index}`, e.currentTarget.innerText)} className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{activeTab === 'original' ? item.quantity : (edits[`item_qty_${index}`] ?? item.quantity)}</span> <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span>
                       </td>
                       {hasReturns && (
                         <td className="py-3 px-3.5 text-center font-black">
@@ -573,7 +591,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                         </td>
                       )}
                       <td className="py-3 px-3.5 text-right font-medium text-slate-700">
-                        <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_price_${index}`, e.currentTarget.innerText)} className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{edits[`item_price_${index}`] ?? formatPKR(item.unitPrice)}</span>
+                        <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_price_${index}`, e.currentTarget.innerText)} className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{activeTab === 'original' ? formatPKR(item.unitPrice) : (edits[`item_price_${index}`] ?? formatPKR(item.unitPrice))}</span>
                       </td>
                       <td className="py-3 px-3.5 text-right">
                         {metrics.returnedQty > 0 ? (
@@ -587,7 +605,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           </div>
                         ) : (
                           <div className="font-black text-slate-900 text-sm">
-                            <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_total_${index}`, e.currentTarget.innerText)} className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{edits[`item_total_${index}`] ?? formatPKR(item.totalPrice)}</span>
+                            <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_total_${index}`, e.currentTarget.innerText)} className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{activeTab === 'original' ? formatPKR(item.totalPrice) : (edits[`item_total_${index}`] ?? formatPKR(item.totalPrice))}</span>
                           </div>
                         )}
                       </td>
@@ -609,12 +627,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     Invoice Remarks / Notes
                   </span>
                   <p contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange("notes", e.currentTarget.innerText)} className={`text-slate-700 whitespace-pre-wrap font-medium leading-relaxed outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border border-dashed border-slate-400 cursor-text min-h-[40px]" : ""}`}>
-                    {edits["notes"] ?? sale.notes}
+                    {activeTab === 'original' ? sale.notes : (edits["notes"] ?? sale.notes)}
                   </p>
                 </div>
               ) : (
                 <div contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange("notes", e.currentTarget.innerText)} className={`border border-dashed border-slate-200 rounded-2xl p-4 text-center text-slate-400 text-xs outline-none ${isEditMode ? "hover:bg-slate-50 border-slate-400 cursor-text min-h-[40px]" : ""}`}>
-                  {edits["notes"] ?? "No additional remarks on this invoice"}
+                  {activeTab === 'original' ? "No additional remarks on this invoice" : (edits["notes"] ?? "No additional remarks on this invoice")}
                 </div>
               )}
 
@@ -631,7 +649,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <div className="bg-slate-200 border border-slate-200 rounded-2xl p-4 text-xs space-y-2.5 shadow-sm">
               <div className="flex justify-between items-center text-slate-600">
                 <span className="font-semibold">Subtotal:</span>
-                <span contentEditable={isEditMode} suppressContentEditableWarning className={`font-bold outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text text-slate-800" : "text-slate-800"}`}>{formatPKR(sale.subtotal)}</span>
+                <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange("subtotal", e.currentTarget.innerText)} className={`font-bold outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text text-slate-800" : "text-slate-800"}`}>{activeTab === 'original' ? formatPKR(sale.subtotal) : (edits["subtotal"] ?? formatPKR(sale.subtotal))}</span>
               </div>
 
               {sale.discountAmount > 0 && (
@@ -660,7 +678,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
               <div className="border-t border-slate-200 pt-2 flex justify-between items-center text-slate-900 font-black text-base">
                 <span>{hasReturns ? 'Net Adjusted Total:' : 'Total Amount:'}</span>
-                <span contentEditable={isEditMode} suppressContentEditableWarning className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text text-red-700" : "text-red-700"}`}>{formatPKR(netInvoiceAmount)}</span>
+                <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange("netInvoiceAmount", e.currentTarget.innerText)} className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text text-red-700" : "text-red-700"}`}>{activeTab === 'original' ? formatPKR(netInvoiceAmount) : (edits["netInvoiceAmount"] ?? formatPKR(netInvoiceAmount))}</span>
               </div>
 
               <div className="border-t border-slate-200 pt-2 flex justify-between items-center text-slate-700">
@@ -704,13 +722,13 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           >
             Close
           </button>
-          <button
+          {activeTab === 'print' && (<button
             type="button"
             onClick={handleToggleEdit}
             className={`px-4 py-2 ${isEditMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'} text-xs font-bold rounded-xl transition-colors cursor-pointer`}
           >
             {isEditMode ? 'Save & Lock PDF Edits' : 'Edit Invoice (For Print)'}
-          </button>
+          </button>)}
           <button
             type="button"
             onClick={handlePrint}
