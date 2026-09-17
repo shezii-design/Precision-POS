@@ -4675,7 +4675,7 @@ BEGIN
     EXCEPTION
         WHEN duplicate_column THEN null;
     END;
-END $;
+END $$;
 
 -- Upgrading table: vendors
 CREATE TABLE IF NOT EXISTS vendors (id TEXT PRIMARY KEY);
@@ -5134,7 +5134,7 @@ BEGIN
     EXCEPTION
         WHEN duplicate_column THEN null;
     END;
-END $;
+END $$;
 
 -- Upgrading table: purchase_orders
 CREATE TABLE IF NOT EXISTS purchase_orders (id TEXT PRIMARY KEY);
@@ -5634,7 +5634,7 @@ BEGIN
     EXCEPTION
         WHEN duplicate_column THEN null;
     END;
-END $;
+END $$;
 
 -- Upgrading table: quotations
 CREATE TABLE IF NOT EXISTS quotations (id TEXT PRIMARY KEY);
@@ -6720,7 +6720,7 @@ BEGIN
     EXCEPTION
         WHEN duplicate_column THEN null;
     END;
-END $;
+END $$;
 
 NOTIFY pgrst, 'reload schema';
 `;
