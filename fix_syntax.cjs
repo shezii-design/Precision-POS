@@ -1,31 +1,11 @@
 const fs = require('fs');
+let code = fs.readFileSync('src/components/InvoiceModal.tsx', 'utf8');
 
-const pages = [
-  'ProductTable.tsx', 'DashboardPage.tsx', 'SalesPage.tsx', 'ProductCard.tsx',
-  'PurchaseOrdersPage.tsx', 'VendorDetailsPage.tsx', 'QuotationsPage.tsx'
-];
+// The error happened because I replaced `{displayName}` indiscriminately.
+// Let's restore the broken template string literal:
+code = code.replace(
+  'const key = `$<span contentEditable={isEditMode} suppressContentEditableWarning className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "bg-amber-50 ring-1 ring-amber-300" : ""}`}>{displayName}</span>|${item.unitPrice}|${item.unit}`;',
+  'const key = `${displayName}|${item.unitPrice}|${item.unit}`;'
+);
 
-// Wait, I need to check how to fix `{prop && ({prop ? <button ... : null})}`.
-// The easiest way is to use a regex replacement to undo the `{prop ? <button ... : null}` where it's wrapped.
-// Or just let's see what exactly was written by replacing `<button` with `{prop ? <button`.
-
-// Actually, I can just use a regex on the entire file content:
-// `\{([a-zA-Z]+)\s*&&\s*\(\{\1\s*\?\s*(<button[\s\S]*?<\/button>)\s*:\s*null\}\)\}`
-// and replace it with `{\1 && (\2)}`
-// Let's test this logic!
-
-for (let file of fs.readdirSync('src/components/')) {
-  if (!file.endsWith('.tsx')) continue;
-  let code = fs.readFileSync(`src/components/${file}`, 'utf8');
-
-  // Fix 1: {prop && ({prop ? <button ... : null})} -> {prop && (<button ... />)}
-  const regex = /\{([a-zA-Z]+)\s*&&\s*\(\{\1\s*\?\s*(<button[\s\S]*?<\/button>)\s*:\s*null\}\)\}/g;
-  code = code.replace(regex, '{$1 && ($2)}');
-  
-  // Fix 2: What about the ones not wrapped in parenthesis? `{prop && {prop ? <button ... : null}}`
-  const regex2 = /\{([a-zA-Z]+)\s*&&\s*\{\1\s*\?\s*(<button[\s\S]*?<\/button>)\s*:\s*null\}\}/g;
-  code = code.replace(regex2, '{$1 && ($2)}');
-
-  fs.writeFileSync(`src/components/${file}`, code);
-}
-console.log("Fixed syntax");
+fs.writeFileSync('src/components/InvoiceModal.tsx', code);

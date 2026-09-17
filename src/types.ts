@@ -453,6 +453,7 @@ export interface Sale {
   paymentType: PaymentType; // 'cash' (full), 'partial' (semi-paid), or 'credit' (unpaid)
   paymentStatus?: 'paid' | 'partial' | 'credit';
   balanceDue: number; // totalAmount - amountReceived (if > 0)
+  pdfEdits?: Record<string, string>; // JSON object for visual invoice overrides
   changeGiven: number; // amountReceived - totalAmount (if > 0)
   invoiceNamingPreference: InvoiceNamingPreference;
   notes?: string;

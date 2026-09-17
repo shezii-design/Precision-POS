@@ -113,7 +113,7 @@ import { autoUpdateProductsROP, calculateSmartROP, buildProductSalesMap } from '
 import { ParsedDimensionQuery } from './services/dimensions';
 import { formatPKR, formatPKRShort, generateProductSellingPrices, getDefaultRetailPrice } from './services/pricing';
 import { exportProductsToCSV, exportProductsToExcel } from './services/excel';
-import { getSupabaseClient, syncAllModulesToSupabase, fetchAllFromSupabase, wipeAllSupabaseData } from './services/supabase';
+import { getSupabaseClient, syncAllModulesToSupabase, syncSalesToSupabase, fetchAllFromSupabase, wipeAllSupabaseData } from './services/supabase';
 
 // Components
 import { Navbar } from './components/Navbar';
@@ -2816,6 +2816,12 @@ export default function App() {
         isOpen={showInvoiceModal}
         onClose={() => setShowInvoiceModal(false)}
         sale={activeSaleForInvoice}
+        onSavePdfEdits={(saleId, edits) => {
+          const updatedSales = sales.map(s => s.id === saleId ? { ...s, pdfEdits: edits } : s);
+          setSales(updatedSales);
+          saveStoredSales(updatedSales);
+          syncSalesToSupabase(updatedSales).catch(console.error);
+        }}
       />
 
       {/* 11. Vendor Create / Edit Modal */}

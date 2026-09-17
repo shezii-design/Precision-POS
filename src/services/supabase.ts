@@ -1987,6 +1987,7 @@ export async function syncSalesToSupabase(
       returned_items_count: Number(s.returnedItemsCount) || 0,
       returns_list: s.returnsList || [],
       invoice_naming_preference: s.invoiceNamingPreference || 'product_name',
+      pdf_edits: s.pdfEdits || null,
       notes: s.notes || null,
       created_at: s.createdAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
