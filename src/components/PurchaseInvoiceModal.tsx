@@ -151,7 +151,7 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
 <body>
   <div class="header">
     <div>
-      <h1 class="company">PRECISION PARTS & INVENTORY</h1>
+      <h1 class="company">King Filter House</h1>
       <div class="sub">Goods Received Note & Purchase Bill Record | Pakistan</div>
     </div>
     <div class="meta">
@@ -367,7 +367,7 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1.5">
-                PRECISION PARTS & INVENTORY
+                King Filter House
               </h1>
               <p className="text-xs text-slate-500 font-medium">
                 Automotive Filters & Machinery Spare Parts • Pakistan

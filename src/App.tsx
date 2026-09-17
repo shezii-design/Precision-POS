@@ -2820,7 +2820,11 @@ export default function App() {
           const updatedSales = sales.map(s => s.id === saleId ? { ...s, pdfEdits: edits } : s);
           setSales(updatedSales);
           saveStoredSales(updatedSales);
-          syncSalesToSupabase(updatedSales).catch(console.error);
+          const client = getSupabaseClient();
+          if (client) {
+            syncSalesToSupabase(client, updatedSales).catch(console.error);
+          }
+          setActiveSaleForInvoice(updatedSales.find(s => s.id === saleId) || null);
         }}
       />
 

@@ -206,8 +206,8 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 <body>
   <div class="header">
     <div>
-      <h1 class="company">PRECISION PARTS & INVENTORY</h1>
-      <div class="sub">Automotive Filters & Machinery Spare Parts | Pakistan</div>
+      <h1 class="company">King Filter House</h1>
+      <div class="sub">Your Filteration Solution<br>03226600734, 03222000734</div>
     </div>
     <div class="meta">
       <h2 class="inv-title">INVOICE: ${sale.id}</h2>
@@ -218,9 +218,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   </div>
 
   <div class="cust-box">
-    <strong>Billed To:</strong> ${sale.customerName}<br>
-    ${sale.customerPhone ? `<strong>Phone:</strong> ${sale.customerPhone}<br>` : ''}
-    ${sale.notes ? `<strong>Notes:</strong> ${sale.notes}` : ''}
+    <strong>Billed To:</strong> ${edits["customerName"] ?? sale.customerName}<br>
+    ${(edits["customerPhone"] ?? sale.customerPhone) ? `<strong>Phone:</strong> ${(edits["customerPhone"] ?? sale.customerPhone)}<br>` : ''}
+    ${(edits["notes"] ?? sale.notes) ? `<strong>Notes:</strong> ${(edits["notes"] ?? sale.notes)}` : ''}
   </div>
 
   ${hasReturns ? `
@@ -236,8 +236,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         <th>#</th>
         <th>Item Description</th>
         
-        <th class="text-center">Orig Qty</th>
-        ${hasReturns ? '<th class="text-center">Return / Net</th>' : '<th class="text-right">Qty</th>'}
+        ${hasReturns ? '<th class="text-center">Orig Qty</th>\n        <th class="text-center">Return / Net</th>' : '<th class="text-center">Qty</th>'}
         <th class="text-right">Rate (PKR)</th>
         <th class="text-right">Total (PKR)</th>
       </tr>
@@ -249,24 +248,24 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         <tr style="${metrics.isFullyReturned ? 'background-color: #fff1f2;' : ''}">
           <td>${idx + 1}</td>
           <td>
-            <strong>${formatItemInvoiceName(it, sale.invoiceNamingPreference)}</strong>
+            <strong>${edits[`item_name_${idx}`] ?? formatItemInvoiceName(it, sale.invoiceNamingPreference)}</strong>
             ${(it.locationName || it.cabinNumber) ? `<div style="font-size:11px;color:#1e40af;margin-top:2px;">📍 Location: <strong>${it.locationName || 'Main Shop'}</strong>${it.cabinNumber ? ` (Cabin: ${it.cabinNumber})` : ''}</div>` : ''}
             ${it.showDetailsOnInvoice && it.crossReferences ? `<div style="font-size:11px;color:#64748b;">Cross Ref: ${it.crossReferences.replace(/\n/g, ', ')}</div>` : ''}
             ${it.showDetailsOnInvoice && it.machineNames ? `<div style="font-size:11px;color:#64748b;">Machine: ${it.machineNames.replace(/\n/g, ', ')}</div>` : ''}
             ${metrics.returnedQty > 0 ? `<div style="font-size:11px;color:#b45309;font-weight:bold;margin-top:2px;">↳ Returned: -${metrics.returnedQty} ${it.unit} (${metrics.isFullyReturned ? 'Fully Returned' : 'Partial Return'})</div>` : ''}
           </td>
           
-          <td class="text-center">${it.quantity} ${it.unit}</td>
+          <td class="text-center">${edits[`item_qty_${idx}`] ?? it.quantity} <span style="font-size:10px;color:#64748b;">${it.unit}</span></td>
           ${hasReturns ? `
             <td class="text-center">
               ${metrics.returnedQty > 0 ? `<span style="color:#b45309;">-${metrics.returnedQty}</span> / ` : ''}
               <strong>${metrics.netQty} ${it.unit}</strong>
             </td>
           ` : ''}
-          <td class="text-right">${formatPKR(it.unitPrice)}</td>
+          <td class="text-right">${edits[`item_price_${idx}`] ?? formatPKR(it.unitPrice)}</td>
           <td class="text-right">
             ${metrics.returnedQty > 0 ? `<div class="strike">${formatPKR(metrics.originalLineTotal)}</div>` : ''}
-            <strong>${formatPKR(metrics.netLineTotal)}</strong>
+            <strong>${edits[`item_total_${idx}`] ?? formatPKR(metrics.netLineTotal)}</strong>
           </td>
         </tr>
       `}).join('')}
@@ -274,7 +273,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   </table>
 
   <div class="totals">
-    <div class="totals-row"><span>Original Subtotal:</span><span>${formatPKR(sale.subtotal)}</span></div>
+    <div class="totals-row"><span>Original Subtotal:</span><span>${edits["subtotal"] ?? formatPKR(sale.subtotal)}</span></div>
     ${sale.discountAmount > 0 ? `<div class="totals-row"><span>Discount (${sale.discountType === 'percentage' ? `${sale.discountValue}%` : 'PKR'}):</span><span>-${formatPKR(sale.discountAmount)}</span></div>` : ''}
     <div class="totals-row"><span>Original Billed Amount:</span><span>${formatPKR(sale.totalAmount)}</span></div>
     ${hasReturns ? `
@@ -284,10 +283,10 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       </div>
       <div class="totals-row grand-total">
         <span>Net Adjusted Total:</span>
-        <span>${formatPKR(netInvoiceAmount)}</span>
+        <span>${edits["netInvoiceAmount"] ?? formatPKR(netInvoiceAmount)}</span>
       </div>
     ` : `
-      <div class="totals-row grand-total"><span>Total Amount:</span><span>${formatPKR(sale.totalAmount)}</span></div>
+      <div class="totals-row grand-total"><span>Total Amount:</span><span>${edits["netInvoiceAmount"] ?? formatPKR(sale.totalAmount)}</span></div>
     `}
     <div class="totals-row" style="margin-top:8px;"><span>Amount Received:</span><span>${formatPKR(sale.amountReceived)}</span></div>
     ${netBalanceDue > 0 ? `<div class="totals-row" style="color:#dc2626;font-weight:bold;"><span>Balance Due (Credit):</span><span>${formatPKR(netBalanceDue)}</span></div>` : ''}
@@ -295,7 +294,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   </div>
 
   <div class="footer">
-    Thank you for your business! | Precision Inventory Management System
+    Thank you for your business! | King Filter House
   </div>
 </body>
 </html>`;
@@ -378,11 +377,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-red-600 inline-block"></span>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                  PRECISION INVENTORY
+                  King Filter House
                 </h1>
               </div>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Automotive Filters & Precision Machinery Spares
+                Your Filteration Solution<br />03226600734, 03222000734
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 Pakistan • PKR Currency Official Sales Receipt
@@ -496,8 +495,14 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                     <th className="py-3 px-3.5 w-10">#</th>
                     <th className="py-3 px-3.5">Item Description</th>
                     
-                    <th className="py-3 px-3.5 text-center w-20">Orig Qty</th>
-                    {hasReturns && <th className="py-3 px-3.5 text-center w-24">Net Billed</th>}
+                    {hasReturns ? (
+                      <>
+                        <th className="py-3 px-3.5 text-center w-20">Orig Qty</th>
+                        <th className="py-3 px-3.5 text-center w-24">Net Billed</th>
+                      </>
+                    ) : (
+                      <th className="py-3 px-3.5 text-center w-20">Qty</th>
+                    )}
                     <th className="py-3 px-3.5 text-right w-28">Rate (PKR)</th>
                     <th className="py-3 px-3.5 text-right w-32">Total (PKR)</th>
                   </tr>
@@ -555,7 +560,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                       </td>
                       
                       <td className="py-3 px-3.5 text-center font-bold text-slate-700">
-                        <span contentEditable={isEditMode} suppressContentEditableWarning className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{item.quantity}</span> <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span>
+                        <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_qty_${index}`, e.currentTarget.innerText)} className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{edits[`item_qty_${index}`] ?? item.quantity}</span> <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span>
                       </td>
                       {hasReturns && (
                         <td className="py-3 px-3.5 text-center font-black">
@@ -567,7 +572,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                         </td>
                       )}
                       <td className="py-3 px-3.5 text-right font-medium text-slate-700">
-                        <span contentEditable={isEditMode} suppressContentEditableWarning className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{formatPKR(item.unitPrice)}</span>
+                        <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_price_${index}`, e.currentTarget.innerText)} className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{edits[`item_price_${index}`] ?? formatPKR(item.unitPrice)}</span>
                       </td>
                       <td className="py-3 px-3.5 text-right">
                         {metrics.returnedQty > 0 ? (
@@ -581,7 +586,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           </div>
                         ) : (
                           <div className="font-black text-slate-900 text-sm">
-                            <span contentEditable={isEditMode} suppressContentEditableWarning className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{formatPKR(item.totalPrice)}</span>
+                            <span contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_total_${index}`, e.currentTarget.innerText)} className={`outline-none px-1 -mx-1 rounded ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text" : ""}`}>{edits[`item_total_${index}`] ?? formatPKR(item.totalPrice)}</span>
                           </div>
                         )}
                       </td>
