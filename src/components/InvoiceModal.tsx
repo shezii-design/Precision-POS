@@ -261,7 +261,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         {/* Modal Action Bar (Hidden on Print) */}
         <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-sm">
               <Receipt className="w-4 h-4" />
             </div>
             <div className="min-w-0">
@@ -289,7 +289,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <button
               type="button"
               onClick={handlePrint}
-              className="px-2.5 sm:px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
               title="Print Invoice"
             >
               <Printer className="w-3.5 h-3.5" />
@@ -419,7 +419,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               {linkedReturns.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1 border-t border-amber-200/60">
                   {linkedReturns.map((lr) => (
-                    <div key={lr.returnId} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-amber-300/80 rounded-xl text-[11px] text-amber-900 font-semibold shadow-2xs">
+                    <div key={lr.returnId} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-amber-300/80 rounded-xl text-[11px] text-amber-900 font-semibold shadow-sm">
                       <span className="font-mono font-bold text-amber-700">{lr.returnNumber}</span>
                       {lr.creditNoteNumber && <span className="text-slate-500 font-mono text-[10px]">({lr.creditNoteNumber})</span>}
                       <span>• {formatPKR(lr.totalRefundAmount)}</span>
@@ -432,7 +432,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           )}
 
           {/* Items Table */}
-          <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+          <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-left text-xs border-collapse">
                 <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-black uppercase tracking-wider text-[11px]">
@@ -568,7 +568,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </div>
 
             {/* Calculations Box */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-2.5 shadow-2xs">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-2.5 shadow-sm">
               <div className="flex justify-between items-center text-slate-600">
                 <span className="font-semibold">Subtotal:</span>
                 <span className="font-bold text-slate-800">{formatPKR(sale.subtotal)}</span>

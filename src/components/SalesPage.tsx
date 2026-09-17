@@ -126,7 +126,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
       {/* Top Banner / Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
         {/* Metric 1: Total Invoices */}
-        <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-2xs min-w-0">
+        <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-sm min-w-0">
           <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Total Invoices</span>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
@@ -142,7 +142,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
         </div>
 
         {/* Metric 2: Total Sales Revenue */}
-        <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-2xs min-w-0">
+        <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-sm min-w-0">
           <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Total Sales</span>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-black text-xs shrink-0">
@@ -158,7 +158,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
         </div>
 
         {/* Metric 3: Gross Profit (FIFO) */}
-        <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-2xs min-w-0">
+        <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-sm min-w-0">
           <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Gross Profit</span>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -174,7 +174,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
         </div>
 
         {/* Metric 4: Cash Collected */}
-        <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-2xs min-w-0">
+        <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-sm min-w-0">
           <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Cash Received</span>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -190,7 +190,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
         </div>
 
         {/* Metric 5: Credit / Receivables */}
-        <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-2xs min-w-0 col-span-2 lg:col-span-1">
+        <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-200 shadow-sm min-w-0 col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Credit Due</span>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
@@ -207,7 +207,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
       </div>
 
       {/* Main Control Card: Search, Sort & Action Button */}
-      <div className="bg-white rounded-3xl p-3.5 sm:p-6 border border-slate-200 shadow-xs space-y-3 sm:space-y-4">
+      <div className="bg-white rounded-3xl p-3.5 sm:p-6 border border-slate-200 shadow-sm space-y-3 sm:space-y-4">
         {/* Row 1: Search Bar & + Make Sale Button */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
           {/* Main Sales Search Bar */}
@@ -218,7 +218,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search Invoice ID, Date, Customer Name, Phone, Item..."
-              className="w-full pl-9 sm:pl-10 pr-9 sm:pr-10 py-2.5 sm:py-3 bg-slate-50 border border-slate-300 rounded-2xl text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-colors shadow-2xs"
+              className="w-full pl-9 sm:pl-10 pr-9 sm:pr-10 py-2.5 sm:py-3 bg-slate-50 border border-slate-300 rounded-2xl text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-colors shadow-sm"
             />
             <Search className="w-4 h-4 text-slate-400 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2" />
             {searchQuery && (
@@ -239,7 +239,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
               onClick={() => setShowFiltersDrawer(!showFiltersDrawer)}
               className={`flex-1 sm:flex-initial justify-center px-3 py-2 sm:py-3 rounded-2xl text-xs font-bold transition-colors flex items-center gap-1.5 border cursor-pointer select-none ${
                 showFiltersDrawer || hasActiveFilters
-                  ? 'bg-red-50 text-red-700 border-red-300 shadow-2xs'
+                  ? 'bg-red-50 text-red-700 border-red-300 shadow-sm'
                   : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300'
               }`}
             >
@@ -254,7 +254,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
             {onOpenNewSale && (<button
               type="button"
               onClick={() => onOpenNewSale()}
-              className="flex-1 sm:flex-initial justify-center px-3.5 sm:px-5 py-2 sm:py-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs sm:text-sm font-black rounded-2xl shadow-xs transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none"
+              className="flex-1 sm:flex-initial justify-center px-3.5 sm:px-5 py-2 sm:py-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs sm:text-sm font-black rounded-2xl shadow-sm transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none"
               title="Record a Sale (Shortcut: F5)"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
@@ -273,7 +273,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                 type="button"
                 onClick={() => setDatePreset('all')}
                 className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                  !startDate && !endDate ? 'bg-red-600 text-white' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  !startDate && !endDate ? 'bg-red-600 text-white' : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 All Time
@@ -281,21 +281,21 @@ export const SalesPage: React.FC<SalesPageProps> = ({
               <button
                 type="button"
                 onClick={() => setDatePreset('today')}
-                className="px-2.5 py-1 bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 Today
               </button>
               <button
                 type="button"
                 onClick={() => setDatePreset('7days')}
-                className="px-2.5 py-1 bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 Last 7 Days
               </button>
               <button
                 type="button"
                 onClick={() => setDatePreset('thisMonth')}
-                className="px-2.5 py-1 bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 This Month
               </button>
@@ -312,7 +312,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                 />
               </div>
 
@@ -325,7 +325,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                 />
               </div>
 
@@ -340,7 +340,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   value={minAmount}
                   onChange={(e) => setMinAmount(e.target.value)}
                   placeholder="e.g. 1000"
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                 />
               </div>
 
@@ -355,7 +355,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   value={maxAmount}
                   onChange={(e) => setMaxAmount(e.target.value)}
                   placeholder="e.g. 50000"
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                 />
               </div>
             </div>
@@ -369,7 +369,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   <select
                     value={paymentTypeFilter}
                     onChange={(e) => setPaymentTypeFilter(e.target.value as any)}
-                    className="px-2.5 py-1 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
+                    className="px-2.5 py-1 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
                   >
                     <option value="all">All Types</option>
                     <option value="cash">Full Cash (Paid)</option>
@@ -384,7 +384,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="px-2.5 py-1 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
+                    className="px-2.5 py-1 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
                   >
                     <option value="date_desc">Date: Latest to Oldest</option>
                     <option value="date_asc">Date: Oldest to Latest</option>
@@ -421,7 +421,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
         </div>
 
         {/* SALES TABLE */}
-        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-xs border-collapse">
               <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-black uppercase tracking-wider text-[11px]">

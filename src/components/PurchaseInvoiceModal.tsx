@@ -460,7 +460,7 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
               {linkedReturns.length > 0 && (
                 <div className="flex flex-wrap gap-2 pt-1 border-t border-amber-200/60">
                   {linkedReturns.map((lr) => (
-                    <div key={lr.returnId} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-amber-300/80 rounded-xl text-[11px] text-amber-900 font-semibold shadow-2xs">
+                    <div key={lr.returnId} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-amber-300/80 rounded-xl text-[11px] text-amber-900 font-semibold shadow-sm">
                       <span className="font-mono font-bold text-amber-700">{lr.returnNumber}</span>
                       {lr.debitNoteNumber && <span className="text-slate-500 font-mono text-[10px]">({lr.debitNoteNumber})</span>}
                       <span>• {formatPKR(lr.totalAmount)}</span>
@@ -473,7 +473,7 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           )}
 
           {/* Line Items Table */}
-          <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+          <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">

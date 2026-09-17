@@ -151,7 +151,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
           </div>
           <button
             onClick={() => exportAnalyticsToExcel(products, sales)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 shadow-xs rounded-xl font-bold text-sm transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 shadow-sm rounded-xl font-bold text-sm transition-all"
             title="Export AI Reorder Data & EOQ to Excel"
           >
             <Download className="w-4 h-4" />
@@ -180,7 +180,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
         </div>
       )}
         {/* Seasonality Chart */}
-        <div className="lg:col-span-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="lg:col-span-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
             <Calendar className="w-5 h-5 text-emerald-600" />
             12-Month Sales Seasonality
@@ -226,7 +226,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
         </div>
 
         {/* Restock Needed */}
-        <div className="lg:col-span-1 bg-rose-50 border border-rose-200 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[500px]">
+        <div className="lg:col-span-1 bg-rose-50 border border-rose-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[500px]">
           <div className="p-4 bg-white border-b border-rose-100 flex items-center justify-between shrink-0">
             <h3 className="font-bold text-rose-800 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5" />
@@ -279,7 +279,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
         </div>
 
         {/* Smart Reorder Point Insights */}
-        <div className="lg:col-span-1 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[500px]">
+        <div className="lg:col-span-1 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[500px]">
           <div className="p-4 bg-white border-b border-indigo-100 flex items-center justify-between shrink-0">
             <div>
               <h3 className="font-bold text-indigo-800 flex items-center gap-2">
@@ -342,7 +342,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
         </div>
 
         {/* Dead Stock */}
-        <div className="lg:col-span-1 bg-slate-50 border border-slate-200 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[500px]">
+        <div className="lg:col-span-1 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[500px]">
           <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
             <div>
               <h3 className="font-bold text-slate-800 flex items-center gap-2">

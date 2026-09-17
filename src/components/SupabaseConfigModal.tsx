@@ -572,7 +572,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
             onClick={() => setActiveTab('connection')}
             className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-t border-x shrink-0 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'connection'
-                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-2xs'
+                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 border-transparent'
             }`}
           >
@@ -585,7 +585,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
             onClick={() => setActiveTab('sync')}
             className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-t border-x shrink-0 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'sync'
-                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-2xs'
+                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 border-transparent'
             }`}
           >
@@ -598,7 +598,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
             onClick={() => setActiveTab('schema')}
             className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-t border-x shrink-0 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'schema'
-                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-2xs'
+                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 border-transparent'
             }`}
           >
@@ -611,7 +611,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
             onClick={() => setActiveTab('guide')}
             className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-t border-x shrink-0 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'guide'
-                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-2xs'
+                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 border-transparent'
             }`}
           >
@@ -624,7 +624,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
             onClick={() => setActiveTab('columns')}
             className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-t border-x shrink-0 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'columns'
-                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-2xs'
+                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 border-transparent'
             }`}
           >
@@ -713,7 +713,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
 
                 {/* Direct Credentials Input Form */}
-                <div className="space-y-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="space-y-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2.5">
                     <div className="flex items-center gap-2">
                       <button
@@ -835,7 +835,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       setCopiedSql(true);
                       setTimeout(() => setCopiedSql(false), 2500);
                     }}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                   >
                     {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedSql ? 'Master SQL Copied!' : 'Copy Master SQL'}</span>
@@ -891,7 +891,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     id="btn-full-pull-supabase"
                     onClick={handlePullAllFromCloud}
                     disabled={isPullingAll || !isCloudConfigured}
-                    className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-md cursor-pointer"
+                    className="px-4 py-2.5 bg-slate-50 hover:bg-slate-200 text-slate-900 text-xs font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-md cursor-pointer"
                   >
                     <ArrowDownToLine className={`w-4 h-4 ${isPullingAll ? 'animate-spin' : ''}`} />
                     <span>{isPullingAll ? 'Restoring All...' : 'Pull All from Cloud'}</span>
@@ -921,7 +921,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('products')}
                       disabled={!isCloudConfigured}
-                      className="flex-1 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="flex-1 py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-red-600" />
                       <span>Push</span>
@@ -930,7 +930,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={handlePullProducts}
                       disabled={!isCloudConfigured}
-                      className="flex-1 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="flex-1 py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowDownToLine className="w-3 h-3 text-slate-700" />
                       <span>Pull</span>
@@ -957,7 +957,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('sales')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-emerald-600" />
                       <span>Push Sales & Invoices</span>
@@ -984,7 +984,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('customers')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-blue-600" />
                       <span>Push Customers & Ledgers</span>
@@ -1011,7 +1011,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('customerReturns')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-rose-600" />
                       <span>Push Returns</span>
@@ -1038,7 +1038,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('vendors')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-purple-600" />
                       <span>Push Vendors & Purchases</span>
@@ -1065,7 +1065,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('vendorLedger')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-indigo-600" />
                       <span>Push Vendor Ledger</span>
@@ -1092,7 +1092,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('quotations')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-amber-600" />
                       <span>Push Quotations</span>
@@ -1119,7 +1119,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('expenses')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-teal-600" />
                       <span>Push Expenses</span>
@@ -1146,7 +1146,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('stockLogs')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-cyan-700" />
                       <span>Push Stock Logs</span>
@@ -1173,7 +1173,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       type="button"
                       onClick={() => handleSyncModule('staff')}
                       disabled={!isCloudConfigured}
-                      className="w-full py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                      className="w-full py-1.5 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <ArrowUpToLine className="w-3 h-3 text-slate-700" />
                       <span>Push Staff & Terminals</span>
@@ -1194,13 +1194,13 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                   <button
                     type="button"
                     onClick={handleExportFullJson}
-                    className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    className="px-3.5 py-2 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                   >
                     <Download className="w-3.5 h-3.5 text-slate-600" />
                     <span>Download JSON Backup</span>
                   </button>
 
-                  <label className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                  <label className="px-3.5 py-2 bg-slate-50 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm">
                     <Upload className="w-3.5 h-3.5 text-slate-600" />
                     <span>Restore File</span>
                     <input type="file" accept=".json" onChange={handleImportJsonFile} className="hidden" />
@@ -1224,7 +1224,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     type="button"
                     onClick={() => setSelectedSchemaTab('full')}
                     className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'full' ? 'bg-white text-red-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      selectedSchemaTab === 'full' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     All 15 Tables (Master)
@@ -1233,7 +1233,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     type="button"
                     onClick={() => setSelectedSchemaTab('upgrade')}
                     className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'upgrade' ? 'bg-white text-indigo-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      selectedSchemaTab === 'upgrade' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Idempotent Upgrade Script (Safe)
@@ -1242,7 +1242,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     type="button"
                     onClick={() => setSelectedSchemaTab('products')}
                     className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'products' ? 'bg-white text-red-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      selectedSchemaTab === 'products' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Products & Inventory
@@ -1251,7 +1251,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     type="button"
                     onClick={() => setSelectedSchemaTab('customers')}
                     className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'customers' ? 'bg-white text-red-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      selectedSchemaTab === 'customers' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Customers & Ledger
@@ -1260,7 +1260,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     type="button"
                     onClick={() => setSelectedSchemaTab('vendors')}
                     className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'vendors' ? 'bg-white text-red-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      selectedSchemaTab === 'vendors' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Vendors & Purchasing
@@ -1269,7 +1269,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     type="button"
                     onClick={() => setSelectedSchemaTab('quotations')}
                     className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'quotations' ? 'bg-white text-red-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      selectedSchemaTab === 'quotations' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Quotations & Demands
@@ -1278,7 +1278,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     type="button"
                     onClick={() => setSelectedSchemaTab('expenses')}
                     className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'expenses' ? 'bg-white text-red-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      selectedSchemaTab === 'expenses' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Expenses & Staff
@@ -1293,7 +1293,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     type="button"
                     id="btn-copy-supabase-sql"
                     onClick={handleCopySql}
-                    className="text-xs text-white bg-red-600 hover:bg-red-700 font-bold flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-colors cursor-pointer shrink-0 shadow-2xs"
+                    className="text-xs text-white bg-red-600 hover:bg-red-700 font-bold flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-colors cursor-pointer shrink-0 shadow-sm"
                   >
                     {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedSql ? 'Copied to Clipboard!' : 'Copy SQL Script'}</span>

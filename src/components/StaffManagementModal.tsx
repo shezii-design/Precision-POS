@@ -462,7 +462,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                 onClick={() => setActiveTab('employees')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'employees' 
-                    ? 'bg-white text-slate-900 shadow-xs' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -476,7 +476,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                 onClick={() => setActiveTab('devices')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'devices' 
-                    ? 'bg-white text-slate-900 shadow-xs' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -498,7 +498,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                   type="button"
                   id="btn-add-new-employee"
                   onClick={handleStartCreate}
-                  className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span>Add Employee</span>
@@ -509,7 +509,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                 type="button"
                 id="btn-register-this-pc"
                 onClick={handleRegisterCurrentWorkstation}
-                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Laptop className="w-4 h-4" />
                 <span>Authorize Current PC ({currentDeviceId})</span>
@@ -546,7 +546,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
               </div>
 
               {/* 1. Basic Account Credentials */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-4">
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
                 <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <Users className="w-4 h-4 text-blue-600" />
                   <span>1. Employee Profile & Quick Login</span>
@@ -661,7 +661,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                         onClick={() => setFormData({ ...formData, status: 'active' })}
                         className={`flex-1 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                           formData.status === 'active' 
-                            ? 'bg-emerald-600 text-white shadow-2xs' 
+                            ? 'bg-emerald-600 text-white shadow-sm' 
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
@@ -673,7 +673,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                         onClick={() => setFormData({ ...formData, status: 'inactive' })}
                         className={`flex-1 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                           formData.status === 'inactive' 
-                            ? 'bg-red-600 text-white shadow-2xs' 
+                            ? 'bg-red-600 text-white shadow-sm' 
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
@@ -686,7 +686,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
               </div>
 
               {/* 2. Visible Tabs & Modules */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
@@ -725,7 +725,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                         onClick={() => toggleTabVisibility(tab)}
                         className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 select-none ${
                           isAllowed 
-                            ? 'bg-red-50/60 border-red-200 text-slate-900 shadow-2xs' 
+                            ? 'bg-red-50/60 border-red-200 text-slate-900 shadow-sm' 
                             : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60 hover:opacity-90'
                         }`}
                       >
@@ -754,7 +754,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
               </div>
 
               {/* 3. Granular Action Permissions */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-4">
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                     <Sliders className="w-4 h-4 text-amber-600" />
@@ -1004,7 +1004,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
               </div>
 
               {/* 4. Windows / Device ID Binding */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Laptop className="w-4 h-4 text-emerald-600" />
@@ -1061,7 +1061,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                             onClick={() => toggleDeviceWhitelist(dev.id)}
                             className={`p-2.5 rounded-lg border flex items-center justify-between cursor-pointer select-none transition-all ${
                               isWhitelisted 
-                                ? 'bg-white border-emerald-400 shadow-2xs text-slate-900' 
+                                ? 'bg-white border-emerald-400 shadow-sm text-slate-900' 
                                 : 'bg-emerald-50/40 border-emerald-200/60 text-slate-500 opacity-70'
                             }`}
                           >
@@ -1136,7 +1136,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                   return (
                     <div 
                       key={emp.id}
-                      className={`bg-white rounded-xl border p-4 shadow-2xs flex flex-col justify-between transition-all hover:shadow-md ${
+                      className={`bg-white rounded-xl border p-4 shadow-sm flex flex-col justify-between transition-all hover:shadow-md ${
                         emp.status === 'inactive' ? 'opacity-60 bg-slate-50 border-slate-200' : 'border-slate-200'
                       }`}
                     >
@@ -1144,7 +1144,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                         {/* Top Strip */}
                         <div className="flex items-start justify-between gap-2 mb-2.5">
                           <div className="flex items-center gap-2.5">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-xs ${
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm ${
                               emp.role === 'admin' ? 'bg-gradient-to-br from-red-500 to-red-700' :
                               emp.role === 'cashier' ? 'bg-gradient-to-br from-blue-500 to-blue-700' :
                               emp.role === 'procurement' ? 'bg-gradient-to-br from-amber-500 to-amber-700' :
@@ -1271,7 +1271,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                   return (
                     <div
                       key={device.id}
-                      className={`bg-white rounded-xl border p-4 shadow-2xs space-y-3 ${
+                      className={`bg-white rounded-xl border p-4 shadow-sm space-y-3 ${
                         isCurrentMachine ? 'border-emerald-300 ring-2 ring-emerald-500/20' : 'border-slate-200'
                       }`}
                     >
@@ -1431,7 +1431,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                   type="button"
                   id="btn-confirm-delete-employee"
                   onClick={confirmDeleteEmployee}
-                  className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Delete Account</span>
@@ -1484,7 +1484,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                   type="button"
                   id="btn-confirm-revoke-device"
                   onClick={confirmDeleteDevice}
-                  className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Revoke Authorization</span>

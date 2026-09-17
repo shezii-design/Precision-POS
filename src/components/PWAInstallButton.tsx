@@ -13,7 +13,7 @@ export const PWAInstallButton: React.FC = () => {
       <button
         type="button"
         onClick={install}
-        className="px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl border border-blue-500 transition-colors flex items-center gap-1 shadow-xs cursor-pointer h-8 sm:h-8.5 shrink-0"
+        className="px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl border border-blue-500 transition-colors flex items-center gap-1 shadow-sm cursor-pointer h-8 sm:h-8.5 shrink-0"
         title="Install App"
       >
         <Download className="w-3.5 h-3.5 shrink-0" />
@@ -28,7 +28,7 @@ export const PWAInstallButton: React.FC = () => {
         <button
           type="button"
           onClick={() => setShowIOSGuide(true)}
-          className="px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl border border-blue-500 transition-colors flex items-center gap-1 shadow-xs cursor-pointer h-8 sm:h-8.5 shrink-0"
+          className="px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl border border-blue-500 transition-colors flex items-center gap-1 shadow-sm cursor-pointer h-8 sm:h-8.5 shrink-0"
           title="Install on iOS"
         >
           <Download className="w-3.5 h-3.5 shrink-0" />

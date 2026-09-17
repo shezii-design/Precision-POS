@@ -160,9 +160,9 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* HEADER BAR */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-red-600 to-red-700 text-white flex items-center justify-center shadow-xs">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-red-600 to-red-700 text-white flex items-center justify-center shadow-sm">
             <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
@@ -199,7 +199,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
         {/* Stat 1: Total Active Quotations */}
         <div 
           onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
-          className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-2xs ${
+          className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-sm ${
             statusFilter === 'active' 
               ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-500/20' 
               : 'bg-white border-slate-200 hover:border-emerald-200'
@@ -224,7 +224,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
         {/* Stat 2: Expired Quotations (> 7 Days) */}
         <div 
           onClick={() => setStatusFilter(statusFilter === 'expired' ? 'all' : 'expired')}
-          className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-2xs ${
+          className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-sm ${
             statusFilter === 'expired' 
               ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-500/20' 
               : 'bg-white border-slate-200 hover:border-amber-200'
@@ -249,7 +249,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
         {/* Stat 3: Converted to Sales */}
         <div 
           onClick={() => setStatusFilter(statusFilter === 'converted' ? 'all' : 'converted')}
-          className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-2xs ${
+          className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-sm ${
             statusFilter === 'converted' 
               ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500/20' 
               : 'bg-white border-slate-200 hover:border-blue-200'
@@ -272,7 +272,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
         </div>
 
         {/* Stat 4: Total Quoted Pipeline */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
               Total Quoted Value
@@ -291,7 +291,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
       </div>
 
       {/* FILTER & SEARCH CONTROLS BAR */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1 min-w-[240px]">
@@ -348,7 +348,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
                 onClick={() => setStatusFilter(pill.id as any)}
                 className={`px-2.5 py-1 rounded-xl text-xs font-black transition-all cursor-pointer border ${
                   statusFilter === pill.id
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                 }`}
               >
@@ -368,7 +368,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
               type="button"
               onClick={() => setTypeFilter('all')}
               className={`px-2.5 py-0.8 rounded-lg transition-colors cursor-pointer ${
-                typeFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500 hover:text-slate-900'
+                typeFilter === 'all' ? 'bg-white text-slate-900 shadow-sm font-black' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
               All Types
@@ -377,7 +377,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
               type="button"
               onClick={() => setTypeFilter('customer')}
               className={`px-2.5 py-0.8 rounded-lg transition-colors cursor-pointer ${
-                typeFilter === 'customer' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500 hover:text-slate-900'
+                typeFilter === 'customer' ? 'bg-white text-slate-900 shadow-sm font-black' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
               Customers
@@ -386,7 +386,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
               type="button"
               onClick={() => setTypeFilter('company')}
               className={`px-2.5 py-0.8 rounded-lg transition-colors cursor-pointer ${
-                typeFilter === 'company' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-500 hover:text-slate-900'
+                typeFilter === 'company' ? 'bg-white text-slate-900 shadow-sm font-black' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
               Companies (B2B)
@@ -419,7 +419,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-left text-xs">
               <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
@@ -545,7 +545,7 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
                             type="button"
                             title="Convert into Official Sale Invoice (Stock will be deducted at sale time)"
                             onClick={() => onConvertToSale(quotation)}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-black transition-colors flex items-center gap-1 cursor-pointer shadow-xs"
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-black transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
                           >
                             <span>Convert to Sale</span>
                             <ArrowRight className="w-3 h-3" />

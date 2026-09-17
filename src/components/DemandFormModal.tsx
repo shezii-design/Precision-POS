@@ -309,7 +309,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                     setCustomerDropdownOpen(true);
                   }}
                   onFocus={() => setCustomerDropdownOpen(true)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-2xs"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                 />
 
                 {/* Customer Autocomplete Dropdown */}
@@ -349,7 +349,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   placeholder="e.g. 0300-8452199"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-2xs"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                 />
               </div>
 
@@ -364,7 +364,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   placeholder="e.g. Badami Bagh, Lahore"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-2xs"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                 />
               </div>
             </div>
@@ -397,7 +397,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                     setProductDropdownOpen(true);
                   }}
                   onFocus={() => setProductDropdownOpen(true)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-2xs"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                 />
 
                 {/* Product Autocomplete Dropdown */}
@@ -442,7 +442,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   placeholder="e.g. Size: OD 280mm, ID 150mm, Height 410mm, Thread 1-3/8-12 UNF, Heavy Duty Mesh"
                   value={itemDetails}
                   onChange={(e) => setItemDetails(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-2xs"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm"
                 />
               </div>
 
@@ -457,7 +457,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   placeholder="e.g. Urgent machine halted on site. Customer prefers Japanese or Genuine Sakura only. Promised 5% trade discount."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-2xs resize-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm resize-none"
                 />
               </div>
             </div>
@@ -486,12 +486,12 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                     required
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-20 px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-red-500 shadow-2xs"
+                    className="w-20 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm"
                   />
                   <select
                     value={unit}
                     onChange={(e) => setUnit(e.target.value as QuantityUnit)}
-                    className="flex-1 px-2.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-2xs cursor-pointer"
+                    className="flex-1 px-2.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer"
                   >
                     <option value="Pcs">Pcs</option>
                     <option value="Box">Box</option>
@@ -519,7 +519,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                     placeholder="e.g. 4500 (Optional)"
                     value={targetPrice}
                     onChange={(e) => setTargetPrice(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-2xs"
+                    className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm"
                   />
                 </div>
               </div>
@@ -534,7 +534,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   type="date"
                   value={requiredDate}
                   onChange={(e) => setRequiredDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-2xs cursor-pointer"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer"
                 />
 
                 {/* Quick Date Buttons */}
@@ -589,7 +589,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                 onClick={() => setStatus('pending')}
                 className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                   status === 'pending'
-                    ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-500/20 text-amber-900 shadow-xs'
+                    ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-500/20 text-amber-900 shadow-sm'
                     : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
                 }`}
               >
@@ -606,7 +606,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                 onClick={() => setStatus('fulfilled')}
                 className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                   status === 'fulfilled'
-                    ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-500/20 text-emerald-900 shadow-xs'
+                    ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-500/20 text-emerald-900 shadow-sm'
                     : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
                 }`}
               >
@@ -623,7 +623,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                 onClick={() => setStatus('unfulfillable')}
                 className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                   status === 'unfulfillable'
-                    ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-500/20 text-rose-900 shadow-xs'
+                    ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-500/20 text-rose-900 shadow-sm'
                     : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
                 }`}
               >
@@ -640,7 +640,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                 onClick={() => setStatus('cancelled')}
                 className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                   status === 'cancelled'
-                    ? 'bg-slate-200 border-slate-400 ring-2 ring-slate-500/20 text-slate-900 shadow-xs'
+                    ? 'bg-slate-200 border-slate-400 ring-2 ring-slate-500/20 text-slate-900 shadow-sm'
                     : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
                 }`}
               >
@@ -679,7 +679,7 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
                   placeholder="e.g. Customer purchased from another city; project postponed."
                   value={cancellationReason}
                   onChange={(e) => setCancellationReason(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500"
                 />
               </div>
             )}

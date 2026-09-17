@@ -109,7 +109,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header & Actions */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-2 rounded-xl bg-amber-100 text-amber-800 font-bold">
@@ -129,7 +129,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
             type="button"
             id="btn-create-po"
             onClick={() => onOpenCreatePO()}
-            className="w-full sm:w-auto px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs sm:text-sm font-black rounded-2xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer select-none"
+            className="w-full sm:w-auto px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs sm:text-sm font-black rounded-2xl shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer select-none"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>New Purchase Order</span>
@@ -140,7 +140,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
       {/* KPI Cards Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Total POs */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
               Total PO Orders
@@ -163,7 +163,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
           className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
             statusFilter === 'ordered' 
               ? 'bg-blue-50/80 border-blue-400 ring-2 ring-blue-400/20' 
-              : 'bg-white border-slate-200 shadow-2xs hover:border-blue-300'
+              : 'bg-white border-slate-200 shadow-sm hover:border-blue-300'
           }`}
         >
           <div>
@@ -188,7 +188,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
           className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
             statusFilter === 'pending_bill' 
               ? 'bg-amber-50/80 border-amber-400 ring-2 ring-amber-400/20' 
-              : 'bg-white border-slate-200 shadow-2xs hover:border-amber-300'
+              : 'bg-white border-slate-200 shadow-sm hover:border-amber-300'
           }`}
         >
           <div>
@@ -213,7 +213,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
           className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
             statusFilter === 'completed' 
               ? 'bg-emerald-50/80 border-emerald-400 ring-2 ring-emerald-400/20' 
-              : 'bg-white border-slate-200 shadow-2xs hover:border-emerald-300'
+              : 'bg-white border-slate-200 shadow-sm hover:border-emerald-300'
           }`}
         >
           <div>
@@ -235,7 +235,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
 
       {/* Feature Guide Notice */}
       <div className="bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 p-4 rounded-2xl border border-amber-200 flex items-start gap-3 text-xs text-amber-950">
-        <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold shrink-0 mt-0.5 shadow-2xs">
+        <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold shrink-0 mt-0.5 shadow-sm">
           <Scale className="w-4 h-4" />
         </div>
         <div className="space-y-1">
@@ -248,7 +248,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
       </div>
 
       {/* Search & Filters Section */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
         {/* Search */}
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -257,7 +257,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search PO#, Supplier, Bill#, Item..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition-all shadow-2xs"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 transition-all shadow-sm"
           />
         </div>
 
@@ -268,7 +268,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
               type="button"
               onClick={() => setStatusFilter('all')}
               className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                statusFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs font-black' : 'text-slate-600 hover:text-slate-900'
+                statusFilter === 'all' ? 'bg-white text-slate-900 shadow-sm font-black' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               All ({totalPOsCount})
@@ -277,7 +277,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
               type="button"
               onClick={() => setStatusFilter('ordered')}
               className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                statusFilter === 'ordered' ? 'bg-blue-600 text-white shadow-2xs font-black' : 'text-blue-700 hover:bg-blue-50'
+                statusFilter === 'ordered' ? 'bg-blue-600 text-white shadow-sm font-black' : 'text-blue-700 hover:bg-blue-50'
               }`}
             >
               In Transit ({inTransitCount})
@@ -286,7 +286,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
               type="button"
               onClick={() => setStatusFilter('pending_bill')}
               className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                statusFilter === 'pending_bill' ? 'bg-amber-600 text-white shadow-2xs font-black' : 'text-amber-800 hover:bg-amber-50'
+                statusFilter === 'pending_bill' ? 'bg-amber-600 text-white shadow-sm font-black' : 'text-amber-800 hover:bg-amber-50'
               }`}
             >
               Bill Pending ({pendingBillCount})
@@ -295,7 +295,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
               type="button"
               onClick={() => setStatusFilter('completed')}
               className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                statusFilter === 'completed' ? 'bg-emerald-600 text-white shadow-2xs font-black' : 'text-emerald-800 hover:bg-emerald-50'
+                statusFilter === 'completed' ? 'bg-emerald-600 text-white shadow-sm font-black' : 'text-emerald-800 hover:bg-emerald-50'
               }`}
             >
               Completed ({completedCount})
@@ -305,7 +305,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
           <select
             value={vendorFilter}
             onChange={(e) => setVendorFilter(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-amber-600 cursor-pointer shadow-2xs"
+            className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-amber-600 cursor-pointer shadow-sm"
           >
             <option value="all">All Suppliers</option>
             {vendors.map(v => (
@@ -317,7 +317,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
 
       {/* PO Orders List */}
       {filteredPOs.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 shadow-xs space-y-4">
+        <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 shadow-sm space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 mx-auto flex items-center justify-center border border-amber-100">
             <Truck className="w-8 h-8" />
           </div>
@@ -330,7 +330,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
           {onOpenCreatePO ? <button
             type="button"
             onClick={() => onOpenCreatePO()}
-            className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl shadow-xs transition-colors inline-flex items-center gap-2 cursor-pointer"
+            className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl shadow-sm transition-colors inline-flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span>Create Purchase Order</span>
@@ -349,7 +349,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
             return (
               <div
                 key={po.id}
-                className={`bg-white rounded-2xl p-4 sm:p-5 border transition-all shadow-2xs hover:shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
+                className={`bg-white rounded-2xl p-4 sm:p-5 border transition-all shadow-sm hover:shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
                   isPendingBill
                     ? 'border-amber-300 ring-2 ring-amber-400/20 bg-gradient-to-r from-white via-amber-50/30 to-white'
                     : isCompleted
@@ -476,7 +476,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                   {isPendingBill && ( onOpenReceiveCargo ? <button
                       type="button"
                       onClick={() => onOpenReceiveCargo(po)}
-                      className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-black rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer select-none"
+                      className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-black rounded-xl shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer select-none"
                     >
                       <DollarSign className="w-3.5 h-3.5 stroke-[2.5]" />
                       <span>Finalize Bill Costs</span>
@@ -485,7 +485,7 @@ export const PurchaseOrdersPage: React.FC<PurchaseOrdersPageProps> = ({
                   {isOrdered && ( onOpenReceiveCargo ? <button
                       type="button"
                       onClick={() => onOpenReceiveCargo(po)}
-                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer select-none"
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black rounded-xl shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer select-none"
                     >
                       <Truck className="w-3.5 h-3.5 stroke-[2.5]" />
                       <span>Receive Cargo</span>

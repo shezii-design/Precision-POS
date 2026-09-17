@@ -546,7 +546,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 <select
                   value={selectedVendorId}
                   onChange={(e) => handleVendorChange(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-semibold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                   required
                 >
                   <option value="">-- Choose Vendor / Supplier --</option>
@@ -567,7 +567,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full h-10 px-3 text-xs font-semibold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-semibold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                   required
                 />
               </div>
@@ -582,7 +582,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                   value={debitNoteNumber}
                   onChange={(e) => setDebitNoteNumber(e.target.value)}
                   placeholder="e.g. DN-101"
-                  className="w-full h-10 px-3 text-xs font-bold font-mono bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none uppercase"
+                  className="w-full h-10 px-3 text-xs font-bold font-mono bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none uppercase"
                 />
               </div>
 
@@ -596,7 +596,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                   value={purchaseId}
                   onChange={(e) => setPurchaseId(e.target.value)}
                   placeholder="e.g. PUR-2001 or SF-9842"
-                  className="w-full h-10 px-3 text-xs font-medium bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none uppercase"
+                  className="w-full h-10 px-3 text-xs font-medium bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none uppercase"
                 />
               </div>
             </div>
@@ -628,7 +628,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
               <button
                 type="button"
                 onClick={addItemRow}
-                className="px-3 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="px-3 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Item</span>
@@ -649,7 +649,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 return (
                   <div 
                     key={item.id || index}
-                    className={`p-3.5 bg-white rounded-xl border shadow-xs space-y-3 transition-colors ${
+                    className={`p-3.5 bg-white rounded-xl border shadow-sm space-y-3 transition-colors ${
                       isOverLimit 
                         ? 'border-red-300 ring-1 ring-red-300 bg-red-50/20' 
                         : isZeroRemaining 
@@ -845,7 +845,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 <select
                   value={settlementMethod}
                   onChange={(e) => setSettlementMethod(e.target.value as VendorReturnSettlement)}
-                  className="w-full h-10 px-3 text-xs font-bold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 >
                   <option value="debit_note">💳 Debit Note (Deduct from Vendor Payable Balance)</option>
                   <option value="cash_refund">💵 Cash Refund Received from Supplier</option>
@@ -868,7 +868,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 <select
                   value={settlementStatus}
                   onChange={(e) => setSettlementStatus(e.target.value as any)}
-                  className="w-full h-10 px-3 text-xs font-bold bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full h-10 px-3 text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
                 >
                   <option value="completed">Completed / Settled</option>
                   <option value="pending">Pending Supplier Confirmation</option>
@@ -887,12 +887,12 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Details regarding transporter/bilty number, supplier rep contact, or warranty claim RMA number..."
                 rows={2}
-                className="w-full p-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+                className="w-full p-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
               />
             </div>
 
             {/* Summary Calculation Card */}
-            <div className="bg-white p-4 rounded-xl border border-red-200 shadow-xs space-y-2">
+            <div className="bg-white p-4 rounded-xl border border-red-200 shadow-sm space-y-2">
               <div className="flex items-center justify-between text-sm font-black text-slate-900">
                 <span className="text-red-700">Total Debit Note Amount:</span>
                 <span className="text-lg text-red-700">Rs. {totalAmount.toLocaleString()}</span>

@@ -264,7 +264,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
     <div id="customers-page" className="space-y-6">
       
       {/* Page Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-2 bg-red-100 text-red-700 rounded-xl">
@@ -287,7 +287,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
               setPaymentPreselectedCustomer(null);
               setShowPaymentModal(true);
             }}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl text-xs font-black shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Wallet className="w-4 h-4" />
             <span>Receive Payment</span>
@@ -300,7 +300,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
               setCustomerModalType('customer');
               setShowCustomerModal(true);
             }}
-            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl text-xs font-black shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <User className="w-4 h-4 text-slate-500" />
             <span>+ Add Customer</span>
@@ -313,7 +313,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
               setCustomerModalType('company');
               setShowCustomerModal(true);
             }}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-2xl text-xs font-black shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-2xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Building2 className="w-4 h-4" />
             <span>+ Add Company (Demand Tab)</span>
@@ -325,7 +325,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         
         {/* Total Receivables */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs">
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
             <span>Total Receivables</span>
             <span className="p-1 rounded-lg bg-rose-50 text-rose-600">
@@ -341,7 +341,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
         </div>
 
         {/* Total Corporate Companies */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs">
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
             <span>Corporate Clients</span>
             <span className="p-1 rounded-lg bg-red-50 text-red-600">
@@ -357,7 +357,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
         </div>
 
         {/* Total Demand Machines Configured */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs">
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
             <span>Fleet Machines</span>
             <span className="p-1 rounded-lg bg-amber-50 text-amber-600">
@@ -373,7 +373,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
         </div>
 
         {/* Regular Customers */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs">
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
             <span>Individual Customers</span>
             <span className="p-1 rounded-lg bg-blue-50 text-blue-600">
@@ -390,7 +390,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
       </div>
 
       {/* Search & Filter Controls */}
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
         
         {/* Search Input */}
         <div className="relative">
@@ -414,7 +414,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
               onClick={() => setActiveTab('customers')}
               className={`px-4 py-2 rounded-xl text-xs font-black transition-colors flex items-center gap-1.5 cursor-pointer select-none ${
                 activeTab === 'customers'
-                  ? 'bg-white text-red-700 shadow-xs'
+                  ? 'bg-white text-red-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -432,7 +432,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
               onClick={() => setActiveTab('companies')}
               className={`px-4 py-2 rounded-xl text-xs font-black transition-colors flex items-center gap-1.5 cursor-pointer select-none ${
                 activeTab === 'companies'
-                  ? 'bg-white text-red-700 shadow-xs'
+                  ? 'bg-white text-red-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -450,7 +450,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
               onClick={() => setActiveTab('all')}
               className={`px-4 py-2 rounded-xl text-xs font-black transition-colors flex items-center gap-1.5 cursor-pointer select-none ${
                 activeTab === 'all'
-                  ? 'bg-white text-red-700 shadow-xs'
+                  ? 'bg-white text-red-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -495,7 +495,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
 
       {/* Cards Grid */}
       {filteredCustomers.length === 0 ? (
-        <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-xs space-y-3">
+        <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-sm space-y-3">
           <Users className="w-12 h-12 text-slate-300 mx-auto" />
           <h3 className="text-base font-bold text-slate-800">No matching accounts found</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -509,7 +509,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                 setCustomerModalType(activeTab === 'companies' ? 'company' : 'customer');
                 setShowCustomerModal(true);
               }}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-xs transition-all cursor-pointer"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-sm transition-all cursor-pointer"
             >
               + Add {activeTab === 'companies' ? 'Company' : 'Customer'}
             </button>}
@@ -528,7 +528,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                 onClick={() => {
                   // Single click on card on mobile can open, or buttons
                 }}
-                className={`bg-white rounded-3xl border transition-all duration-150 shadow-xs hover:shadow-md flex flex-col justify-between group cursor-pointer ${
+                className={`bg-white rounded-3xl border transition-all duration-150 shadow-sm hover:shadow-md flex flex-col justify-between group cursor-pointer ${
                   isComp ? 'border-slate-200 hover:border-red-400' : 'border-slate-200 hover:border-blue-400'
                 }`}
               >
@@ -536,7 +536,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
                 <div className="p-5 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold shadow-2xs ${
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold shadow-sm ${
                         isComp ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
                       }`}>
                         {isComp ? <Building2 className="w-5 h-5" /> : <User className="w-5 h-5" />}

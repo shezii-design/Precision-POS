@@ -948,7 +948,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               {/* Left Title & Status Indicator */}
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center font-bold shrink-0 shadow-2xs transition-colors ${
+                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center font-bold shrink-0 shadow-sm transition-colors ${
                   isBackdated 
                     ? 'bg-amber-600 text-white' 
                     : 'bg-red-600 text-white'
@@ -981,7 +981,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
               {/* Right Controls: Date Picker, Time Picker, and Quick Presets */}
               <div className="flex flex-wrap items-center gap-2">
                 {/* Date Input */}
-                <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-500 shadow-2xs">
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-500 shadow-sm">
                   <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <input
                     type="date"
@@ -993,7 +993,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                 </div>
 
                 {/* Time Input */}
-                <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-500 shadow-2xs">
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-500 shadow-sm">
                   <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <input
                     type="time"
@@ -1014,8 +1014,8 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     }}
                     className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                       !isBackdated
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                        : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                        : 'bg-slate-50 hover:bg-slate-200 text-slate-700 border-slate-300'
                     }`}
                     title="Set to today's date and current time"
                   >
@@ -1029,8 +1029,8 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     }}
                     className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                       saleDate === getYesterdayDateString()
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                        : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                        : 'bg-slate-50 hover:bg-slate-200 text-slate-700 border-slate-300'
                     }`}
                     title="Set date to yesterday"
                   >
@@ -1058,7 +1058,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   onClick={handleSetWalkin}
                   className={`flex-1 sm:flex-initial text-center px-2.5 sm:px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     customerMode === 'walkin'
-                      ? 'bg-white text-red-600 shadow-xs'
+                      ? 'bg-white text-red-600 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -1069,7 +1069,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   onClick={() => setCustomerMode('select')}
                   className={`flex-1 sm:flex-initial text-center px-2.5 sm:px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     customerMode === 'select'
-                      ? 'bg-white text-red-600 shadow-xs'
+                      ? 'bg-white text-red-600 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -1080,7 +1080,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   onClick={handleSetNewCustomer}
                   className={`flex-1 sm:flex-initial text-center px-2.5 sm:px-3 py-1 rounded-lg transition-all cursor-pointer ${
                     customerMode === 'new'
-                      ? 'bg-white text-red-600 shadow-xs'
+                      ? 'bg-white text-red-600 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -1111,7 +1111,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     }}
                     onFocus={() => setShowCustomerDropdown(true)}
                     placeholder="Type to search existing customer name or phone..."
-                    className="w-full pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                   />
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 </div>
@@ -1165,7 +1165,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     value={newCustomerName}
                     onChange={(e) => setNewCustomerName(e.target.value)}
                     placeholder="e.g. Tariq Machinery Works"
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
                 <div>
@@ -1177,7 +1177,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     value={newCustomerPhone}
                     onChange={(e) => setNewCustomerPhone(e.target.value)}
                     placeholder="e.g. 0300-1234567"
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
               </div>
@@ -1211,7 +1211,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                   }}
                   onFocus={() => setShowProductDropdown(true)}
                   placeholder="Search inventory by Part Name (sfc-5706), ID (KFH-2501), Brand, Cross Ref..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 hover:border-slate-300 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all shadow-2xs"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 hover:border-slate-300 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all shadow-sm"
                 />
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 {productSearchTerm && (
@@ -1263,7 +1263,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                             {/* Cost Price & Tier prices preview list */}
                             <div className="flex flex-wrap items-center gap-1.5">
                               {/* Cost Price Badge (Red) */}
-                              <span className="px-2 py-0.5 bg-red-50 text-red-700 border border-red-200 rounded-md text-[10px] font-black flex items-center gap-1 shadow-2xs">
+                              <span className="px-2 py-0.5 bg-red-50 text-red-700 border border-red-200 rounded-md text-[10px] font-black flex items-center gap-1 shadow-sm">
                                 <span className="text-red-500 font-bold">Cost:</span>
                                 <span>{formatPKR(cost)}</span>
                               </span>
@@ -1312,7 +1312,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                 {saleItems.map((item, index) => (
                   <div
                     key={item.id}
-                    className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 shadow-2xs space-y-3 hover:border-red-200 transition-colors"
+                    className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-4 shadow-sm space-y-3 hover:border-red-200 transition-colors"
                   >
                     {/* Top Row: Item Name, Price Autoload Note, Remove */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
@@ -1497,8 +1497,8 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                               onClick={() => handleSelectTier(item.id, tier)}
                               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                                 isSelected
-                                  ? 'bg-red-600 text-white shadow-xs ring-2 ring-red-600/30'
-                                  : 'bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 shadow-2xs'
+                                  ? 'bg-red-600 text-white shadow-sm ring-2 ring-red-600/30'
+                                  : 'bg-slate-50 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 shadow-sm'
                               }`}
                               title={`Apply ${tier.tierName} price: ${formatPKR(tier.price)}`}
                             >
@@ -1523,8 +1523,8 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                             onClick={() => handleSelectCustomerHistoryPrice(item.id)}
                             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                               item.unitPrice === item.historyPrice && item.selectedTierId === 'customer_history'
-                                ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-600/30'
-                                : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 shadow-2xs'
+                                ? 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-600/30'
+                                : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 shadow-sm'
                             }`}
                             title={item.historyPriceNote}
                           >
@@ -1608,7 +1608,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                                     cabinNumber: nextCabin,
                                   });
                                 }}
-                                className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
+                                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
                               >
                                 {itemInventoryLocations.map(loc => (
                                   <option key={loc.locationId} value={loc.locationId}>
@@ -1634,7 +1634,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                                 <select
                                   value={item.cabinNumber || activeCabins[0] || ''}
                                   onChange={(e) => handleUpdateItem(item.id, { cabinNumber: e.target.value })}
-                                  className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
+                                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
                                 >
                                   {activeCabins.map((cab, cIdx) => (
                                     <option key={cIdx} value={cab}>
@@ -1652,7 +1652,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                                   value={item.cabinNumber || ''}
                                   onChange={(e) => handleUpdateItem(item.id, { cabinNumber: e.target.value })}
                                   placeholder="e.g. C-12, Bay-1"
-                                  className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
+                                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
                                 />
                               )}
                             </div>
@@ -1661,7 +1661,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                           {/* Active Dispatch Badge */}
                           <div className="flex items-center gap-2 pt-0.5 text-[11px]">
                             <span className="text-slate-500 font-medium">Dispatching from:</span>
-                            <span className="px-2 py-0.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-md font-bold text-[11px] inline-flex items-center gap-1 shadow-2xs">
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-md font-bold text-[11px] inline-flex items-center gap-1 shadow-sm">
                               <MapPin className="w-3 h-3 text-blue-600" />
                               <span>{item.locationName || activeLocObj?.locationName || 'Main Shop'}</span>
                               {item.cabinNumber && (
@@ -1750,7 +1750,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                         type="button"
                         onClick={() => setDiscountType('amount')}
                         className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                          discountType === 'amount' ? 'bg-white text-red-600 shadow-xs' : 'text-slate-600'
+                          discountType === 'amount' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600'
                         }`}
                       >
                         ₨ PKR
@@ -1759,7 +1759,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                         type="button"
                         onClick={() => setDiscountType('percentage')}
                         className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                          discountType === 'percentage' ? 'bg-white text-red-600 shadow-xs' : 'text-slate-600'
+                          discountType === 'percentage' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600'
                         }`}
                       >
                         % Percent
@@ -1773,7 +1773,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                       value={discountValue || ''}
                       onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
                       placeholder={discountType === 'percentage' ? 'e.g. 5%' : 'e.g. 500'}
-                      className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
+                      className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-red-500"
                     />
                   </div>
                   {discountAmount > 0 && (
@@ -1793,13 +1793,13 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     value={saleNotes}
                     onChange={(e) => setSaleNotes(e.target.value)}
                     placeholder="Optional remarks e.g. 'Delivered via Bilal Travels', 'Payment on 1st'"
-                    className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:border-red-500"
                   />
                 </div>
               </div>
 
               {/* Right Column: Calculations & Received Amount */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-xs">
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm">
                 <div className="flex justify-between items-center text-xs text-slate-600">
                   <span className="font-semibold">Subtotal:</span>
                   <span className="font-bold text-slate-800">{formatPKR(subtotal)}</span>
@@ -1857,7 +1857,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                       onClick={() => setAmountReceived(totalAmount)}
                       className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         numericReceived >= totalAmount && totalAmount > 0
-                          ? 'bg-emerald-600 text-white shadow-xs'
+                          ? 'bg-emerald-600 text-white shadow-sm'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
                       }`}
                     >
@@ -1870,7 +1870,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                       onClick={() => setAmountReceived(Math.round(totalAmount / 2))}
                       className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         numericReceived > 0 && numericReceived < totalAmount && Math.abs(numericReceived - Math.round(totalAmount / 2)) <= 1
-                          ? 'bg-amber-600 text-white shadow-xs'
+                          ? 'bg-amber-600 text-white shadow-sm'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
                       }`}
                     >
@@ -1883,7 +1883,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                       onClick={() => setAmountReceived(0)}
                       className={`py-1.5 px-2 rounded-lg text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                         numericReceived === 0 && totalAmount > 0
-                          ? 'bg-red-600 text-white shadow-xs'
+                          ? 'bg-red-600 text-white shadow-sm'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
                       }`}
                     >
@@ -2020,7 +2020,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer text-center"
+              className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-slate-50 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer text-center"
             >
               Cancel
             </button>
@@ -2061,7 +2061,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                 onClick={() => setNamingChoice('product_name')}
                 className={`p-3.5 rounded-2xl border-2 cursor-pointer flex items-center justify-between transition-all ${
                   namingChoice === 'product_name' 
-                    ? 'border-red-600 bg-red-50/70 text-red-900 shadow-xs' 
+                    ? 'border-red-600 bg-red-50/70 text-red-900 shadow-sm' 
                     : 'border-slate-200 hover:border-slate-300 text-slate-700'
                 }`}
               >
@@ -2081,7 +2081,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                 onClick={() => setNamingChoice('internal_id')}
                 className={`p-3.5 rounded-2xl border-2 cursor-pointer flex items-center justify-between transition-all ${
                   namingChoice === 'internal_id' 
-                    ? 'border-red-600 bg-red-50/70 text-red-900 shadow-xs' 
+                    ? 'border-red-600 bg-red-50/70 text-red-900 shadow-sm' 
                     : 'border-slate-200 hover:border-slate-300 text-slate-700'
                 }`}
               >
@@ -2101,7 +2101,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                 onClick={() => setNamingChoice('both')}
                 className={`p-3.5 rounded-2xl border-2 cursor-pointer flex items-center justify-between transition-all ${
                   namingChoice === 'both' 
-                    ? 'border-red-600 bg-red-50/70 text-red-900 shadow-xs' 
+                    ? 'border-red-600 bg-red-50/70 text-red-900 shadow-sm' 
                     : 'border-slate-200 hover:border-slate-300 text-slate-700'
                 }`}
               >
@@ -2121,7 +2121,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                 onClick={() => setNamingChoice('custom')}
                 className={`p-3.5 rounded-2xl border-2 cursor-pointer flex flex-col transition-all ${
                   namingChoice === 'custom' 
-                    ? 'border-red-600 bg-red-50/70 text-red-900 shadow-xs' 
+                    ? 'border-red-600 bg-red-50/70 text-red-900 shadow-sm' 
                     : 'border-slate-200 hover:border-slate-300 text-slate-700'
                 }`}
               >

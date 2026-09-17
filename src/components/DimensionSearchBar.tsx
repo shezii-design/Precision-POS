@@ -57,7 +57,7 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
                 ? 'Size: e.g. 7.85x3.75x3.15 (H x OD x ID in)'
                 : 'Size: e.g. 199.4x95.3 (H x OD x ID mm)'
             }
-            className="w-full pl-10 pr-20 sm:pr-28 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
+            className="w-full pl-10 pr-20 sm:pr-28 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-sm"
           />
 
           <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -82,7 +82,7 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
             </button>
 
             <kbd 
-              className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 text-slate-500 border border-slate-200 rounded shadow-2xs select-none"
+              className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-100 text-slate-500 border border-slate-200 rounded shadow-sm select-none"
               title="Keyboard shortcut: Ctrl + E"
             >
               Ctrl+E
@@ -97,7 +97,7 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
             onClick={() => handleUnitToggle('inch')}
             className={`flex-1 xs:flex-initial px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-center ${
               currentUnit === 'inch'
-                ? 'bg-red-600 text-white shadow-2xs'
+                ? 'bg-red-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -108,7 +108,7 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
             onClick={() => handleUnitToggle('mm')}
             className={`flex-1 xs:flex-initial px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-center ${
               currentUnit === 'mm'
-                ? 'bg-red-600 text-white shadow-2xs'
+                ? 'bg-red-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >

@@ -85,7 +85,7 @@ export const LowStockNotificationBanner: React.FC<LowStockNotificationBannerProp
             {/* Notification Text & Summaries */}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-600 text-white shadow-xs">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-600 text-white shadow-sm">
                   <AlertOctagon className="w-3.5 h-3.5" />
                   {lowStockProducts.length > 5 ? 'LOGIN ALERT: CRITICAL LOW STOCK (>5 ITEMS)' : 'INVENTORY NOTICE: LOW STOCK DETECTED'}
                 </span>
@@ -93,7 +93,7 @@ export const LowStockNotificationBanner: React.FC<LowStockNotificationBannerProp
                   {lowStockProducts.length} Affected Products
                 </span>
                 {outOfStockCount > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-600 text-white shadow-2xs">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-600 text-white shadow-sm">
                     <AlertOctagon className="w-3 h-3" />
                     {outOfStockCount} Out of Stock
                   </span>
@@ -135,7 +135,7 @@ export const LowStockNotificationBanner: React.FC<LowStockNotificationBannerProp
               id="filter-low-stock-inventory-btn"
               type="button"
               onClick={onViewLowStockInventory}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow-md transition-all active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs sm:text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
             >
               <Eye className="w-4 h-4" />
               <span>Review {lowStockProducts.length} Low Stock Items</span>
@@ -148,7 +148,7 @@ export const LowStockNotificationBanner: React.FC<LowStockNotificationBannerProp
                 id="reorder-po-low-stock-btn"
                 type="button"
                 onClick={onOpenPurchaseOrders}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 active:bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-semibold shadow-2xs hover:shadow-xs transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 active:bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-semibold shadow-sm hover:shadow-sm transition-all"
               >
                 <ShoppingCart className="w-3.5 h-3.5 text-amber-700" />
                 <span>Create Purchase Order (PO)</span>
@@ -206,7 +206,7 @@ export const LowStockNotificationBanner: React.FC<LowStockNotificationBannerProp
                       key={product.id}
                       id={`low-stock-item-card-${product.id}`}
                       onClick={onViewLowStockInventory}
-                      className="group cursor-pointer bg-white/90 hover:bg-white border border-amber-200/90 hover:border-amber-400 rounded-xl p-2.5 transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between"
+                      className="group cursor-pointer bg-white/90 hover:bg-white border border-amber-200/90 hover:border-amber-400 rounded-xl p-2.5 transition-all shadow-sm hover:shadow-sm flex flex-col justify-between"
                     >
                       <div className="flex items-start justify-between gap-1.5">
                         <div className="min-w-0 flex-1">

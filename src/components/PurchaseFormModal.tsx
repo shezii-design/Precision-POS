@@ -369,7 +369,7 @@ export const PurchaseFormModal: React.FC<PurchaseFormModalProps> = ({
                 <p className="text-xs font-semibold">No items added yet. Search above to add items to this purchase bill.</p>
               </div>
             ) : (
-              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">\n                <div className="overflow-x-auto">
+              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">\n                <div className="overflow-x-auto">
                 <table className="w-full min-w-[700px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
@@ -410,7 +410,7 @@ export const PurchaseFormModal: React.FC<PurchaseFormModalProps> = ({
                               min="1"
                               value={item.quantity}
                               onChange={e => handleUpdateItem(idx, 'quantity', parseInt(e.target.value) || 1)}
-                              className="w-20 px-2 py-1 text-center font-bold bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                              className="w-20 px-2 py-1 text-center font-bold bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
                             />
                           </td>
 
@@ -421,7 +421,7 @@ export const PurchaseFormModal: React.FC<PurchaseFormModalProps> = ({
                               step="any"
                               value={item.unitPrice}
                               onChange={e => handleUpdateItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
-                              className="w-28 px-2 py-1 text-right font-black bg-white border border-slate-300 rounded-lg text-xs text-amber-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                              className="w-28 px-2 py-1 text-right font-black bg-slate-50 border border-slate-300 rounded-lg text-xs text-amber-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                             />
                           </td>
 
@@ -449,7 +449,7 @@ export const PurchaseFormModal: React.FC<PurchaseFormModalProps> = ({
           </div>
 
           {/* Update Prices in Inventory Option (Auto-selected by default) */}
-          <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 flex items-start gap-3 shadow-2xs">
+          <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
             <input
               type="checkbox"
               id="purchase-update-prices-checkbox"
@@ -488,7 +488,7 @@ export const PurchaseFormModal: React.FC<PurchaseFormModalProps> = ({
                   min="0"
                   value={discountAmount}
                   onChange={e => setDiscountAmount(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
@@ -512,7 +512,7 @@ export const PurchaseFormModal: React.FC<PurchaseFormModalProps> = ({
                   min="0"
                   value={amountPaid}
                   onChange={e => setAmountPaid(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-emerald-700 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
                 <p className="text-[10px] text-slate-400 mt-0.5">
                   Creates "Cash" entry in vendor ledger

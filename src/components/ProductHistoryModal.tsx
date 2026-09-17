@@ -507,7 +507,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
 
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-0.5 bg-red-500 text-white font-mono font-black text-xs rounded-md shadow-2xs">
+                <span className="px-2.5 py-0.5 bg-red-500 text-white font-mono font-black text-xs rounded-md shadow-sm">
                   {product.internalId}
                 </span>
                 <span className="px-2 py-0.5 bg-slate-700/80 text-slate-200 text-xs font-bold rounded-md flex items-center gap-1">
@@ -548,7 +548,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
               onClick={() => setShowTrendGraph(!showTrendGraph)}
               className={`p-2 sm:px-3 sm:py-1.5 text-xs font-bold rounded-xl border transition-colors flex items-center gap-1.5 cursor-pointer ${
                 showTrendGraph
-                  ? 'bg-red-600 hover:bg-red-500 text-white border-red-500 shadow-2xs'
+                  ? 'bg-red-600 hover:bg-red-500 text-white border-red-500 shadow-sm'
                   : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
               }`}
               title="Toggle 30-Day Stock Level & Demand Trend Graph"
@@ -592,7 +592,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
           {/* SUMMARY KPI CARDS */}
           <div className="p-3 sm:p-4 bg-slate-50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
             {/* Card 1: Purchases Summary */}
-            <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-2xs">
+            <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
               <div className="flex items-center justify-between text-indigo-700 font-bold text-xs">
                 <span className="flex items-center gap-1">
                   <ShoppingBag className="w-3.5 h-3.5" /> Total Purchases
@@ -615,7 +615,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             </div>
 
             {/* Card 2: Sales Summary */}
-            <div className="bg-white p-3 rounded-xl border border-emerald-100 shadow-2xs">
+            <div className="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm">
               <div className="flex items-center justify-between text-emerald-700 font-bold text-xs">
                 <span className="flex items-center gap-1">
                   <Receipt className="w-3.5 h-3.5" /> Total Sales
@@ -638,7 +638,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             </div>
 
             {/* Card 3: Gross Profit & Margin */}
-            <div className="bg-white p-3 rounded-xl border border-amber-100 shadow-2xs">
+            <div className="bg-white p-3 rounded-xl border border-amber-100 shadow-sm">
               <div className="flex items-center justify-between text-amber-800 font-bold text-xs">
                 <span className="flex items-center gap-1">
                   <TrendingUp className="w-3.5 h-3.5" /> Gross Profit
@@ -662,7 +662,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             </div>
 
             {/* Card 4: Returns / Net Movement */}
-            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between text-slate-700 font-bold text-xs">
                 <span className="flex items-center gap-1">
                   <RotateCcw className="w-3.5 h-3.5 text-amber-600" /> Returns & Vouchers
@@ -698,7 +698,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
           )}
 
           {/* CONTROLS & FILTER BAR (Sticky for quick accessibility while scrolling ledger) */}
-          <div className="p-3 sm:p-4 bg-white/95 backdrop-blur-md sticky top-0 z-10 space-y-3 shadow-xs">
+          <div className="p-3 sm:p-4 bg-white/95 backdrop-blur-md sticky top-0 z-10 space-y-3 shadow-sm">
             {/* Top Row: Tabs + Date quick filters */}
             <div className="flex flex-wrap items-center justify-between gap-2.5">
               {/* Tab switchers */}
@@ -707,7 +707,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                   type="button"
                   onClick={() => setActiveTab('all')}
                   className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                    activeTab === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                    activeTab === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <span>All History</span>
@@ -720,7 +720,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                   type="button"
                   onClick={() => setActiveTab('purchases')}
                   className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                    activeTab === 'purchases' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:text-indigo-900'
+                    activeTab === 'purchases' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-indigo-900'
                   }`}
                 >
                   <ShoppingBag className="w-3.5 h-3.5" />
@@ -736,7 +736,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                   type="button"
                   onClick={() => setActiveTab('sales')}
                   className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                    activeTab === 'sales' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-slate-600 hover:text-emerald-900'
+                    activeTab === 'sales' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-emerald-900'
                   }`}
                 >
                   <Receipt className="w-3.5 h-3.5" />
@@ -752,7 +752,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                   type="button"
                   onClick={() => setActiveTab('returns')}
                   className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                    activeTab === 'returns' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-600 hover:text-amber-900'
+                    activeTab === 'returns' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:text-amber-900'
                   }`}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -775,7 +775,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                     onClick={() => setDateFilter(df)}
                     className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors border cursor-pointer ${
                       dateFilter === df
-                        ? 'bg-slate-800 text-white border-slate-800 shadow-2xs'
+                        ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
@@ -862,7 +862,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse min-w-[760px]">
                   <thead className="bg-slate-100/90 text-slate-600 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 select-none">
@@ -1097,7 +1097,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             <button
               type="button"
               onClick={handleExportCSV}
-              className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 bg-slate-50 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 shadow-sm transition-colors flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5 text-slate-600" />
               Download CSV
@@ -1105,7 +1105,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-2xs transition-colors"
+              className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
             >
               Close
             </button>

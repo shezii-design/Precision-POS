@@ -120,12 +120,12 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   );
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 hover:border-red-300 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group">
+    <div className="bg-white rounded-2xl border border-slate-200/90 hover:border-red-300 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group">
       {/* Card Header Bar */}
       <div className="bg-gradient-to-r from-slate-50 to-red-50/40 p-3 sm:p-3.5 border-b border-slate-100 flex items-center justify-between gap-1.5 sm:gap-2">
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
           {/* Internal ID Badge */}
-          <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-red-600 text-white font-mono font-bold text-xs rounded-lg shadow-2xs">
+          <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-red-600 text-white font-mono font-bold text-xs rounded-lg shadow-sm">
             {product.internalId}
           </span>
 
@@ -218,7 +218,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             {product.image ? (
               <div
                 onClick={() => setShowImageZoom(true)}
-                className="w-28 h-28 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer relative group/img shadow-2xs hover:ring-2 hover:ring-red-400"
+                className="w-28 h-28 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer relative group/img shadow-sm hover:ring-2 hover:ring-red-400"
               >
                 <img
                   src={product.image}
@@ -319,7 +319,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
               {/* Height */}
               {dims?.height !== undefined && (
-                <div className="bg-white p-1.5 rounded-lg border border-slate-200/60">
+                <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200/60">
                   <span className="text-[10px] text-slate-400 font-semibold block uppercase">
                     {labels.heightName} (Height)
                   </span>
@@ -331,7 +331,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
               {/* Outer Dia / Length */}
               {dims?.outerDia !== undefined && (
-                <div className="bg-white p-1.5 rounded-lg border border-slate-200/60">
+                <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200/60">
                   <span className="text-[10px] text-slate-400 font-semibold block uppercase">
                     {labels.outerDiaName}
                   </span>
@@ -343,7 +343,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
               {/* Inner Dia / Width */}
               {dims?.innerDia !== undefined && (
-                <div className="bg-white p-1.5 rounded-lg border border-slate-200/60">
+                <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200/60">
                   <span className="text-[10px] text-slate-400 font-semibold block uppercase">
                     {labels.innerDiaName}
                   </span>
@@ -355,7 +355,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
               {/* Thread (EXCLUDED FROM INCH/MM CONVERSION) */}
               {dims?.thread && (
-                <div className="bg-white p-1.5 rounded-lg border border-red-200/60">
+                <div className="bg-slate-50 p-1.5 rounded-lg border border-red-200/60">
                   <span className="text-[10px] text-red-600 font-semibold block uppercase">
                     Thread
                   </span>
@@ -367,7 +367,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
               {/* Gasket OD */}
               {dims?.gasket_OD !== undefined && (
-                <div className="bg-white p-1.5 rounded-lg border border-slate-200/60">
+                <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200/60">
                   <span className="text-[10px] text-slate-400 font-semibold block uppercase">
                     Gasket OD
                   </span>
@@ -379,7 +379,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
               {/* Gasket ID */}
               {dims?.gasket_ID !== undefined && (
-                <div className="bg-white p-1.5 rounded-lg border border-slate-200/60">
+                <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200/60">
                   <span className="text-[10px] text-slate-400 font-semibold block uppercase">
                     Gasket ID
                   </span>
@@ -456,7 +456,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             </div>
           )}
           {/* Editable Cost Price - Highlighted in Red */}
-          <div className="flex items-center justify-between bg-red-950 text-white px-3 py-2 rounded-xl border border-red-900 shadow-2xs">
+          <div className="flex items-center justify-between bg-red-950 text-white px-3 py-2 rounded-xl border border-red-900 shadow-sm">
             <span className="text-sm font-bold text-red-200 uppercase tracking-widest tracking-wider flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
               Cost Price:
@@ -484,7 +484,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 className="flex items-center gap-1.5 cursor-pointer group/cost hover:opacity-90"
                 title="Click to edit cost price (Red)"
               >
-                <span className="font-mono font-black text-base tracking-tight text-white group-hover/cost:text-red-300 drop-shadow-xs">
+                <span className="font-mono font-black text-base tracking-tight text-white group-hover/cost:text-red-300 drop-shadow-sm">
                   {formatPKR(product.costPrice)}
                 </span>
                 <Edit3 className="w-3 h-3 text-red-400/80 group-hover/cost:text-red-300" />
@@ -536,7 +536,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
               {showBatches && (
                 <div className="mt-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5 text-[10px]">
                   {product.costBatches.map((batch) => (
-                    <div key={batch.id} className="bg-white p-1.5 rounded border border-slate-100 flex items-center justify-between">
+                    <div key={batch.id} className="bg-slate-50 p-1.5 rounded border border-slate-100 flex items-center justify-between">
                       <div>
                         <span className="font-mono font-bold text-red-600">
                           {batch.billNumber ? `#${batch.billNumber}` : 'Initial Stock'}
@@ -560,13 +560,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             <button
               type="button"
               onClick={() => onViewHistory(product)}
-              className="w-full flex items-center justify-between px-3 py-2 bg-gradient-to-r from-red-50/80 to-slate-50 hover:from-red-100 hover:to-slate-100 border border-red-200/90 rounded-xl text-xs font-bold text-red-950 transition-all shadow-2xs group/hist"
+              className="w-full flex items-center justify-between px-3 py-2 bg-gradient-to-r from-red-50/80 to-slate-50 hover:from-red-100 hover:to-slate-100 border border-red-200/90 rounded-xl text-xs font-bold text-red-950 transition-all shadow-sm group/hist"
             >
               <span className="flex items-center gap-2">
                 <History className="w-3.5 h-3.5 text-red-600 group-hover/hist:rotate-45 transition-transform" />
                 <span>Purchases & Sales History</span>
               </span>
-              <span className="text-[10px] text-red-700 bg-white px-2 py-0.5 rounded-md border border-red-200 font-mono font-bold shadow-2xs">
+              <span className="text-[10px] text-red-700 bg-white px-2 py-0.5 rounded-md border border-red-200 font-mono font-bold shadow-sm">
                 View All
               </span>
             </button>
@@ -580,7 +580,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           {onPrintLabel ? <button
             type="button"
             onClick={() => onPrintLabel(product)}
-            className="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition-colors flex items-center gap-1.5 shadow-2xs"
+            className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition-colors flex items-center gap-1.5 shadow-sm"
           >
             <Printer className="w-3.5 h-3.5 text-slate-500" />
             Label
@@ -589,7 +589,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             <button
               type="button"
               onClick={() => onViewHistory(product)}
-              className="px-2.5 py-1.5 bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 text-xs font-bold rounded-lg border border-slate-200 hover:border-red-200 transition-colors flex items-center gap-1.5 shadow-2xs"
+              className="px-2.5 py-1.5 bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-700 text-xs font-bold rounded-lg border border-slate-200 hover:border-red-200 transition-colors flex items-center gap-1.5 shadow-sm"
               title="View Purchases and Sales History"
             >
               <History className="w-3.5 h-3.5 text-red-600" />
@@ -602,7 +602,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           {onDuplicate && (<button
             type="button"
             onClick={() => onDuplicate(product)}
-            className="p-1.5 text-slate-500 hover:text-slate-800 bg-white hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors shadow-2xs"
+            className="p-1.5 text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors shadow-sm"
             title="Duplicate"
           >
             <Copy className="w-3.5 h-3.5" />
@@ -610,7 +610,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           {onEdit && (<button
             type="button"
             onClick={() => onEdit(product)}
-            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors flex items-center gap-1"
+            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1"
           >
             <Edit3 className="w-3.5 h-3.5" />
             Edit

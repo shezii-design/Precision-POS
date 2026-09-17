@@ -474,7 +474,7 @@ export const ProductStockTrendGraph: React.FC<ProductStockTrendGraphProps> = ({
               </h3>
 
               {/* Demand Status Pill */}
-              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border shadow-2xs ${demandAnalytics.demandColor}`}>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black border shadow-sm ${demandAnalytics.demandColor}`}>
                 {demandAnalytics.demandLevel === 'high' && <Flame className="w-3.5 h-3.5 fill-current animate-pulse text-rose-600" />}
                 {demandAnalytics.demandLevel === 'moderate' && <Zap className="w-3.5 h-3.5 fill-current text-emerald-600" />}
                 {demandAnalytics.demandLevel === 'low' && <Clock className="w-3.5 h-3.5 text-slate-500" />}
@@ -506,7 +506,7 @@ export const ProductStockTrendGraph: React.FC<ProductStockTrendGraphProps> = ({
                 onClick={() => setTimeRange(days)}
                 className={`px-2.5 py-1 rounded-lg transition-all text-[11px] cursor-pointer ${
                   timeRange === days
-                    ? 'bg-red-600 text-white shadow-2xs font-black'
+                    ? 'bg-red-600 text-white shadow-sm font-black'
                     : 'text-slate-400 hover:text-white'
                 }`}
                 title={`Analyze ${days} days`}
@@ -523,7 +523,7 @@ export const ProductStockTrendGraph: React.FC<ProductStockTrendGraphProps> = ({
               onClick={() => setChartMode('composed')}
               className={`px-2.5 py-1 rounded-lg transition-all text-[11px] flex items-center gap-1 cursor-pointer ${
                 chartMode === 'composed'
-                  ? 'bg-white text-slate-900 font-black shadow-2xs'
+                  ? 'bg-white text-slate-900 font-black shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
               title="Combined Stock Trend & Sales Velocity"
@@ -536,7 +536,7 @@ export const ProductStockTrendGraph: React.FC<ProductStockTrendGraphProps> = ({
               onClick={() => setChartMode('stock')}
               className={`px-2.5 py-1 rounded-lg transition-all text-[11px] flex items-center gap-1 cursor-pointer ${
                 chartMode === 'stock'
-                  ? 'bg-indigo-600 text-white font-black shadow-2xs'
+                  ? 'bg-indigo-600 text-white font-black shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
               title="Stock Level Curve"
@@ -549,7 +549,7 @@ export const ProductStockTrendGraph: React.FC<ProductStockTrendGraphProps> = ({
               onClick={() => setChartMode('sales')}
               className={`px-2.5 py-1 rounded-lg transition-all text-[11px] flex items-center gap-1 cursor-pointer ${
                 chartMode === 'sales'
-                  ? 'bg-emerald-600 text-white font-black shadow-2xs'
+                  ? 'bg-emerald-600 text-white font-black shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
               title="Daily Sales Outflow Bars"

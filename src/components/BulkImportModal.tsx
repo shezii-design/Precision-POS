@@ -245,7 +245,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
               <button
                 type="button"
                 onClick={() => downloadSampleTemplate('xlsx')}
-                className="flex-1 sm:flex-initial px-3 py-1.5 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                className="flex-1 sm:flex-initial px-3 py-1.5 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <Download className="w-3.5 h-3.5" />
                 Excel (.xlsx)
@@ -253,7 +253,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
               <button
                 type="button"
                 onClick={() => downloadSampleTemplate('csv')}
-                className="flex-1 sm:flex-initial px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                className="flex-1 sm:flex-initial px-3 py-1.5 bg-slate-50 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <Download className="w-3.5 h-3.5" />
                 CSV
@@ -330,7 +330,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
                     onClick={() => setImportMode('append')}
                     className={`p-3 rounded-xl border text-left text-xs transition-all ${
                       importMode === 'append'
-                        ? 'border-red-600 bg-white shadow-xs'
+                        ? 'border-red-600 bg-white shadow-sm'
                         : 'border-slate-200 bg-slate-100/60 text-slate-600'
                     }`}
                   >
@@ -345,7 +345,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
                     onClick={() => setImportMode('overwrite')}
                     className={`p-3 rounded-xl border text-left text-xs transition-all ${
                       importMode === 'overwrite'
-                        ? 'border-red-600 bg-white shadow-xs'
+                        ? 'border-red-600 bg-white shadow-sm'
                         : 'border-slate-200 bg-slate-100/60 text-slate-600'
                     }`}
                   >
@@ -389,7 +389,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors order-2 sm:order-1"
+            className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-50 border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors order-2 sm:order-1"
           >
             Cancel
           </button>

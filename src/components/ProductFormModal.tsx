@@ -704,10 +704,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                         value={image}
                         onChange={(e) => setImage(e.target.value)}
                         placeholder="Paste image URL..."
-                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs"
                       />
                       <div className="flex items-center gap-2">
-                        <label className="px-3 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs inline-flex items-center gap-1.5">
+                        <label className="px-3 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-sm inline-flex items-center gap-1.5">
                           <Upload className="w-3.5 h-3.5" />
                           Choose Image File
                           <input type="file" accept="image/*" onChange={handleImageFileUpload} className="hidden" />
@@ -909,7 +909,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             {activeTab === 'pricing' && (
               <div className="space-y-4">
                 {/* Cost Price - Styled in RED */}
-                <div className="bg-red-950/95 border border-red-900 rounded-2xl p-4 text-white space-y-2 shadow-2xs">
+                <div className="bg-red-950/95 border border-red-900 rounded-2xl p-4 text-white space-y-2 shadow-sm">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold uppercase tracking-wider text-red-200 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-red-500"></span>
@@ -1095,7 +1095,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors"
+              className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-50 border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors"
             >
               Cancel
             </button>

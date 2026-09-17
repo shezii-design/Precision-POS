@@ -478,7 +478,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
     <div className="space-y-5 animate-in fade-in duration-200">
       
       {/* 1. HEADER & PERIOD CONTROLS (Screen view only) */}
-      <section className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-xs print:hidden">
+      <section className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm print:hidden">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           
           {/* Title & Brand */}
@@ -510,7 +510,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                 type="button"
                 onClick={() => setActiveTab('statement')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${
-                  activeTab === 'statement' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'
+                  activeTab === 'statement' ? 'bg-white text-slate-900 shadow-sm font-black' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 P&L Statement
@@ -519,7 +519,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                 type="button"
                 onClick={() => setActiveTab('expenses_manager')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${
-                  activeTab === 'expenses_manager' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'
+                  activeTab === 'expenses_manager' ? 'bg-white text-slate-900 shadow-sm font-black' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 Expenses Manager ({expenses.length})
@@ -552,7 +552,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
             <button
               type="button"
               onClick={handleExportStatementExcel}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
               title="Export complete financial statement to Excel"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
@@ -627,7 +627,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 print:hidden">
         
         {/* Net Sales */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
           <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block truncate">
             1. Net Revenue
           </span>
@@ -640,7 +640,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
         </div>
 
         {/* COGS */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
           <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block truncate">
             2. Cost of Sales (COGS)
           </span>
@@ -653,7 +653,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
         </div>
 
         {/* Gross Profit */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
           <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block truncate">
             3. Gross Profit
           </span>
@@ -668,7 +668,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
         </div>
 
         {/* OPEX */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
           <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block truncate">
             4. Operating Expenses
           </span>
@@ -699,7 +699,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
 
       {/* 3. MAIN P&L STATEMENT TABLE (Print-Formatted & Formal Accounting Sheet) */}
       {activeTab === 'statement' ? (
-        <section className="bg-white rounded-3xl p-4 sm:p-8 border border-slate-200 shadow-xs space-y-6 print:p-0 print:border-none print:shadow-none">
+        <section className="bg-white rounded-3xl p-4 sm:p-8 border border-slate-200 shadow-sm space-y-6 print:p-0 print:border-none print:shadow-none">
           
           {/* Formal Accounting Report Title Header */}
           <div className="text-center pb-5 border-b-2 border-slate-900 space-y-1">
@@ -1087,7 +1087,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
         </section>
       ) : (
         /* ---------------- OPERATING EXPENSES MANAGER SECTION ---------------- */
-        <section className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-xs space-y-4">
+        <section className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-sm space-y-4">
           
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
             <div>

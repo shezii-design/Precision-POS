@@ -205,14 +205,14 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
   return (
     <div id="purchases-page" className="space-y-6">
       {/* Top Header Card */}
-      <div className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-white rounded-3xl p-5 sm:p-7 shadow-xs border border-amber-800/40 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 text-white rounded-3xl p-5 sm:p-7 shadow-sm border border-amber-800/40 relative overflow-hidden">
         {/* Subtle decorative background glow */}
         <div className="absolute right-0 top-0 translate-x-12 -translate-y-8 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 relative z-10">
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-black text-amber-200 border border-white/20 shadow-xs">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-black text-amber-200 border border-white/20 shadow-sm">
                 <ShoppingBag className="w-5 h-5" />
               </div>
               <div>
@@ -235,7 +235,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
                 type="button"
                 id="btn-goto-purchase-orders"
                 onClick={onGoToPurchaseOrders}
-                className="px-3.5 py-2 bg-amber-900/60 hover:bg-amber-900/80 active:bg-amber-950 text-white text-xs font-bold rounded-xl border border-amber-400/40 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-3.5 py-2 bg-amber-900/60 hover:bg-amber-900/80 active:bg-amber-950 text-white text-xs font-bold rounded-xl border border-amber-400/40 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                 title="View Purchase Orders & Receive Cargo"
               >
                 <Truck className="w-4 h-4 text-amber-300" />
@@ -247,7 +247,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
               <button
                 type="button"
                 onClick={onExportExcel}
-                className="px-3.5 py-2 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white text-xs font-bold rounded-xl border border-white/25 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-3.5 py-2 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white text-xs font-bold rounded-xl border border-white/25 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                 title="Export purchases data"
               >
                 <Download className="w-4 h-4" />
@@ -259,7 +259,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
               type="button"
               id="btn-open-new-purchase"
               onClick={() => onOpenNewPurchase()}
-              className="px-4 py-2 bg-white hover:bg-amber-50 active:bg-amber-100 text-amber-900 text-xs font-black rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer select-none"
+              className="px-4 py-2 bg-white hover:bg-amber-50 active:bg-amber-100 text-amber-900 text-xs font-black rounded-xl shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer select-none"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span>Record Purchase Bill</span>
@@ -320,7 +320,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
       </div>
 
       {/* Filter and Control Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           {/* Main Search Input */}
           <div className="relative flex-1">
@@ -351,7 +351,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
               onClick={() => setDatePreset('all')}
               className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer select-none ${
                 !startDate && !endDate
-                  ? 'bg-amber-600 text-white shadow-xs'
+                  ? 'bg-amber-600 text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -472,8 +472,8 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
 
       {/* Purchases List Table */}
       {filteredPurchases.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center shadow-xs">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200/60 shadow-xs">
+        <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200/60 shadow-sm">
             <ShoppingBag className="w-8 h-8" />
           </div>
           <h3 className="text-base sm:text-lg font-black text-slate-900">
@@ -492,10 +492,10 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
             >
               Clear Search Filters
             </button>
-          ) : ( onOpenNewPurchase ? <button type="button" onClick={() => onOpenNewPurchase()} className="flex-1 sm:flex-initial justify-center px-4 sm:px-6 py-2.5 sm:py-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl shadow-xs sm:shadow-sm transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none" title="Record a New Purchase / Bill"><Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" /><span className="whitespace-nowrap">New Purchase</span></button> : null )}
+          ) : ( onOpenNewPurchase ? <button type="button" onClick={() => onOpenNewPurchase()} className="flex-1 sm:flex-initial justify-center px-4 sm:px-6 py-2.5 sm:py-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl shadow-sm sm:shadow-sm transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none" title="Record a New Purchase / Bill"><Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" /><span className="whitespace-nowrap">New Purchase</span></button> : null )}
         </div>
       ) : (
-        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead>

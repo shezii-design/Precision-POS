@@ -133,7 +133,7 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
                         <span>#{index + 1}</span>
                       </div>
                       <div className="sm:hidden text-right">
-                        <span className={`inline-block px-2 py-0.5 bg-white border rounded-md font-mono font-black text-xs shadow-2xs ${theme.border} ${theme.textColor}`}>
+                        <span className={`inline-block px-2 py-0.5 bg-white border rounded-md font-mono font-black text-xs shadow-sm ${theme.border} ${theme.textColor}`}>
                           {formatPKR(calculatedSample)}
                         </span>
                       </div>
@@ -149,7 +149,7 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
                         value={tier.name}
                         onChange={(e) => handleTierNameChange(index, e.target.value)}
                         placeholder="e.g. Wholesale, Retail, Sell@20%"
-                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                       />
                     </div>
 
@@ -165,7 +165,7 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
                           min="0"
                           value={tier.markupPercent}
                           onChange={(e) => handleTierMarkupChange(index, parseFloat(e.target.value))}
-                          className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs sm:text-sm font-bold text-red-600 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 pr-7"
+                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-bold text-red-600 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 pr-7"
                         />
                         <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
                           %
@@ -178,7 +178,7 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
                       <span className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
                         Sample Result
                       </span>
-                      <span className={`inline-block px-2.5 py-1 bg-white border rounded-md font-mono font-black text-sm shadow-2xs ${theme.border} ${theme.textColor}`}>
+                      <span className={`inline-block px-2.5 py-1 bg-white border rounded-md font-mono font-black text-sm shadow-sm ${theme.border} ${theme.textColor}`}>
                         {formatPKR(calculatedSample)}
                       </span>
                     </div>
@@ -256,7 +256,7 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors"
+            className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 bg-slate-50 border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors"
           >
             Cancel
           </button>

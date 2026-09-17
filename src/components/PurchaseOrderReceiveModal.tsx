@@ -303,9 +303,9 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 px-5 sm:px-7 py-4 text-white flex items-center justify-between shrink-0 shadow-xs">
+        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 px-5 sm:px-7 py-4 text-white flex items-center justify-between shrink-0 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-emerald-200 border border-white/20 shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-emerald-200 border border-white/20 shadow-sm">
               <Truck className="w-5 h-5" />
             </div>
             <div>
@@ -342,7 +342,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
           {/* Important Status Banner */}
           {wasStockAlreadyReceived ? (
             <div className="bg-blue-50 p-4 rounded-2xl border border-blue-200 flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 mt-0.5 shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 mt-0.5 shadow-sm">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
               <div className="text-xs text-blue-950">
@@ -373,7 +373,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                   onClick={() => setIsPendingBill(false)}
                   className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
                     !isPendingBill 
-                      ? 'bg-emerald-50/80 border-emerald-600 shadow-xs ring-2 ring-emerald-500/20' 
+                      ? 'bg-emerald-50/80 border-emerald-600 shadow-sm ring-2 ring-emerald-500/20' 
                       : 'bg-white border-slate-200 hover:border-slate-300'
                   }`}
                 >
@@ -402,7 +402,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                   onClick={() => setIsPendingBill(true)}
                   className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
                     isPendingBill 
-                      ? 'bg-amber-50/80 border-amber-600 shadow-xs ring-2 ring-amber-500/20' 
+                      ? 'bg-amber-50/80 border-amber-600 shadow-sm ring-2 ring-amber-500/20' 
                       : 'bg-white border-slate-200 hover:border-slate-300'
                   }`}
                 >
@@ -442,7 +442,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                 value={receivingDate}
                 onChange={(e) => setReceivingDate(e.target.value)}
                 required
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-2xs"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-sm"
               />
             </div>
 
@@ -457,7 +457,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                 value={billNumber}
                 onChange={(e) => setBillNumber(e.target.value)}
                 placeholder={isPendingBill ? 'Bill pending...' : 'e.g. SF-9921'}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-mono shadow-2xs"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-mono shadow-sm"
               />
             </div>
 
@@ -483,7 +483,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                   value={cargoCost || ''}
                   onChange={(e) => setCargoCost(parseFloat(e.target.value) || 0)}
                   placeholder="0 (e.g. 1000)"
-                  className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-2xs"
+                  className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-sm"
                 />
               </div>
             </div>
@@ -499,7 +499,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                 value={biltyNumber}
                 onChange={(e) => setBiltyNumber(e.target.value)}
                 placeholder="e.g. BLT-78923"
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-mono shadow-2xs"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-mono shadow-sm"
               />
             </div>
 
@@ -514,7 +514,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                 value={transporterName}
                 onChange={(e) => setTransporterName(e.target.value)}
                 placeholder="e.g. Faisal Movers Cargo, Al-Madina Goods Transport..."
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-2xs"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-sm"
               />
             </div>
 
@@ -538,7 +538,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                   value={amountPaid || ''}
                   onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
                   placeholder="0 (leave 0 if paid on credit)"
-                  className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-2xs"
+                  className="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-sm"
                 />
               </div>
             </div>
@@ -562,7 +562,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                 <button
                   type="button"
                   onClick={() => setShowAddExtraDropdown(!showAddExtraDropdown)}
-                  className="px-3 py-1.5 bg-emerald-100/90 hover:bg-emerald-200 text-emerald-900 text-xs font-black rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer border border-emerald-300/80 shadow-2xs"
+                  className="px-3 py-1.5 bg-emerald-100/90 hover:bg-emerald-200 text-emerald-900 text-xs font-black rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer border border-emerald-300/80 shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5 stroke-[3]" />
                   <span>Add Extra Product Arrived in Cargo</span>
@@ -610,7 +610,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
             </div>
 
             {/* Table */}
-            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto max-h-[42vh]">
                 <table className="w-full min-w-[700px] text-left border-collapse text-xs">
                   <thead>
@@ -669,7 +669,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                                 step="1"
                                 value={item.receivedQuantity}
                                 onChange={(e) => handleUpdateItem(index, 'receivedQuantity', parseInt(e.target.value, 10) || 0)}
-                                className="w-20 px-2 py-1 bg-white border-2 border-emerald-500 rounded-lg text-xs font-black text-center text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 shadow-2xs"
+                                className="w-20 px-2 py-1 bg-white border-2 border-emerald-500 rounded-lg text-xs font-black text-center text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 shadow-sm"
                               />
                               {item.orderedQuantity > 0 && qtyDiff !== 0 && (
                                 <span className={`text-[10px] font-bold ${
@@ -688,7 +688,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
                               value={item.actualUnitPrice || ''}
                               onChange={(e) => handleUpdateItem(index, 'actualUnitPrice', parseFloat(e.target.value) || 0)}
                               placeholder={isPendingBill ? 'Pending...' : '0'}
-                              className="w-28 px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-black text-right text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 font-mono shadow-2xs"
+                              className="w-28 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-right text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 font-mono shadow-sm"
                             />
                           </td>
                           <td className="py-2.5 px-2 text-center font-mono font-bold text-slate-600 text-[11px]">
@@ -770,7 +770,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. All 10 cartons arrived in intact condition via Faisal Movers Bilty #78923; verified by warehouse supervisor."
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-2xs"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-sm"
             />
           </div>
         </form>
@@ -780,7 +780,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer"
+            className="px-4 py-2 bg-slate-50 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -789,7 +789,7 @@ export const PurchaseOrderReceiveModal: React.FC<PurchaseOrderReceiveModalProps>
             <button
               type="button"
               onClick={handleSubmit}
-              className={`px-5 py-2.5 text-white text-xs font-black rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer select-none ${
+              className={`px-5 py-2.5 text-white text-xs font-black rounded-xl shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer select-none ${
                 isPendingBill 
                   ? 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800' 
                   : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800'

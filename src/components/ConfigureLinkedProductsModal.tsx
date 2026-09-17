@@ -212,7 +212,7 @@ export const ConfigureLinkedProductsModal: React.FC<ConfigureLinkedProductsModal
                     onClick={() => toggleSelectProduct(product.id)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer select-none flex items-start gap-3 ${
                       isSelected
-                        ? 'bg-amber-50/80 border-amber-400 ring-1 ring-amber-400 shadow-xs'
+                        ? 'bg-amber-50/80 border-amber-400 ring-1 ring-amber-400 shadow-sm'
                         : 'bg-white border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50/50'
                     }`}
                   >

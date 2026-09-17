@@ -258,7 +258,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
   return (
     <div id="returns-page" className="space-y-6">
       {/* Workspace Header Banner */}
-      <div className="bg-white border border-slate-200 shadow-xs p-5 sm:p-6 rounded-3xl">
+      <div className="bg-white border border-slate-200 shadow-sm p-5 sm:p-6 rounded-3xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-600 text-white flex items-center justify-center shadow-md shrink-0">
@@ -284,7 +284,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             {onOpenCustomerReturnModal ? <button
               type="button"
               onClick={() => onOpenCustomerReturnModal()}
-              className="px-3.5 sm:px-4 py-2 text-xs font-black text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="px-3.5 sm:px-4 py-2 text-xs font-black text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>+ Customer Return</span>
@@ -293,7 +293,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             {onOpenVendorReturnModal ? <button
               type="button"
               onClick={() => onOpenVendorReturnModal()}
-              className="px-3.5 sm:px-4 py-2 text-xs font-black text-slate-800 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-300 rounded-xl transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="px-3.5 sm:px-4 py-2 text-xs font-black text-slate-800 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-300 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4 text-red-600" />
               <span>+ Vendor Return (Debit Note)</span>
@@ -308,7 +308,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             onClick={() => { setActiveTab('customer'); setMethodFilter('all'); }}
             className={`px-4 py-2 text-xs font-black rounded-xl transition-colors flex items-center gap-2 cursor-pointer select-none ${
               activeTab === 'customer'
-                ? 'bg-red-600 text-white shadow-xs'
+                ? 'bg-red-600 text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
             }`}
           >
@@ -326,7 +326,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             onClick={() => { setActiveTab('vendor'); setMethodFilter('all'); }}
             className={`px-4 py-2 text-xs font-black rounded-xl transition-colors flex items-center gap-2 cursor-pointer select-none ${
               activeTab === 'vendor'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-slate-900 text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
             }`}
           >
@@ -347,7 +347,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
         {activeTab === 'customer' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Card 1: Total Customer Returns */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-[11px] font-black uppercase tracking-wider">Total Customer Returns</span>
                 <RotateCcw className="w-4 h-4 text-red-600" />
@@ -361,7 +361,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             </div>
 
             {/* Card 2: Restocked Inventory */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-[11px] font-black uppercase tracking-wider">Restocked Filters</span>
                 <PackageCheck className="w-4 h-4 text-emerald-600" />
@@ -375,7 +375,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             </div>
 
             {/* Card 3: Damaged / Scrap */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-[11px] font-black uppercase tracking-wider">Damaged / Scrap</span>
                 <AlertCircle className="w-4 h-4 text-amber-600" />
@@ -389,7 +389,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             </div>
 
             {/* Card 4: Khata Credit Settlement */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-[11px] font-black uppercase tracking-wider">Khata Balance Credits</span>
                 <DollarSign className="w-4 h-4 text-blue-600" />
@@ -405,7 +405,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Card 1: Total Vendor Returns */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-[11px] font-black uppercase tracking-wider">Total Purchase Returns</span>
                 <RotateCcw className="w-4 h-4 text-red-600" />
@@ -419,7 +419,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             </div>
 
             {/* Card 2: Items Shipped Back */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-[11px] font-black uppercase tracking-wider">Parts Returned</span>
                 <PackageMinus className="w-4 h-4 text-rose-600" />
@@ -433,7 +433,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             </div>
 
             {/* Card 3: Debit Notes Claimed */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-[11px] font-black uppercase tracking-wider">Debit Notes Adjusted</span>
                 <DollarSign className="w-4 h-4 text-emerald-600" />
@@ -447,7 +447,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
             </div>
 
             {/* Card 4: Pending Replacements */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-[11px] font-black uppercase tracking-wider">Pending Claims</span>
                 <Clock className="w-4 h-4 text-amber-600" />
@@ -463,7 +463,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
         )}
 
         {/* Filter and Search Bar */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
             {/* Search Input */}
             <div className="sm:col-span-4 relative">
@@ -575,7 +575,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
         {/* Data Table Section */}
         {activeTab === 'customer' ? (
           /* CUSTOMER RETURNS TABLE */
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-700">
@@ -756,7 +756,7 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
           </div>
         ) : (
           /* VENDOR RETURNS TABLE */
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-700">

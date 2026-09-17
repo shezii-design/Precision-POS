@@ -142,7 +142,7 @@ export const QuotationViewModal: React.FC<QuotationViewModalProps> = ({
               type="button"
               id="quotation-print-btn"
               onClick={handlePrint}
-              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print / Save PDF</span>
@@ -297,7 +297,7 @@ export const QuotationViewModal: React.FC<QuotationViewModalProps> = ({
           </div>
 
           {/* QUOTATION LINE ITEMS TABLE */}
-          <div className="border border-slate-300 rounded-xl overflow-hidden shadow-2xs">
+          <div className="border border-slate-300 rounded-xl overflow-hidden shadow-sm">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-900 text-white font-bold uppercase text-[10px] tracking-wider">
                 <tr>

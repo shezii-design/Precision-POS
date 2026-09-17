@@ -138,7 +138,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
               onClick={() => { setAdjustmentType('add'); setReason('Received Stock'); }}
               className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
                 adjustmentType === 'add'
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                   : 'bg-slate-50 text-slate-700 border-slate-200'
               }`}
             >
@@ -149,7 +149,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
               onClick={() => { setAdjustmentType('remove'); setReason('Sale'); }}
               className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
                 adjustmentType === 'remove'
-                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
                   : 'bg-slate-50 text-slate-700 border-slate-200'
               }`}
             >
@@ -160,7 +160,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
               onClick={() => { setAdjustmentType('set'); setReason('Adjustment'); }}
               className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
                 adjustmentType === 'set'
-                  ? 'bg-slate-800 text-white border-slate-800 shadow-xs'
+                  ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
                   : 'bg-slate-50 text-slate-700 border-slate-200'
               }`}
             >

@@ -78,7 +78,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
       {/* Table control sub-bar */}
       <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-xs font-semibold text-slate-700">
         <div>
@@ -92,7 +92,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
               type="button"
               onClick={() => setTableUnit('inch')}
               className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
-                tableUnit === 'inch' ? 'bg-red-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                tableUnit === 'inch' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Inches (in)
@@ -101,7 +101,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
               type="button"
               onClick={() => setTableUnit('mm')}
               className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
-                tableUnit === 'mm' ? 'bg-red-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                tableUnit === 'mm' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               mm (Metric)

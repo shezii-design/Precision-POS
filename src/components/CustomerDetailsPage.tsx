@@ -343,12 +343,12 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
     <div id="customer-details-page" className="space-y-6 animate-in fade-in duration-200">
       
       {/* Top Breadcrumb & Quick Actions Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onBack}
-            className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 flex items-center justify-center transition-all cursor-pointer shadow-sm"
             title="Back to Customers List"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -385,7 +385,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
           <button
             type="button"
             onClick={() => { setEditingPaymentEntry(null); setShowPaymentModal(true); }}
-            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-black shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Wallet className="w-4 h-4" />
             <span>Receive Payment</span>
@@ -394,7 +394,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
           <button
             type="button"
             onClick={() => onOpenNewSaleForCustomer(currentCustomer.id)}
-            className="px-3.5 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl text-xs font-black shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <ShoppingCart className="w-4 h-4" />
             <span>Record Sale (POS)</span>
@@ -404,7 +404,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
             type="button"
             id="btn-customer-top-download-pdf"
             onClick={() => downloadCustomerLedgerPDF(currentCustomer, ledgerRows, netBalance, 'Complete Ledger Statement')}
-            className="p-2 sm:px-3 sm:py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            className="p-2 sm:px-3 sm:py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
             title="Download complete transaction statement report as PDF"
           >
             <Download className="w-4 h-4 text-red-600" />
@@ -437,7 +437,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* Contact & Address Card */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-3">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
           <div className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
             <Phone className="w-3.5 h-3.5 text-slate-500" />
             Contact & Communication
@@ -495,7 +495,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
         </div>
 
         {/* Business Sales Summary Card */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-3">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
           <div className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
             <Receipt className="w-3.5 h-3.5 text-slate-500" />
             Purchases & Orders Summary
@@ -528,7 +528,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
         </div>
 
         {/* Net Outstanding Balance Banner */}
-        <div className={`p-5 rounded-3xl border shadow-xs flex flex-col justify-between ${
+        <div className={`p-5 rounded-3xl border shadow-sm flex flex-col justify-between ${
           netBalance > 0 
             ? 'bg-rose-50/70 border-rose-200 text-rose-950' 
             : (netBalance < 0 ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-900')
@@ -581,7 +581,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
               onClick={() => setActiveTab('demand')}
               className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-colors flex items-center gap-2 cursor-pointer select-none ${
                 activeTab === 'demand'
-                  ? 'bg-red-600 text-white shadow-xs'
+                  ? 'bg-red-600 text-white shadow-sm'
                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
@@ -600,7 +600,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
               onClick={() => setActiveTab('ledger')}
               className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-colors flex items-center gap-2 cursor-pointer select-none ${
                 activeTab === 'ledger'
-                  ? 'bg-red-600 text-white shadow-xs'
+                  ? 'bg-red-600 text-white shadow-sm'
                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
@@ -614,7 +614,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
               onClick={() => setActiveTab('invoices')}
               className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-colors flex items-center gap-2 cursor-pointer select-none ${
                 activeTab === 'invoices'
-                  ? 'bg-red-600 text-white shadow-xs'
+                  ? 'bg-red-600 text-white shadow-sm'
                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
@@ -635,7 +635,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
               onClick={() => setActiveTab('ledger')}
               className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-colors flex items-center gap-2 cursor-pointer select-none ${
                 activeTab === 'ledger'
-                  ? 'bg-red-600 text-white shadow-xs'
+                  ? 'bg-red-600 text-white shadow-sm'
                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
@@ -649,7 +649,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
               onClick={() => setActiveTab('invoices')}
               className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-colors flex items-center gap-2 cursor-pointer select-none ${
                 activeTab === 'invoices'
-                  ? 'bg-red-600 text-white shadow-xs'
+                  ? 'bg-red-600 text-white shadow-sm'
                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
@@ -672,7 +672,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
         <div className="space-y-5 animate-in fade-in duration-150">
           
           {/* Demand Toolbar & Multi-Select Action Banner */}
-          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-wrap">
               {/* Select All Checkbox */}
               {machines.length > 0 && (
@@ -739,7 +739,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
 
           {/* Machine Cards List */}
           {filteredMachines.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-xs space-y-3">
+            <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-sm space-y-3">
               <Wrench className="w-12 h-12 text-slate-300 mx-auto" />
               <h3 className="text-base font-bold text-slate-800">No Machines Configured Yet</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
@@ -763,7 +763,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                 return (
                   <div
                     key={machine.id}
-                    className={`bg-white rounded-3xl border transition-all shadow-xs overflow-hidden ${
+                    className={`bg-white rounded-3xl border transition-all shadow-sm overflow-hidden ${
                       isSelected ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
@@ -816,7 +816,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                         <button
                           type="button"
                           onClick={() => handleQuickRecordSaleForSingleMachine(machine)}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
                           title="Record sale for only this machine"
                         >
                           <ShoppingCart className="w-3.5 h-3.5" />
@@ -959,7 +959,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
         <div className="space-y-4 animate-in fade-in duration-150">
           
           {/* Ledger Summary & Filter Bar */}
-          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-black text-slate-900">
@@ -1003,7 +1003,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                   onClick={() => setLedgerSortOrder('statement')}
                   className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                     ledgerSortOrder === 'statement'
-                      ? 'bg-white text-slate-900 shadow-xs font-black'
+                      ? 'bg-white text-slate-900 shadow-sm font-black'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                   title="Standard Accounting Statement Order: Oldest to newest, sales invoice entry comes strictly before payment receipt"
@@ -1015,7 +1015,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                   onClick={() => setLedgerSortOrder('recent')}
                   className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                     ledgerSortOrder === 'recent'
-                      ? 'bg-white text-slate-900 shadow-xs font-black'
+                      ? 'bg-white text-slate-900 shadow-sm font-black'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                   title="Recent First: Newest entries at top"
@@ -1028,7 +1028,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                 type="button"
                 id="btn-customer-ledger-download-pdf"
                 onClick={() => downloadCustomerLedgerPDF(currentCustomer, ledgerRows, netBalance, 'Complete Ledger Statement')}
-                className="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200/80 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                className="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200/80 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                 title="Download formatted customer transaction statement as PDF"
               >
                 <Download className="w-4 h-4 text-red-600" />
@@ -1047,7 +1047,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
               <button
                 type="button"
                 onClick={() => { setEditingPaymentEntry(null); setShowPaymentModal(true); }}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Record Payment (Cash In)</span>
@@ -1067,7 +1067,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
           </div>
 
           {/* Ledger Table */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[700px] text-left text-xs border-collapse">
                 <thead>
@@ -1200,7 +1200,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
       {/* ==================================================== */}
       {activeTab === 'invoices' && (
         <div className="space-y-4 animate-in fade-in duration-150">
-          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
               <h3 className="text-base font-black text-slate-900">
                 Invoices History for {currentCustomer.name}
@@ -1213,14 +1213,14 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
             <button
               type="button"
               onClick={() => onOpenNewSaleForCustomer(currentCustomer.id)}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Create New Invoice</span>
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[700px] text-left text-xs border-collapse">
                 <thead>

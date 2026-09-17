@@ -161,7 +161,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
   return (
     <div id="vendors-page" className="space-y-6">
       {/* Top Header Banner */}
-      <div className="bg-white border border-neutral-200 shadow-xs p-5 sm:p-6 rounded-3xl">
+      <div className="bg-white border border-neutral-200 shadow-sm p-5 sm:p-6 rounded-3xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -185,7 +185,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
               type="button"
               id="btn-vendors-record-cash"
               onClick={() => onOpenCashModal()}
-              className="px-4 py-2.5 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-800 text-xs sm:text-sm font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-800 text-xs sm:text-sm font-bold shadow-sm transition-colors flex items-center gap-2 cursor-pointer"
             >
               <ArrowUpRight className="w-4 h-4 text-amber-600" />
               <span>+ Cash Payment / Receipt</span>
@@ -195,7 +195,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
               type="button"
               id="btn-add-new-vendor-top"
               onClick={onOpenAddVendorModal}
-              className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>+ Add New Vendor</span>
@@ -205,7 +205,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
 
         {/* KPI Cards Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
-          <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 shadow-2xs">
+          <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 shadow-sm">
             <div className="flex items-center justify-between text-xs text-neutral-500 font-semibold">
               <span>Total Vendors</span>
               <Building2 className="w-4 h-4 text-neutral-400" />
@@ -216,7 +216,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
             <p className="text-[11px] text-neutral-400 mt-0.5">Active supplier accounts</p>
           </div>
 
-          <div className="bg-amber-50/80 p-4 rounded-2xl border border-amber-200 shadow-2xs">
+          <div className="bg-amber-50/80 p-4 rounded-2xl border border-amber-200 shadow-sm">
             <div className="flex items-center justify-between text-xs text-amber-800 font-bold">
               <span>Total Balance We Owe (Payable)</span>
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
@@ -227,7 +227,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
             <p className="text-[11px] text-amber-700 mt-0.5 font-medium">Outstanding to suppliers</p>
           </div>
 
-          <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 shadow-2xs">
+          <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 shadow-sm">
             <div className="flex items-center justify-between text-xs text-neutral-500 font-semibold">
               <span>Total Purchases</span>
               <ShoppingBag className="w-4 h-4 text-purple-600" />
@@ -238,7 +238,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
             <p className="text-[11px] text-neutral-400 mt-0.5 font-medium">{purchases.length} total bills recorded</p>
           </div>
 
-          <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 shadow-2xs">
+          <div className="bg-neutral-50 p-4 rounded-2xl border border-neutral-200 shadow-sm">
             <div className="flex items-center justify-between text-xs text-neutral-500 font-semibold">
               <span>Total Cash Paid</span>
               <ArrowUpRight className="w-4 h-4 text-emerald-600" />
@@ -253,7 +253,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
 
       <div className="space-y-6">
         {/* Search & Filter Bar */}
-        <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-xs space-y-3">
+        <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm space-y-3">
           {/* Main Search Input */}
           <div className="relative">
             <input
@@ -387,7 +387,7 @@ export const VendorsPage: React.FC<VendorsPageProps> = ({
             {onOpenAddVendorModal ? <button
               type="button"
               onClick={onOpenAddVendorModal}
-              className="mt-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors inline-flex items-center gap-1.5"
+              className="mt-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors inline-flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               <span>Add New Vendor</span>

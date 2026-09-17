@@ -211,7 +211,7 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1"
                 >
                   <Plus className="w-4 h-4" /> Add Type
                 </button>
@@ -256,7 +256,7 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-2xs flex items-center gap-1"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1"
                 >
                   <Plus className="w-4 h-4" /> Add Brand
                 </button>
@@ -302,14 +302,14 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
                     value={newLocationName}
                     onChange={(e) => setNewLocationName(e.target.value)}
                     placeholder="Location Name (e.g. Godown 3, Main Counter)"
-                    className="flex-1 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900"
+                    className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900"
                   />
                   <input
                     type="text"
                     value={newLocationCabin}
                     onChange={(e) => setNewLocationCabin(e.target.value)}
                     placeholder="Initial Cabin (e.g. C-01)"
-                    className="w-32 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-mono font-semibold text-slate-900"
+                    className="w-32 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-semibold text-slate-900"
                   />
                   <button
                     type="submit"
@@ -384,7 +384,7 @@ export const CategoriesAndBrandsModal: React.FC<CategoriesAndBrandsModalProps> =
                         {loc.cabins.map((cabin) => (
                           <span
                             key={cabin}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 shadow-2xs"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-800 shadow-sm"
                           >
                             <span>Cabin: {cabin}</span>
                             <button

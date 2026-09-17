@@ -408,7 +408,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 type="button"
                 id="navbar-menu-btn"
                 onClick={() => setShowAppMenu(true)}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-colors cursor-pointer select-none shrink-0 shadow-xs h-8 sm:h-8.5 ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-colors cursor-pointer select-none shrink-0 shadow-sm h-8 sm:h-8.5 ${
                   showAppMenu
                     ? 'bg-white text-red-700 border-white shadow-inner'
                     : 'bg-black/25 hover:bg-black/40 text-white border-white/20 hover:border-white/35'
@@ -440,7 +440,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="button"
                   id="navbar-make-sale-btn"
                   onClick={() => onOpenNewSale()}
-                  className="px-2 sm:px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-xs font-bold rounded-xl border border-emerald-400/60 transition-colors flex items-center gap-1 shadow-xs cursor-pointer h-8 sm:h-8.5 shrink-0"
+                  className="px-2 sm:px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-xs font-bold rounded-xl border border-emerald-400/60 transition-colors flex items-center gap-1 shadow-sm cursor-pointer h-8 sm:h-8.5 shrink-0"
                   title="Make a Sale / Open POS (F5)"
                 >
                   <Plus className="w-3.5 h-3.5 stroke-[3] shrink-0" />
@@ -457,7 +457,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="button"
                   id="navbar-add-product-btn"
                   onClick={onOpenAddProduct}
-                  className="px-2 sm:px-2.5 py-1.5 bg-white hover:bg-slate-100 text-red-700 text-xs font-bold rounded-xl border border-white shadow-xs transition-colors flex items-center gap-1 cursor-pointer h-8 sm:h-8.5 shrink-0"
+                  className="px-2 sm:px-2.5 py-1.5 bg-white hover:bg-slate-100 text-red-700 text-xs font-bold rounded-xl border border-white shadow-sm transition-colors flex items-center gap-1 cursor-pointer h-8 sm:h-8.5 shrink-0"
                   title="Add New Inventory Product"
                 >
                   <Plus className="w-3.5 h-3.5 stroke-[3] shrink-0" />
@@ -472,7 +472,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="button"
                   id="navbar-low-stock-badge-btn"
                   onClick={onToggleLowStockBanner}
-                  className={`px-2 py-1.5 text-xs font-bold rounded-xl border transition-colors flex items-center gap-1 cursor-pointer h-8 sm:h-8.5 shadow-xs shrink-0 ${
+                  className={`px-2 py-1.5 text-xs font-bold rounded-xl border transition-colors flex items-center gap-1 cursor-pointer h-8 sm:h-8.5 shadow-sm shrink-0 ${
                     showLowStockBanner
                       ? 'bg-amber-400 text-amber-950 border-amber-300 font-bold'
                       : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-400 font-bold'
@@ -490,7 +490,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 type="button"
                 id="navbar-supabase-sql-btn"
                 onClick={onOpenSupabaseConfig}
-                className={`px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-colors flex items-center gap-1 shadow-2xs cursor-pointer h-8 sm:h-8.5 shrink-0 ${
+                className={`px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded-xl border transition-colors flex items-center gap-1 shadow-sm cursor-pointer h-8 sm:h-8.5 shrink-0 ${
                   supabaseConfig.enabled && supabaseConfig.syncStatus === 'connected'
                     ? 'bg-emerald-600/90 hover:bg-emerald-600 text-white border-emerald-400/60'
                     : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
@@ -510,10 +510,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="button"
                   id="navbar-pkr-formulas-btn"
                   onClick={onOpenPricingFormulas}
-                  className="hidden 2xl:flex items-center gap-1 px-2.5 py-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white text-xs font-bold rounded-xl border border-white/20 transition-colors shadow-2xs group cursor-pointer h-8.5 shrink-0"
+                  className="hidden 2xl:flex items-center gap-1 px-2.5 py-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white text-xs font-bold rounded-xl border border-white/20 transition-colors shadow-sm group cursor-pointer h-8.5 shrink-0"
                   title="Configure PKR markup formulas & selling tiers"
                 >
-                  <div className="w-4 h-4 rounded-md bg-white text-red-700 flex items-center justify-center font-bold text-[10px] shadow-2xs shrink-0">
+                  <div className="w-4 h-4 rounded-md bg-white text-red-700 flex items-center justify-center font-bold text-[10px] shadow-sm shrink-0">
                     ₨
                   </div>
                   <span className="text-xs font-bold whitespace-nowrap">Formulas</span>
@@ -531,7 +531,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="px-1.5 sm:px-2 py-1 bg-black/25 hover:bg-black/35 text-white rounded-xl border border-white/20 transition-colors flex items-center gap-1 cursor-pointer h-8 sm:h-8.5 shrink-0"
                   title={`Current Operator: ${currentEmployee.name} (${currentEmployee.designation}). Click to switch operator.`}
                 >
-                  <div className={`w-5 h-5 rounded-lg flex items-center justify-center font-bold text-[10px] text-white shadow-2xs shrink-0 ${
+                  <div className={`w-5 h-5 rounded-lg flex items-center justify-center font-bold text-[10px] text-white shadow-sm shrink-0 ${
                     currentEmployee.role === 'admin' ? 'bg-red-600 border border-white/40' :
                     currentEmployee.role === 'cashier' ? 'bg-blue-600 border border-white/40' :
                     currentEmployee.role === 'procurement' ? 'bg-amber-600 border border-white/40' :
@@ -555,7 +555,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => setShowToolsMenu(!showToolsMenu)}
                   className={`px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 cursor-pointer h-8 sm:h-8.5 shrink-0 ${
                     showToolsMenu 
-                      ? 'bg-white text-red-700 border-white shadow-xs' 
+                      ? 'bg-white text-red-700 border-white shadow-sm' 
                       : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
                   }`}
                   title="Tools, Staff Accounts & Security"
@@ -716,7 +716,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 type="button"
                 id="navbar-lock-app-btn"
                 onClick={onLockApp}
-                className="p-1.5 sm:p-2 bg-black/25 hover:bg-black/35 text-white text-xs font-bold rounded-xl border border-white/20 transition-colors flex items-center justify-center cursor-pointer h-8 sm:h-8.5 w-8 sm:w-8.5 shrink-0 shadow-2xs"
+                className="p-1.5 sm:p-2 bg-black/25 hover:bg-black/35 text-white text-xs font-bold rounded-xl border border-white/20 transition-colors flex items-center justify-center cursor-pointer h-8 sm:h-8.5 w-8 sm:w-8.5 shrink-0 shadow-sm"
                 title="Lock Screen"
               >
                 <Lock className="w-3.5 h-3.5" />
@@ -746,7 +746,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => handleSelectTab(tab.id)}
                     className={`group relative w-full h-8 sm:h-8.5 px-1 sm:px-1.5 text-xs rounded-xl transition-colors duration-150 flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer whitespace-nowrap select-none border min-w-0 overflow-hidden font-bold focus:outline-none focus:ring-2 focus:ring-white/40 ${
                       isActive
-                        ? 'bg-white text-red-900 border-white shadow-xs'
+                        ? 'bg-white text-red-900 border-white shadow-sm'
                         : 'bg-black/25 hover:bg-black/40 text-white/95 hover:text-white border-white/15 hover:border-white/30'
                     }`}
                     title={`${tab.title} (${tab.shortcut})\n${tab.description}`}
@@ -830,8 +830,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => handleSelectTab(tab.id)}
                     className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer group ${
                       isActive 
-                        ? 'bg-red-50 border-red-300 ring-2 ring-red-500/20 shadow-xs' 
-                        : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 shadow-2xs'
+                        ? 'bg-red-50 border-red-300 ring-2 ring-red-500/20 shadow-sm' 
+                        : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 shadow-sm'
                     }`}
                   >
                     <div>
