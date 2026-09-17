@@ -4668,7 +4668,7 @@ END $$;
 
 
 
-DO $ 
+DO $$ 
 BEGIN 
     BEGIN
         ALTER TABLE customer_returns ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
@@ -5127,7 +5127,7 @@ END $$;
 
 
 
-DO $ 
+DO $$ 
 BEGIN 
     BEGIN
         ALTER TABLE vendor_returns ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
@@ -5627,7 +5627,7 @@ END $$;
 
 
 
-DO $ 
+DO $$ 
 BEGIN 
     BEGIN
         ALTER TABLE purchases ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();

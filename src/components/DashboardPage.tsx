@@ -250,22 +250,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   // 1. Filter Transactions within Selected Period
   const periodSales = useMemo(() => sales.filter(s => isDateInRange(s.date || s.createdAt)), [sales, dateRange]);
   const periodPurchases = useMemo(() => purchases.filter(p => isDateInRange(p.date || p.createdAt)), [purchases, dateRange]);
-  const periodCustomerReturns = useMemo(() => customerReturns.filter(r => isDateInRange(r.returnDate || r.createdAt)), [customerReturns, dateRange]);
-  const periodVendorReturns = useMemo(() => vendorReturns.filter(r => isDateInRange(r.returnDate || r.createdAt)), [vendorReturns, dateRange]);
+  const periodCustomerReturns = useMemo(() => customerReturns.filter(r => isDateInRange(r.date || r.createdAt)), [customerReturns, dateRange]);
+  const periodVendorReturns = useMemo(() => vendorReturns.filter(r => isDateInRange(r.date || r.createdAt)), [vendorReturns, dateRange]);
   const periodExpenses = useMemo(() => expenses.filter(e => isDateInRange(e.date || e.createdAt)), [expenses, dateRange]);
 
   // 2. Compute Core Financial Metrics
   const financials = useMemo(() => {
     // Gross & Net Sales
     const grossSales = periodSales.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-    const salesDiscounts = periodSales.reduce((sum, s) => sum + (Number(s.discount) || 0), 0);
-    const cashCollected = periodSales.reduce((sum, s) => sum + (Number(s.paidAmount) || 0), 0);
-    const creditSales = periodSales.reduce((sum, s) => sum + (Number(s.remainingBalance) || 0), 0);
+    const salesDiscounts = periodSales.reduce((sum, s) => sum + (Number(s.discountAmount) || 0), 0);
+    const cashCollected = periodSales.reduce((sum, s) => sum + (Number(s.amountReceived) || 0), 0);
+    const creditSales = periodSales.reduce((sum, s) => sum + (Number(s.balanceDue) || 0), 0);
     const itemsSoldUnits = periodSales.reduce((sum, s) => sum + s.items.reduce((iSum, it) => iSum + (Number(it.quantity) || 0), 0), 0);
 
     // Sales Returns
-    const salesReturnsAmount = periodCustomerReturns.reduce((sum, r) => sum + (Number(r.totalReturnAmount) || 0), 0);
-    const restockFeesCollected = periodCustomerReturns.reduce((sum, r) => sum + (Number(r.restockFee) || 0), 0);
+    const salesReturnsAmount = periodCustomerReturns.reduce((sum, r) => sum + (Number(r.totalRefundAmount) || 0), 0);
+    const restockFeesCollected = periodCustomerReturns.reduce((sum, r) => sum + (Number(r.deductionOrRestockFee) || 0), 0);
 
     // Net Sales
     const netSales = Math.max(0, grossSales - salesReturnsAmount);
@@ -280,7 +280,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     });
 
     // Deduct vendor return cost relief
-    const vendorReturnsAmount = periodVendorReturns.reduce((sum, r) => sum + (Number(r.totalReturnAmount) || 0), 0);
+    const vendorReturnsAmount = periodVendorReturns.reduce((sum, r) => sum + (Number(r.totalAmount) || 0), 0);
     const totalCOGS = Math.max(0, fifoCOGS);
 
     // Gross Profit
@@ -296,7 +296,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
     // Purchases Spend
     const purchasesSpend = periodPurchases.reduce((sum, p) => sum + (Number(p.totalAmount) || 0), 0);
-    const purchasesPaid = periodPurchases.reduce((sum, p) => sum + (Number(p.paidAmount) || 0), 0);
+    const purchasesPaid = periodPurchases.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
     const itemsPurchasedUnits = periodPurchases.reduce((sum, p) => sum + p.items.reduce((iSum, it) => iSum + (Number(it.quantity) || 0), 0), 0);
 
     return {
@@ -600,8 +600,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         title: `Sale #${s.invoiceNumber || s.id}`,
         subtitle: `${s.customerName || 'Cash Customer'} • ${s.items.length} items`,
         amount: s.totalAmount,
-        statusBadge: s.remainingBalance > 0 ? 'Khata / Credit' : 'Paid in Full',
-        statusColor: s.remainingBalance > 0 ? 'amber' : 'emerald',
+        statusBadge: s.balanceDue > 0 ? 'Khata / Credit' : 'Paid in Full',
+        statusColor: s.balanceDue > 0 ? 'amber' : 'emerald',
         timestamp: s.createdAt || s.date,
         rawObject: s,
       });
@@ -627,10 +627,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         type: 'customer_return',
         title: `Sales Return #${r.returnNumber || r.id}`,
         subtitle: `${r.customerName || 'Customer'} • Restocked`,
-        amount: r.totalReturnAmount,
+        amount: r.totalRefundAmount,
         statusBadge: 'Credit Note',
         statusColor: 'purple',
-        timestamp: r.createdAt || r.returnDate,
+        timestamp: r.createdAt || r.date,
         rawObject: r,
       });
     });
