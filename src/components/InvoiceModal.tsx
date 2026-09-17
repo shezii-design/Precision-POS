@@ -201,6 +201,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     .badge-return { background: #fef3c7; color: #b45309; }
     .strike { text-decoration: line-through; color: #94a3b8; font-size: 11px; }
     .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+    @media print { @page { margin: 0; } body { margin: 1.6cm; } }
   </style>
 </head>
 <body>
@@ -249,7 +250,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           <td>${idx + 1}</td>
           <td>
             <strong>${edits[`item_name_${idx}`] ?? formatItemInvoiceName(it, sale.invoiceNamingPreference)}</strong>
-            ${(it.locationName || it.cabinNumber) ? `<div style="font-size:11px;color:#1e40af;margin-top:2px;">📍 Location: <strong>${it.locationName || 'Main Shop'}</strong>${it.cabinNumber ? ` (Cabin: ${it.cabinNumber})` : ''}</div>` : ''}
+            
             ${it.showDetailsOnInvoice && it.crossReferences ? `<div style="font-size:11px;color:#64748b;">Cross Ref: ${it.crossReferences.replace(/\n/g, ', ')}</div>` : ''}
             ${it.showDetailsOnInvoice && it.machineNames ? `<div style="font-size:11px;color:#64748b;">Machine: ${it.machineNames.replace(/\n/g, ', ')}</div>` : ''}
             ${metrics.returnedQty > 0 ? `<div style="font-size:11px;color:#b45309;font-weight:bold;margin-top:2px;">↳ Returned: -${metrics.returnedQty} ${it.unit} (${metrics.isFullyReturned ? 'Fully Returned' : 'Partial Return'})</div>` : ''}
@@ -525,7 +526,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           </div>
                         )}
                         {(item.locationName || item.cabinNumber) && (
-                          <div className="text-[11px] text-blue-700 font-semibold flex items-center gap-1 mt-0.5">
+                          <div className="text-[11px] text-blue-700 font-semibold flex items-center gap-1 mt-0.5 print:hidden">
                             <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
                             <span>Loc: <strong>{item.locationName || 'Main Shop'}</strong></span>
                             {item.cabinNumber && (
