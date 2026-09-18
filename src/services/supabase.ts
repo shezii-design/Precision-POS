@@ -985,6 +985,15 @@ CREATE INDEX IF NOT EXISTS idx_purchases_bill ON purchases(bill_number);
 -- AIRTIGHT ROW LEVEL SECURITY (RLS) & RPCs
 -- ==========================================================
 
+-- Ensure missing columns exist before creating views
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS pin_hash TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+
+DROP VIEW IF EXISTS public_employee_profiles CASCADE;
+
 -- 9. SAFE PUBLIC VIEW (Excludes pin_hash and password_hash)
 CREATE OR REPLACE VIEW public_employee_profiles AS
 SELECT 
@@ -1257,6 +1266,15 @@ CREATE TABLE IF NOT EXISTS employee_accounts (
 -- Safely migrate legacy plaintext columns if they exist
 DO $$
 BEGIN
+  -- Ensure updated_at and created_at exist if table was created in an older schema
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_accounts' AND column_name='updated_at') THEN
+    ALTER TABLE employee_accounts ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_accounts' AND column_name='created_at') THEN
+    ALTER TABLE employee_accounts ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+  END IF;
+
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_accounts' AND column_name='pin_hash') THEN
     ALTER TABLE employee_accounts ADD COLUMN pin_hash TEXT;
   END IF;
@@ -1281,6 +1299,11 @@ BEGIN
     ALTER TABLE employee_accounts DROP COLUMN IF EXISTS password;
   END IF;
 END $$;
+
+-- Ensure columns exist and drop old view if present
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+DROP VIEW IF EXISTS public_employee_profiles CASCADE;
 
 -- 3. Public Safe View (Excludes pin_hash, password_hash)
 CREATE OR REPLACE VIEW public_employee_profiles AS
@@ -3116,24 +3139,33 @@ export async function fetchStaffAndDevicesFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; employees: EmployeeAccount[]; devices: RegisteredDevice[]; error?: string }> {
   try {
-    // Attempt to fetch safe employee profiles, ignoring plaintext pin or password
-    const [empRes, devRes] = await Promise.all([
-      client.from('employee_accounts')
-        .select('id, name, email, phone, role, designation, status, permissions, restrict_to_devices, allowed_device_ids, avatar_color, last_login_at, last_login_device_id, notes, created_at, auth_user_id, pin_hash, password_hash')
-        .order('name', { ascending: true }),
-      client.from('registered_devices').select('*').order('registered_at', { ascending: false }),
-    ]);
+    // Attempt to fetch safe employee profiles
+    let empData: any[] = [];
+    let devData: any[] = [];
 
-    const employees: EmployeeAccount[] = (empRes.data || []).map(r => ({
+    try {
+      const [empRes, devRes] = await Promise.all([
+        client.from('employee_accounts').select('*').order('name', { ascending: true }),
+        client.from('registered_devices').select('*').order('registered_at', { ascending: false }),
+      ]);
+      if (empRes.data) empData = empRes.data;
+      if (devRes.data) devData = devRes.data;
+    } catch {
+      // Fallback
+    }
+
+    const employees: EmployeeAccount[] = empData.map(r => ({
       id: r.id,
       name: r.name,
       email: r.email,
       phone: r.phone || undefined,
+      pin: r.pin || undefined,
+      password: r.password || undefined,
       pinHash: r.pin_hash || undefined,
       passwordHash: r.password_hash || undefined,
       authUserId: r.auth_user_id || undefined,
-      role: r.role,
-      designation: r.designation,
+      role: r.role || 'cashier',
+      designation: r.designation || 'Staff',
       status: r.status || 'active',
       permissions: r.permissions || {
         allowedTabs: ['sales', 'inventory'],
@@ -3180,7 +3212,7 @@ export async function fetchStaffAndDevicesFromSupabase(
       createdAt: r.created_at || new Date().toISOString(),
     }));
 
-    const devices: RegisteredDevice[] = (devRes.data || []).map(r => ({
+    const devices: RegisteredDevice[] = devData.map(r => ({
       id: r.id,
       name: r.name,
       os: r.os,

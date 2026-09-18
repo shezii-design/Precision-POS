@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { AuthState, DeviceInfo } from '../types';
+import { AuthState, DeviceInfo, EmployeeAccount } from '../types';
 import { authenticateEmployee } from '../services/auth';
-import { ShieldCheck, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { ShieldCheck, AlertCircle, Eye, EyeOff, Loader2, KeyRound } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
   isLockScreenMode?: boolean;
   onClose: () => void;
   authState: AuthState;
-  onAuthSuccess: () => void;
+  onAuthSuccess: (employee?: EmployeeAccount) => void;
   deviceInfo: DeviceInfo;
   onUpdateAuthState: (state: AuthState) => void;
 }
@@ -33,46 +33,61 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
     setErrorMessage('');
 
-    if (!enteredEmail.trim() || !enteredPassword) {
-      setErrorMessage('Please enter both username/email and password/PIN.');
+    const ident = enteredEmail.trim();
+    const pass = enteredPassword.trim();
+
+    if (!ident && !pass) {
+      setErrorMessage('Please enter your username/email and password or PIN.');
       return;
     }
 
     setIsLoggingIn(true);
     
-    // Simulate slight network delay for feel
-    await new Promise(r => setTimeout(r, 600));
+    // Simulate slight delay for feel
+    await new Promise(r => setTimeout(r, 400));
 
-    const empRes = await authenticateEmployee(enteredEmail, enteredPassword, deviceInfo.deviceId);
+    // Support flexible inputs: either username + pass/PIN, or single PIN/password
+    const empRes = await authenticateEmployee(
+      ident || pass,
+      ident && pass ? pass : undefined,
+      deviceInfo.deviceId
+    );
     
     setIsLoggingIn(false);
 
     if (empRes.success && empRes.employee) {
+      const emp = empRes.employee;
       setErrorMessage('');
       setEnteredEmail('');
       setEnteredPassword('');
       
       onUpdateAuthState({ 
         ...authState, 
-        currentUserId: empRes.employee.id, 
+        currentUserId: emp.id, 
         isLocked: false,
         lastUnlockedAt: new Date().toISOString()
       });
-      onAuthSuccess();
+      onAuthSuccess(emp);
     } else {
       setErrorMessage(empRes.error || 'Invalid username or password.');
     }
   };
 
+  const handleFillDefaultAdmin = () => {
+    setEnteredEmail('admin');
+    setEnteredPassword('admin');
+    setErrorMessage('');
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md overflow-y-auto">
       <div className="bg-white rounded-3xl shadow-2xl border border-red-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="bg-gradient-to-br from-red-600 to-red-700 p-8 text-white text-center">
+        <div className="bg-gradient-to-br from-red-600 to-red-700 p-8 text-white text-center relative">
           <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-md mx-auto flex items-center justify-center border border-white/20 mb-4 shadow-inner">
             <ShieldCheck className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-xl font-black tracking-tight">System Login</h2>
-          <p className="text-sm text-red-100 mt-1 opacity-90">Enter your credentials to access the system</p>
+          <p className="text-sm text-red-100 mt-1 opacity-90">Enter your employee credentials to access ERP</p>
         </div>
 
         <div className="p-6">
@@ -91,8 +106,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 autoFocus
                 value={enteredEmail}
                 onChange={(e) => setEnteredEmail(e.target.value)}
-                placeholder="Enter username or email"
-                className="w-full px-4 py-3 bg-slate-200 border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all"
+                placeholder="e.g. admin or employee email"
+                className="w-full px-4 py-3 bg-slate-100 border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all"
               />
             </div>
 
@@ -103,8 +118,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   type={showPassword ? 'text' : 'password'}
                   value={enteredPassword}
                   onChange={(e) => setEnteredPassword(e.target.value)}
-                  placeholder="Enter your password or PIN"
-                  className="w-full px-4 py-3 pr-10 bg-slate-200 border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all"
+                  placeholder="Enter password or 4-digit PIN"
+                  className="w-full px-4 py-3 pr-10 bg-slate-100 border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all"
                 />
                 <button
                   type="button"
@@ -127,9 +142,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <span>Authenticating...</span>
                 </>
               ) : (
-                <span>Secure Login</span>
+                <span>Unlock & Access System</span>
               )}
             </button>
+
+            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <div className="flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-slate-400" />
+                <span>Default: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-700">admin</code> / <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-700">admin</code></span>
+              </div>
+              <button
+                type="button"
+                onClick={handleFillDefaultAdmin}
+                className="text-red-600 hover:text-red-800 font-semibold hover:underline cursor-pointer"
+              >
+                Auto-fill Admin
+              </button>
+            </div>
           </form>
         </div>
       </div>

@@ -2827,11 +2827,27 @@ export default function App() {
         isLockScreenMode={authState.isLocked}
         onClose={() => setShowSecurityModal(false)}
         authState={authState}
-        onAuthSuccess={() => {
-          if (authState.currentUserId) {
-            setActiveEmployeeId(authState.currentUserId);
+        onAuthSuccess={(authenticatedEmp) => {
+          const empId = authenticatedEmp?.id || authState.currentUserId || 'admin-master';
+          setActiveEmployeeId(empId);
+          saveStoredActiveEmployeeId(empId);
+          if (authenticatedEmp) {
+            setEmployees(prev => {
+              const idx = prev.findIndex(e => e.id === authenticatedEmp.id);
+              if (idx >= 0) {
+                const updated = [...prev];
+                updated[idx] = authenticatedEmp;
+                return updated;
+              }
+              return [authenticatedEmp, ...prev];
+            });
           }
-          setAuthState(prev => ({ ...prev, isLocked: false, lastUnlockedAt: new Date().toISOString() }));
+          setAuthState(prev => ({ 
+            ...prev, 
+            isLocked: false, 
+            currentUserId: empId,
+            lastUnlockedAt: new Date().toISOString() 
+          }));
           setShowSecurityModal(false);
           try {
             sessionStorage.removeItem('kfh_dismissed_low_stock_banner');
