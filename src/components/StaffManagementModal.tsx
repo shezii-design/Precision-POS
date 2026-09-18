@@ -12,6 +12,7 @@ import {
   getRoleDefaultPermissions, 
   SUPER_ADMIN_PERMISSIONS, 
   saveEmployee, 
+  saveEmployeeWithCredentials,
   deleteEmployee 
 } from '../services/auth';
 import { 
@@ -148,6 +149,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
     email: string;
     phone: string;
     pin: string;
+    password?: string;
     role: UserRole;
     designation: string;
     status: 'active' | 'inactive';
@@ -161,7 +163,8 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
     name: '',
     email: '',
     phone: '',
-    pin: '1234',
+    pin: '',
+    password: '',
     role: 'cashier',
     designation: 'Sales Cashier',
     status: 'active',
@@ -186,6 +189,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
       email: '',
       phone: '',
       pin: Math.floor(1000 + Math.random() * 9000).toString(),
+      password: '',
       role: 'cashier',
       designation: 'Counter Cashier',
       status: 'active',
@@ -205,7 +209,8 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
       name: emp.name,
       email: emp.email,
       phone: emp.phone || '',
-      pin: emp.pin,
+      pin: emp.pin || '',
+      password: emp.password || '',
       role: emp.role,
       designation: emp.designation,
       status: emp.status,
@@ -280,7 +285,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
     });
   };
 
-  const handleSaveEmployee = (e: React.FormEvent) => {
+  const handleSaveEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       showNotification('Please enter the employee full name.');
@@ -305,24 +310,41 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
       return;
     }
 
+    if (['1234', '0000', '1111', 'admin'].includes(formData.pin.trim())) {
+      showNotification('Insecure default PINs like "1234" or "0000" are forbidden. Please choose a unique PIN.');
+      return;
+    }
+
+    // Ensure the current device is included if device restriction is active to avoid accidental lockout
+    let allowedDevices = [...formData.allowedDeviceIds];
+    if (formData.restrictToDevices && allowedDevices.length === 0) {
+      allowedDevices = [currentDeviceId];
+    }
+
     const employeeRecord: EmployeeAccount = {
       id: formData.id,
       name: formData.name.trim(),
       email: formData.email.trim(),
       phone: formData.phone.trim(),
       pin: formData.pin.trim(),
+      password: formData.password?.trim() || undefined,
       role: formData.role,
       designation: formData.designation.trim() || ROLE_INFO[formData.role].label,
       status: formData.status,
       permissions: formData.permissions,
       restrictToDevices: formData.restrictToDevices,
-      allowedDeviceIds: formData.allowedDeviceIds,
+      allowedDeviceIds: allowedDevices,
       avatarColor: formData.avatarColor,
       createdAt: editingEmployee ? editingEmployee.createdAt : new Date().toISOString(),
       notes: formData.notes.trim()
     };
 
-    const saved = saveEmployee(employeeRecord);
+    const saved = await saveEmployeeWithCredentials(
+      employeeRecord, 
+      formData.pin.trim(), 
+      formData.password?.trim()
+    );
+
     const updatedList = employees.map(e => e.id === saved.id ? saved : e);
     if (!employees.some(e => e.id === saved.id)) {
       updatedList.push(saved);
@@ -330,7 +352,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
     onUpdateEmployees(updatedList);
     setIsCreatingNew(false);
     setEditingEmployee(null);
-    showNotification(`Employee ${saved.name} saved successfully.`);
+    showNotification(`Employee ${saved.name} saved successfully with active login access.`);
   };
 
   const handleDelete = (emp: EmployeeAccount) => {
@@ -620,6 +642,17 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                         <RefreshCw className="w-3.5 h-3.5" />
                       </button>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Login Password (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="Optional alphanumeric password"
+                      value={formData.password || ''}
+                      onChange={e => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                    />
                   </div>
                 </div>
 

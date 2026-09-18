@@ -1,4 +1,5 @@
 import { GlobalPricingSettings, PricingTierConfig, ProductSellingPrice } from '../types';
+import { roundFinancial, roundCurrency, safeFinancialNumber, multiplyFinancial } from './financialMath';
 
 export const DEFAULT_PRICING_SETTINGS: GlobalPricingSettings = {
   activeTierCount: 3,
@@ -13,15 +14,20 @@ export const DEFAULT_PRICING_SETTINGS: GlobalPricingSettings = {
   ]
 };
 
-export function formatPKR(amount: number | undefined | null, includePrefix: boolean = true): string {
+export function formatPKR(amount: number | undefined | null, includePrefix: boolean = true, allowDecimals: boolean = false): string {
   if (amount === undefined || amount === null || isNaN(amount)) return includePrefix ? 'PKR 0' : '0';
-  const formatted = Math.round(amount).toLocaleString('en-PK');
+  const safe = safeFinancialNumber(amount, 0);
+  const rounded = roundFinancial(safe, 2);
+  const formatted = allowDecimals && (rounded % 1 !== 0)
+    ? rounded.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : Math.round(rounded).toLocaleString('en-PK');
   return includePrefix ? `PKR ${formatted}` : formatted;
 }
 
 export function formatPKRShort(amount: number | undefined | null): string {
   if (amount === undefined || amount === null || isNaN(amount)) return '₨ 0';
-  const val = Math.round(amount);
+  const safe = safeFinancialNumber(amount, 0);
+  const val = Math.round(roundCurrency(safe));
   if (val >= 1000000) {
     return `₨ ${(val / 1000000).toFixed(2)}M`;
   }
@@ -36,10 +42,11 @@ export function calculateSellingPrice(
   markupPercent: number,
   roundToNearest: number = 0
 ): number {
-  if (!costPrice || !Number.isFinite(costPrice) || isNaN(costPrice) || costPrice <= 0) return 0;
-  const safeMarkup = !Number.isFinite(markupPercent) || isNaN(markupPercent) ? 0 : markupPercent;
-  const raw = costPrice * (1 + safeMarkup / 100);
-  if (!Number.isFinite(raw) || isNaN(raw) || raw < 0) return 0;
+  const safeCost = safeFinancialNumber(costPrice, 0);
+  if (safeCost <= 0) return 0;
+  const safeMarkup = safeFinancialNumber(markupPercent, 0);
+  const raw = multiplyFinancial(safeCost, 1 + safeMarkup / 100, 4);
+  if (!Number.isFinite(raw) || raw < 0) return 0;
   if (roundToNearest > 0 && Number.isFinite(roundToNearest)) {
     return Math.round(raw / roundToNearest) * roundToNearest;
   }

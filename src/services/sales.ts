@@ -1,4 +1,5 @@
 import { InvoiceNamingPreference, Sale, SaleFilterOptions, SaleItem } from '../types';
+import { roundCurrency, addFinancial, multiplyFinancial, subtractFinancial, safeFinancialNumber } from './financialMath';
 
 /**
  * Formats line item title according to invoice naming preference
@@ -146,37 +147,37 @@ export function calculateSalesSummary(sales: Sale[]) {
   let totalGrossProfit = 0;
 
   for (const s of sales) {
-    totalRevenue += s.totalAmount || 0;
-    totalCashReceived += s.amountReceived || 0;
-    totalCreditOutstanding += s.balanceDue || 0;
-    totalDiscountGiven += s.discountAmount || 0;
+    totalRevenue = addFinancial(totalRevenue, s.totalAmount || 0);
+    totalCashReceived = addFinancial(totalCashReceived, s.amountReceived || 0);
+    totalCreditOutstanding = addFinancial(totalCreditOutstanding, s.balanceDue || 0);
+    totalDiscountGiven = addFinancial(totalDiscountGiven, s.discountAmount || 0);
     
-    let saleCogs = s.totalCost || 0;
+    let saleCogs = safeFinancialNumber(s.totalCost, 0);
     if (s.items) {
       let calcItemsCogs = 0;
       for (const item of s.items) {
-        totalItemsSold += item.quantity || 1;
+        totalItemsSold += safeFinancialNumber(item.quantity, 1);
         const itemCost = item.costPrice !== undefined ? item.costPrice : (item.fifoCost || 0);
-        calcItemsCogs += itemCost * (item.quantity || 1);
+        calcItemsCogs = addFinancial(calcItemsCogs, multiplyFinancial(safeFinancialNumber(item.quantity, 1), safeFinancialNumber(itemCost, 0)));
       }
       if (!saleCogs) {
         saleCogs = calcItemsCogs;
       }
     }
 
-    const saleProfit = s.totalProfit !== undefined ? s.totalProfit : ((s.totalAmount || 0) - saleCogs);
-    totalCogs += saleCogs;
-    totalGrossProfit += saleProfit;
+    const saleProfit = s.totalProfit !== undefined ? safeFinancialNumber(s.totalProfit, 0) : subtractFinancial(s.totalAmount || 0, saleCogs);
+    totalCogs = addFinancial(totalCogs, saleCogs);
+    totalGrossProfit = addFinancial(totalGrossProfit, saleProfit);
   }
 
   return {
     totalInvoices: sales.length,
-    totalRevenue,
-    totalCashReceived,
-    totalCreditOutstanding,
-    totalDiscountGiven,
-    totalItemsSold,
-    totalCogs,
-    totalGrossProfit,
+    totalRevenue: roundCurrency(totalRevenue),
+    totalCashReceived: roundCurrency(totalCashReceived),
+    totalCreditOutstanding: roundCurrency(totalCreditOutstanding),
+    totalDiscountGiven: roundCurrency(totalDiscountGiven),
+    totalItemsSold: Math.round(totalItemsSold),
+    totalCogs: roundCurrency(totalCogs),
+    totalGrossProfit: roundCurrency(totalGrossProfit),
   };
 }

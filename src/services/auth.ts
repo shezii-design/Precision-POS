@@ -1,6 +1,6 @@
 import { AppWorkspaceView, AuthState, EmployeeAccount, EmployeePermissions, UserRole } from '../types';
 import { getOrCreateDeviceId } from './device';
-import { getSupabaseClient, authenticateEmployeeViaSupabase } from './supabase';
+import { getSupabaseClient, authenticateEmployeeViaSupabase, saveEmployeeSecureToSupabase } from './supabase';
 
 const AUTH_STORAGE_KEY = 'kfh_inventory_auth_v1';
 const EMPLOYEES_STORAGE_KEY = 'kfh_employees_accounts_v1';
@@ -323,16 +323,19 @@ export async function hashSecret(secret: string): Promise<string> {
   return `h_${Math.abs(hash).toString(16)}`;
 }
 
+export const FORBIDDEN_PASSWORDS = ['admin', '1234', 'password', '123456', '0000', '1111', 'root'];
+export const INSECURE_DEFAULT_HASHES = [
+  '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', // sha256('admin')
+  '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', // sha256('1234')
+  '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', // sha256('password')
+];
+
 export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
   {
     id: 'admin-master',
     name: 'Administrator (Owner)',
     email: 'admin@inventory.pk',
-    phone: '+92 300 1234567',
-    pin: '1234',
-    pinHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
-    password: 'admin',
-    passwordHash: '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',
+    phone: '',
     role: 'admin',
     designation: 'Shop Owner & Super Admin',
     status: 'active',
@@ -347,12 +350,12 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
 
 export const DEFAULT_AUTH_STATE: AuthState = {
   isLocked: true,
-  isConfigured: true,
-  authMethod: 'pin',
-  email: 'admin@inventory.pk',
-  biometricsEnabled: true,
+  isConfigured: false,
+  authMethod: 'password',
+  email: '',
+  biometricsEnabled: false,
   rememberSession: true,
-  lastUnlockedAt: new Date().toISOString(),
+  lastUnlockedAt: '',
   currentUserId: 'admin-master'
 };
 
@@ -442,11 +445,41 @@ export function getStoredEmployees(): EmployeeAccount[] {
       return list;
     }
 
+    // Sanitize every employee to guarantee valid permissions object and strip insecure default credentials
+    list = list.map(emp => {
+      const role = emp.role || 'cashier';
+      const hasValidPerms = emp.permissions && typeof emp.permissions === 'object' && Array.isArray(emp.permissions.allowedTabs);
+      const sanitized: EmployeeAccount = {
+        ...emp,
+        role,
+        permissions: hasValidPerms ? emp.permissions : getRoleDefaultPermissions(role)
+      };
+
+      // Only strip default insecure credentials on the initial unconfigured master admin account ('admin-master')
+      if (sanitized.id === 'admin-master' && sanitized.role === 'admin') {
+        if (
+          (sanitized.password && FORBIDDEN_PASSWORDS.includes(sanitized.password.trim().toLowerCase())) ||
+          (sanitized.passwordHash && INSECURE_DEFAULT_HASHES.includes(sanitized.passwordHash.toLowerCase()))
+        ) {
+          delete sanitized.password;
+          delete sanitized.passwordHash;
+        }
+        if (
+          (sanitized.pin && FORBIDDEN_PASSWORDS.includes(sanitized.pin.trim().toLowerCase())) ||
+          (sanitized.pinHash && INSECURE_DEFAULT_HASHES.includes(sanitized.pinHash.toLowerCase()))
+        ) {
+          delete sanitized.pin;
+          delete sanitized.pinHash;
+        }
+      }
+
+      return sanitized;
+    });
+
     // Ensure Master Admin account exists
     const hasAdmin = list.some(e => e.role === 'admin' && e.status === 'active');
     if (!hasAdmin) {
       list.unshift(INITIAL_EMPLOYEES[0]);
-      saveStoredEmployees(list);
     }
 
     return list;
@@ -454,6 +487,121 @@ export function getStoredEmployees(): EmployeeAccount[] {
     console.error('Failed to load employees', err);
     return INITIAL_EMPLOYEES;
   }
+}
+
+/**
+ * Checks if the master administrator credentials need initial setup.
+ * Returns true if no administrator has a configured password or PIN and no configured staff accounts exist.
+ */
+export function isMasterAdminSetupRequired(): boolean {
+  try {
+    const employees = getStoredEmployees();
+    // If an administrator has configured credentials, setup is complete
+    const configuredAdmin = employees.find(e => 
+      e.role === 'admin' && 
+      e.status === 'active' && 
+      (Boolean(e.password?.trim() || e.passwordHash?.trim()) || Boolean(e.pin?.trim() || e.pinHash?.trim()))
+    );
+    if (configuredAdmin) return false;
+
+    // If active employees already exist with configured credentials, do not force setup screen
+    const anyConfiguredEmployee = employees.some(e => 
+      e.status === 'active' && 
+      e.id !== 'admin-master' &&
+      (Boolean(e.password?.trim() || e.passwordHash?.trim()) || Boolean(e.pin?.trim() || e.pinHash?.trim()))
+    );
+    if (anyConfiguredEmployee) return false;
+
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Sets up custom, secure master administrator credentials on first run.
+ * Strictly blocks default/trivial passwords like "admin", "1234", "password".
+ */
+export async function setupMasterAdminCredentials(params: {
+  name: string;
+  email: string;
+  password?: string;
+  pin?: string;
+}): Promise<{ success: boolean; employee?: EmployeeAccount; error?: string }> {
+  const cleanEmail = params.email.trim().toLowerCase();
+  const cleanPassword = params.password ? params.password.trim() : '';
+  const cleanPin = params.pin ? params.pin.trim() : '';
+
+  if (!cleanEmail) {
+    return { success: false, error: 'Administrator email or username is required.' };
+  }
+  if (!cleanPassword && !cleanPin) {
+    return { success: false, error: 'Please set a secure master password or a 4-digit PIN.' };
+  }
+  if (cleanPassword) {
+    if (cleanPassword.length < 6) {
+      return { success: false, error: 'Master password must be at least 6 characters long.' };
+    }
+    if (FORBIDDEN_PASSWORDS.includes(cleanPassword.toLowerCase())) {
+      return { success: false, error: 'Insecure default passwords like "admin" or "1234" are strictly prohibited.' };
+    }
+  }
+  if (cleanPin) {
+    if (cleanPin.length < 4) {
+      return { success: false, error: 'Security PIN must be at least 4 digits.' };
+    }
+    if (FORBIDDEN_PASSWORDS.includes(cleanPin.toLowerCase())) {
+      return { success: false, error: 'Insecure default PINs like "1234" or "0000" are strictly prohibited.' };
+    }
+  }
+
+  const employees = getStoredEmployees();
+  let admin = employees.find(e => e.role === 'admin') || employees.find(e => e.id === 'admin-master');
+
+  const passwordHash = cleanPassword ? await hashSecret(cleanPassword) : undefined;
+  const pinHash = cleanPin ? await hashSecret(cleanPin) : undefined;
+
+  if (!admin) {
+    admin = {
+      id: 'admin-master',
+      name: params.name.trim() || 'Administrator (Owner)',
+      email: cleanEmail,
+      role: 'admin',
+      designation: 'Shop Owner & Super Admin',
+      status: 'active',
+      permissions: SUPER_ADMIN_PERMISSIONS,
+      restrictToDevices: false,
+      allowedDeviceIds: [],
+      avatarColor: 'red',
+      createdAt: new Date().toISOString(),
+      passwordHash,
+      pinHash
+    };
+    employees.unshift(admin);
+  } else {
+    admin.name = params.name.trim() || admin.name;
+    admin.email = cleanEmail;
+    if (passwordHash) {
+      admin.passwordHash = passwordHash;
+      delete admin.password;
+    }
+    if (pinHash) {
+      admin.pinHash = pinHash;
+      delete admin.pin;
+    }
+  }
+
+  saveStoredEmployees(employees);
+
+  const authState = getStoredAuthState();
+  authState.isConfigured = true;
+  authState.isLocked = false;
+  authState.lastUnlockedAt = new Date().toISOString();
+  authState.currentUserId = admin.id;
+  authState.email = admin.email;
+  saveAuthState(authState);
+
+  return { success: true, employee: admin };
 }
 
 export function saveStoredEmployees(employees: EmployeeAccount[]): void {
@@ -478,6 +626,61 @@ export function saveEmployee(employee: EmployeeAccount): EmployeeAccount {
   return employee;
 }
 
+/**
+ * Saves an employee account with explicit PIN / Password and computes hashes
+ * Synchronizes with Supabase cloud if connected.
+ */
+export async function saveEmployeeWithCredentials(
+  employee: EmployeeAccount,
+  rawPin?: string,
+  rawPassword?: string
+): Promise<EmployeeAccount> {
+  const pin = rawPin !== undefined && rawPin.trim() !== '' ? rawPin.trim() : (employee.pin ? String(employee.pin).trim() : undefined);
+  const password = rawPassword !== undefined && rawPassword.trim() !== '' ? rawPassword.trim() : (employee.password ? String(employee.password).trim() : undefined);
+
+  let pinHash = employee.pinHash;
+  if (pin) {
+    try {
+      pinHash = await hashSecret(pin);
+    } catch (e) {
+      console.warn('Failed to compute pin hash', e);
+    }
+  }
+
+  let passwordHash = employee.passwordHash;
+  if (password) {
+    try {
+      passwordHash = await hashSecret(password);
+    } catch (e) {
+      console.warn('Failed to compute password hash', e);
+    }
+  }
+
+  const updated: EmployeeAccount = {
+    ...employee,
+    pin: pin || employee.pin,
+    pinHash: pinHash || employee.pinHash,
+    password: password || employee.password,
+    passwordHash: passwordHash || employee.passwordHash
+  };
+
+  saveEmployee(updated);
+
+  // Sync to Supabase in the background if client is available
+  try {
+    const client = getSupabaseClient();
+    if (client) {
+      saveEmployeeSecureToSupabase(client, updated, pin, password).catch(err => {
+        console.warn('Supabase employee background sync error:', err);
+      });
+    }
+  } catch (err) {
+    console.warn('Supabase not available for employee sync', err);
+  }
+
+  return updated;
+}
+
 export function deleteEmployee(id: string): void {
   if (id === 'admin-master') {
     console.warn('Cannot delete primary master admin account');
@@ -487,6 +690,16 @@ export function deleteEmployee(id: string): void {
   saveStoredEmployees(employees);
   if (getStoredActiveEmployeeId() === id) {
     saveStoredActiveEmployeeId('admin-master');
+  }
+
+  // Delete from Supabase as well
+  try {
+    const client = getSupabaseClient();
+    if (client) {
+      Promise.resolve(client.from('employee_accounts').delete().eq('id', id)).catch(err => console.warn('Supabase delete error', err));
+    }
+  } catch (err) {
+    console.warn(err);
   }
 }
 
@@ -550,22 +763,42 @@ export async function authenticateEmployee(
   currentDeviceId?: string
 ): Promise<{ success: boolean; employee?: EmployeeAccount; error?: string }> {
   const deviceId = currentDeviceId || getOrCreateDeviceId();
-  const rawIdent = identifierOrPin ? identifierOrPin.trim() : '';
+  const rawIdent = (identifierOrPin || '').trim();
   const rawSecret = pin !== undefined ? pin.trim() : '';
 
-  // 1. Try Supabase cloud RPC if enabled
+  // Explicitly reject the default admin/admin backdoor if master admin has not been customized
+  if (
+    rawIdent.toLowerCase() === 'admin' && 
+    (rawSecret.toLowerCase() === 'admin' || rawSecret === '1234' || !rawSecret)
+  ) {
+    const employees = getStoredEmployees();
+    const admin = employees.find(e => (e.email?.toLowerCase() === 'admin' || e.role === 'admin') && e.status === 'active');
+    const hasConfiguredCredentials = admin && (admin.password || admin.passwordHash || admin.pin || admin.pinHash);
+    if (!hasConfiguredCredentials) {
+      return { 
+        success: false, 
+        error: 'Default "admin" / "admin" credentials are disabled for security. Please set master administrator credentials or sign in with your staff account.' 
+      };
+    }
+  }
+
+  // 1. Try Supabase cloud RPC if enabled (with strict 2.5s timeout to prevent hanging)
   try {
     const client = getSupabaseClient();
     if (client) {
-      const supaRes = await authenticateEmployeeViaSupabase(
+      const timeoutPromise = new Promise<{ success: boolean; employee?: EmployeeAccount; error: string }>((resolve) =>
+        setTimeout(() => resolve({ success: false, error: 'RPC_TIMEOUT' }), 2500)
+      );
+      const supaPromise = authenticateEmployeeViaSupabase(
         client,
         rawIdent,
         rawSecret || rawIdent,
         deviceId
       );
+      const supaRes = await Promise.race([supaPromise, timeoutPromise]);
       if (supaRes.success && supaRes.employee) {
         saveEmployee(supaRes.employee);
-        return supaRes;
+        return { success: true, employee: supaRes.employee };
       }
     }
   } catch (supaErr) {
@@ -576,103 +809,96 @@ export async function authenticateEmployee(
   const employees = getStoredEmployees();
   let matched: EmployeeAccount | undefined;
 
-  // Case A: Single parameter entered (PIN or Password only)
-  if (!rawSecret) {
-    const secret = rawIdent;
-    const computedHash = await hashSecret(secret);
+  const secretCandidate = rawSecret || rawIdent;
+  const computedHash = secretCandidate ? await hashSecret(secretCandidate) : '';
+  const computedIdHash = rawIdent ? await hashSecret(rawIdent) : '';
 
+  // Helper to verify if candidate matches employee secret (PIN, password, or SHA-256 hash)
+  const verifySecret = (e: EmployeeAccount, secret: string, hashVal: string): boolean => {
+    if (!secret) return false;
+    const clean = secret.trim();
+    if (e.pin && String(e.pin).trim() === clean) return true;
+    if (e.password && String(e.password).trim() === clean) return true;
+    if (e.pinHash && (e.pinHash.toLowerCase() === hashVal.toLowerCase() || e.pinHash === clean)) return true;
+    if (e.passwordHash && (e.passwordHash.toLowerCase() === hashVal.toLowerCase() || e.passwordHash === clean)) return true;
+    return false;
+  };
+
+  // Helper to check if candidate identifier matches employee (email, username, name, id, phone, role)
+  const verifyIdentifier = (e: EmployeeAccount, idCandidate: string): boolean => {
+    if (!idCandidate) return false;
+    const cId = idCandidate.toLowerCase().trim();
+    const cleanPhone = (e.phone || '').replace(/\D/g, '');
+    const cleanIdPhone = cId.replace(/\D/g, '');
+
+    if (e.id && e.id.toLowerCase().trim() === cId) return true;
+    if (e.email && e.email.toLowerCase().trim() === cId) return true;
+    if (e.email && e.email.toLowerCase().trim().split('@')[0] === cId) return true;
+    if (e.name && e.name.toLowerCase().trim() === cId) return true;
+    if (e.name && e.name.toLowerCase().trim().includes(cId)) return true;
+    if (e.name && cId.includes(e.name.toLowerCase().trim())) return true;
+    if (cleanPhone && cleanIdPhone && cleanPhone === cleanIdPhone && cleanIdPhone.length >= 4) return true;
+    if (e.designation && e.designation.toLowerCase().trim() === cId) return true;
+    if (e.role && e.role.toLowerCase() === cId) return true;
+    if ((cId === 'admin' || cId === 'administrator' || cId === 'owner') && e.role === 'admin') return true;
+    return false;
+  };
+
+  // Case A: Both username/identifier AND password/PIN provided
+  if (rawIdent && rawSecret) {
+    // Normal order: rawIdent is identifier, rawSecret is secret
     matched = employees.find(e => 
-      e.status === 'active' && (
-        (e.pin && String(e.pin).trim() === secret) ||
-        (e.pinHash && e.pinHash.toLowerCase() === computedHash.toLowerCase()) ||
-        (e.password && String(e.password).trim() === secret) ||
-        (e.passwordHash && e.passwordHash.toLowerCase() === computedHash.toLowerCase()) ||
-        ((e.role === 'admin' || e.id === 'admin-master') && (secret === '1234' || secret === 'admin'))
-      )
+      verifyIdentifier(e, rawIdent) && verifySecret(e, rawSecret, computedHash)
+    );
+
+    // If not matched, try reversed (user entered secret in 1st box and username in 2nd box)
+    if (!matched) {
+      matched = employees.find(e => 
+        verifyIdentifier(e, rawSecret) && verifySecret(e, rawIdent, computedIdHash)
+      );
+    }
+
+    // If still not matched, check if user entered their PIN/password in BOTH boxes
+    if (!matched) {
+      matched = employees.find(e => 
+        verifySecret(e, rawSecret, computedHash) || verifySecret(e, rawIdent, computedIdHash)
+      );
+    }
+
+    // If still not matched, check if the identifier exists but password was wrong
+    if (!matched) {
+      const userExists = employees.find(e => verifyIdentifier(e, rawIdent) || verifyIdentifier(e, rawSecret));
+      if (userExists) {
+        return { success: false, error: 'Incorrect password or PIN for this employee account.' };
+      }
+    }
+  }
+  // Case B: Only one field was provided (Single PIN or Password entered)
+  else if (secretCandidate) {
+    matched = employees.find(e => 
+      e.status === 'active' && verifySecret(e, secretCandidate, computedHash)
     );
 
     if (!matched) {
-      const inactive = employees.find(e => 
-        (e.pin && String(e.pin).trim() === secret) ||
-        (e.pinHash && e.pinHash.toLowerCase() === computedHash.toLowerCase()) ||
-        (e.password && String(e.password).trim() === secret) ||
-        (e.passwordHash && e.passwordHash.toLowerCase() === computedHash.toLowerCase())
-      );
+      const inactive = employees.find(e => verifySecret(e, secretCandidate, computedHash));
       if (inactive) {
-        return { success: false, error: 'This employee account is currently deactivated.' };
+        return { success: false, error: `The employee account for "${inactive.name}" is currently deactivated.` };
       }
-      return { success: false, error: 'Invalid PIN or password entered.' };
+      return { success: false, error: 'No employee found matching this PIN or password.' };
     }
   } else {
-    // Case B: Both Username/Email and PIN/Password provided
-    const cleanId = rawIdent.toLowerCase();
-    const computedHash = await hashSecret(rawSecret);
-
-    matched = employees.find(e => {
-      // Flexible identifier matching: email, username/handle, full name, ID, or admin role
-      const matchId = 
-        e.email.toLowerCase() === cleanId ||
-        e.email.toLowerCase().split('@')[0] === cleanId ||
-        e.name.toLowerCase() === cleanId ||
-        e.name.toLowerCase().includes(cleanId) ||
-        e.id.toLowerCase() === cleanId ||
-        ((cleanId === 'admin' || cleanId === 'administrator' || cleanId === 'owner' || cleanId === 'shop') && e.role === 'admin');
-
-      if (!matchId) return false;
-
-      // Secret verification
-      const pinMatch = 
-        (e.pin && String(e.pin).trim() === rawSecret) ||
-        (e.pinHash && e.pinHash.toLowerCase() === computedHash.toLowerCase());
-
-      const pwdMatch = 
-        (e.password && String(e.password).trim() === rawSecret) ||
-        (e.passwordHash && e.passwordHash.toLowerCase() === computedHash.toLowerCase());
-
-      const masterAdminMatch = 
-        (e.role === 'admin' || e.id === 'admin-master') && 
-        (rawSecret === '1234' || rawSecret === 'admin');
-
-      return pinMatch || pwdMatch || masterAdminMatch;
-    });
-
-    if (!matched) {
-      // Check reversed fields (in case user entered secret first and username second)
-      const reverseCleanId = rawSecret.toLowerCase();
-      const reverseComputedHash = await hashSecret(rawIdent);
-      matched = employees.find(e => {
-        const matchId = 
-          e.email.toLowerCase() === reverseCleanId ||
-          e.email.toLowerCase().split('@')[0] === reverseCleanId ||
-          e.name.toLowerCase() === reverseCleanId ||
-          e.id.toLowerCase() === reverseCleanId ||
-          ((reverseCleanId === 'admin' || reverseCleanId === 'administrator') && e.role === 'admin');
-        if (!matchId) return false;
-        return (
-          (e.pin && String(e.pin).trim() === rawIdent) ||
-          (e.pinHash && e.pinHash.toLowerCase() === reverseComputedHash.toLowerCase()) ||
-          (e.password && String(e.password).trim() === rawIdent) ||
-          (e.passwordHash && e.passwordHash.toLowerCase() === reverseComputedHash.toLowerCase()) ||
-          ((e.role === 'admin' || e.id === 'admin-master') && (rawIdent === '1234' || rawIdent === 'admin'))
-        );
-      });
-    }
-
-    if (!matched) {
-      // Primary admin master fallback for initial default login
-      if ((cleanId === 'admin' || cleanId === 'admin@inventory.pk') && (rawSecret === 'admin' || rawSecret === '1234')) {
-        matched = employees.find(e => e.role === 'admin') || INITIAL_EMPLOYEES[0];
-      } else {
-        return { success: false, error: 'Invalid username/email or PIN/password.' };
-      }
-    }
-
-    if (matched.status !== 'active') {
-      return { success: false, error: 'This employee account is deactivated by the Administrator.' };
-    }
+    return { success: false, error: 'Please enter your username/email and password or PIN.' };
   }
 
-  // Device whitelisting check (admins bypass device lockout to prevent administrative lockout)
+  if (!matched) {
+    return { success: false, error: 'Invalid username/email or PIN/password.' };
+  }
+
+  if (matched.status !== 'active') {
+    return { success: false, error: `Account for "${matched.name}" is currently inactive. Contact your administrator.` };
+  }
+
+  // Device whitelisting check (admins bypass device lockout to prevent lockouts)
   if (matched.role !== 'admin') {
     const deviceCheck = validateEmployeeDeviceAccess(matched, deviceId);
     if (!deviceCheck.allowed) {
@@ -691,31 +917,24 @@ export async function authenticateEmployee(
 /**
  * Checks if a tab is visible/allowed for the employee
  */
-export function isTabAllowed(user: EmployeeAccount, tab: AppWorkspaceView): boolean {
-  if (user.role === 'admin') return true;
+export function isTabAllowed(user: EmployeeAccount | null | undefined, tab: AppWorkspaceView): boolean {
+  if (!user || user.role === 'admin') return true;
+  if (!user.permissions || !Array.isArray(user.permissions.allowedTabs)) {
+    return true; // Fallback to allowed if permissions not configured
+  }
   return user.permissions.allowedTabs.includes(tab);
 }
 
 /**
  * Checks if an action is permitted for the employee
  */
-export function isActionAllowed(user: EmployeeAccount | null, action: keyof EmployeePermissions): boolean {
-  // If offline, disable all write/edit actions globally for everyone
-  if (typeof window !== 'undefined' && !window.navigator.onLine) {
-    const writeActions = [
-      'canCreateSales', 'canAddProducts', 'canEditProducts', 'canDeleteProducts', 
-      'canManageSettings', 'canImportExport', 'canClearRecords', 'canManageStaff'
-    ];
-    if (writeActions.includes(action)) {
-      return false;
-    }
-  }
-
-  if (!user) {
-    // If no employee is logged in, assume super admin, but still restricted by offline check above
+export function isActionAllowed(user: EmployeeAccount | null | undefined, action: keyof EmployeePermissions): boolean {
+  if (!user || user.role === 'admin') {
     return true;
   }
-  if (user.role === 'admin') return true;
+  if (!user.permissions) {
+    return true;
+  }
   return Boolean(user.permissions[action]);
 }
 

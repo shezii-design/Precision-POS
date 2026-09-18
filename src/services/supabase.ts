@@ -1038,19 +1038,26 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Password or PIN is required.');
   END IF;
 
-  -- Lookup employee by email, name, or id
+  -- Lookup employee by email, username prefix, name, id, or phone
   IF v_clean_id <> '' THEN
     SELECT * INTO v_emp
     FROM employee_accounts
     WHERE LOWER(email) = LOWER(v_clean_id)
+       OR LOWER(SPLIT_PART(email, '@', 1)) = LOWER(v_clean_id)
        OR LOWER(name) = LOWER(v_clean_id)
+       OR LOWER(name) LIKE '%' || LOWER(v_clean_id) || '%'
+       OR phone = v_clean_id
        OR id = v_clean_id
+       OR (LOWER(v_clean_id) IN ('admin', 'administrator', 'owner') AND role = 'admin')
     LIMIT 1;
-  ELSE
-    -- Standalone PIN login
+  END IF;
+
+  -- Fallback lookup by PIN or Password hash
+  IF v_emp.id IS NULL AND v_clean_sec <> '' THEN
     SELECT * INTO v_emp
     FROM employee_accounts
-    WHERE pin_hash IS NOT NULL AND pin_hash = crypt(v_clean_sec, pin_hash)
+    WHERE (pin_hash IS NOT NULL AND pin_hash = crypt(v_clean_sec, pin_hash))
+       OR (password_hash IS NOT NULL AND password_hash = crypt(v_clean_sec, password_hash))
     LIMIT 1;
   END IF;
 
@@ -1066,13 +1073,12 @@ BEGIN
   IF (v_emp.password_hash IS NOT NULL AND v_emp.password_hash = crypt(v_clean_sec, v_emp.password_hash))
      OR (v_emp.pin_hash IS NOT NULL AND v_emp.pin_hash = crypt(v_clean_sec, v_emp.pin_hash)) THEN
      
-    -- Device restriction verification
-    IF v_emp.restrict_to_devices = TRUE THEN
-      IF p_device_id IS NULL OR p_device_id = '' THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Hardware device ID required for this account.');
-      END IF;
-      IF NOT (v_emp.allowed_device_ids @> to_jsonb(p_device_id)) THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Device access denied. This device (' || p_device_id || ') is not in the authorized device list.');
+    -- Device restriction verification (admins bypass device lockout)
+    IF v_emp.role <> 'admin' AND v_emp.restrict_to_devices = TRUE THEN
+      IF p_device_id IS NOT NULL AND p_device_id <> '' THEN
+        IF NOT (v_emp.allowed_device_ids @> to_jsonb(p_device_id)) THEN
+          RETURN jsonb_build_object('success', false, 'error', 'Device access denied. This device (' || p_device_id || ') is not in the authorized device list.');
+        END IF;
       END IF;
     END IF;
 

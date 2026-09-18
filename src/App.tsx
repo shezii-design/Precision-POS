@@ -202,10 +202,10 @@ export default function App() {
   const [supabaseConfig, setSupabaseConfig] = useState<SupabaseConfig>(() => getStoredSupabaseConfig());
   const [authState, setAuthState] = useState<AuthState>(() => {
     const stored = getStoredAuthState();
-    let shouldLock = true;
+    let shouldLock = Boolean(stored.isLocked);
     
     // Check if within 24 hours
-    if (stored.lastUnlockedAt && stored.rememberSession !== false) {
+    if (shouldLock && stored.lastUnlockedAt && stored.rememberSession !== false) {
       const lastUnlockTime = new Date(stored.lastUnlockedAt).getTime();
       const ONE_DAY_MS = 24 * 60 * 60 * 1000;
       if (Date.now() - lastUnlockTime < ONE_DAY_MS) {
@@ -1492,7 +1492,8 @@ export default function App() {
   useEffect(() => {
     if (currentEmployee && currentEmployee.role !== 'admin') {
       if (!isTabAllowed(currentEmployee, currentView)) {
-        const allowedFallback = (currentEmployee.permissions.allowedTabs[0] || 'sales') as AppWorkspaceView;
+        const allowedTabs = currentEmployee.permissions?.allowedTabs || ['sales', 'inventory'];
+        const allowedFallback = (allowedTabs[0] || 'sales') as AppWorkspaceView;
         setCurrentView(allowedFallback);
       }
     }
@@ -1565,8 +1566,27 @@ export default function App() {
       setExpenses(data.expenses);
     }
     if (data.employees && Array.isArray(data.employees)) {
-      saveStoredEmployees(data.employees);
-      setEmployees(data.employees);
+      const localEmployees = getStoredEmployees();
+      const mergedEmployees: EmployeeAccount[] = data.employees.map((incoming: EmployeeAccount) => {
+        const local = localEmployees.find(e => e.id === incoming.id || (incoming.email && e.email?.toLowerCase() === incoming.email.toLowerCase()));
+        return {
+          ...incoming,
+          pin: incoming.pin || local?.pin,
+          password: incoming.password || local?.password,
+          pinHash: incoming.pinHash || local?.pinHash,
+          passwordHash: incoming.passwordHash || local?.passwordHash,
+        };
+      });
+
+      // Preserve any local employee accounts that haven't been pushed to the incoming list yet
+      localEmployees.forEach(local => {
+        if (!mergedEmployees.some(e => e.id === local.id)) {
+          mergedEmployees.push(local);
+        }
+      });
+
+      saveStoredEmployees(mergedEmployees);
+      setEmployees(mergedEmployees);
     }
     if (data.stockLogs && Array.isArray(data.stockLogs)) {
       saveStoredStockLogs(data.stockLogs);
