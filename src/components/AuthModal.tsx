@@ -43,7 +43,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     // Simulate slight network delay for feel
     await new Promise(r => setTimeout(r, 600));
 
-    const empRes = authenticateEmployee(enteredEmail, enteredPassword, deviceInfo.deviceId);
+    const empRes = await authenticateEmployee(enteredEmail, enteredPassword, deviceInfo.deviceId);
     
     setIsLoggingIn(false);
 

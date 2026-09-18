@@ -12,7 +12,8 @@ import {
   CheckCircle2, 
   AlertCircle,
   Hash,
-  Briefcase
+  Briefcase,
+  Calendar
 } from 'lucide-react';
 
 interface CustomerFormModalProps {
@@ -41,6 +42,8 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
   const [ntn, setNtn] = useState<string>('');
   const [strn, setStrn] = useState<string>('');
   const [openingBalance, setOpeningBalance] = useState<string>('');
+  const [openingBalanceDate, setOpeningBalanceDate] = useState<string>('');
+  const [openingBalanceTime, setOpeningBalanceTime] = useState<string>('00:00');
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string>('');
 
@@ -58,6 +61,22 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         setNtn(customer.ntn || '');
         setStrn(customer.strn || '');
         setOpeningBalance(customer.openingBalance !== undefined ? String(customer.openingBalance) : '0');
+        
+        const rawDate = customer.openingBalanceDate || customer.createdAt;
+        if (rawDate) {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            setOpeningBalanceDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+            setOpeningBalanceTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+          } else {
+            setOpeningBalanceDate(new Date().toISOString().slice(0, 10));
+            setOpeningBalanceTime('00:00');
+          }
+        } else {
+          setOpeningBalanceDate(new Date().toISOString().slice(0, 10));
+          setOpeningBalanceTime('00:00');
+        }
+
         setNotes(customer.notes || '');
       } else {
         setType(defaultType);
@@ -71,6 +90,9 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         setNtn('');
         setStrn('');
         setOpeningBalance('0');
+        const now = new Date();
+        setOpeningBalanceDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
+        setOpeningBalanceTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
         setNotes('');
       }
       setError('');
@@ -86,6 +108,22 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       return;
     }
 
+    let finalOpenDate = '';
+    if (openingBalanceDate) {
+      const [year, month, day] = openingBalanceDate.split('-').map(Number);
+      let hours = 0;
+      let minutes = 0;
+      if (openingBalanceTime) {
+        const [h, m] = openingBalanceTime.split(':').map(Number);
+        hours = isNaN(h) ? 0 : h;
+        minutes = isNaN(m) ? 0 : m;
+      }
+      const combined = new Date(year, month - 1, day, hours, minutes, 0);
+      finalOpenDate = isNaN(combined.getTime()) ? new Date().toISOString() : combined.toISOString();
+    } else {
+      finalOpenDate = customer?.openingBalanceDate || customer?.createdAt || new Date().toISOString();
+    }
+
     const customerData: Partial<Customer> = {
       ...(customer ? { id: customer.id } : {}),
       type,
@@ -99,6 +137,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       ntn: ntn.trim() || undefined,
       strn: strn.trim() || undefined,
       openingBalance: parseFloat(openingBalance) || 0,
+      openingBalanceDate: finalOpenDate,
       notes: notes.trim() || undefined,
       machines: customer?.machines || [],
     };
@@ -278,27 +317,55 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               />
             </div>
 
-            {/* Opening Balance (Initial Debit) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
-                  Opening Balance (PKR)
-                </span>
-                <span className="text-[10px] text-slate-400 font-normal">Amount owed to us</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">
-                  ₨
-                </span>
+            {/* Opening Balance (Initial Debit), Date and Time */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                    Opening Balance (PKR)
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">Amount owed</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">
+                    ₨
+                  </span>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    placeholder="0"
+                    value={openingBalance}
+                    onChange={(e) => setOpeningBalance(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-bold text-slate-900 outline-hidden transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  Opening Date
+                </label>
                 <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  placeholder="0"
-                  value={openingBalance}
-                  onChange={(e) => setOpeningBalance(e.target.value)}
-                  className="w-full pl-7 pr-3 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-bold text-slate-900 outline-hidden transition-all"
+                  type="date"
+                  value={openingBalanceDate}
+                  onChange={(e) => setOpeningBalanceDate(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  Opening Time
+                </label>
+                <input
+                  type="time"
+                  value={openingBalanceTime}
+                  onChange={(e) => setOpeningBalanceTime(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-200 border border-slate-200 focus:border-red-500 focus:bg-white rounded-xl text-xs font-semibold text-slate-900 outline-hidden transition-all"
                 />
               </div>
             </div>

@@ -116,18 +116,18 @@ export const QuotationsPage: React.FC<QuotationsPageProps> = ({
 
         // Search Query
         if (searchQuery.trim()) {
-          const query = searchQuery.toLowerCase();
-          const matchNum = q.quotationNumber?.toLowerCase().includes(query);
-          const matchId = q.id?.toLowerCase().includes(query);
-          const matchCustomer = q.customerName?.toLowerCase().includes(query);
-          const matchContact = q.contactPerson?.toLowerCase().includes(query);
-          const matchPhone = q.customerPhone?.toLowerCase().includes(query);
-          const matchCity = q.customerCity?.toLowerCase().includes(query);
+          const query = (searchQuery ? searchQuery.toLowerCase() : '');
+          const matchNum = (q.quotationNumber && q.quotationNumber.toLowerCase().includes(query));
+          const matchId = (q.id && q.id.toLowerCase().includes(query));
+          const matchCustomer = (q.customerName && q.customerName.toLowerCase().includes(query));
+          const matchContact = (q.contactPerson && q.contactPerson.toLowerCase().includes(query));
+          const matchPhone = (q.customerPhone && q.customerPhone.toLowerCase().includes(query));
+          const matchCity = (q.customerCity && q.customerCity.toLowerCase().includes(query));
           const matchItems = q.items?.some(it => 
-            it.productName?.toLowerCase().includes(query) ||
-            it.internalId?.toLowerCase().includes(query) ||
-            it.brandName?.toLowerCase().includes(query) ||
-            it.machineNames?.toLowerCase().includes(query)
+            (it.productName && it.productName.toLowerCase().includes(query)) ||
+            (it.internalId && it.internalId.toLowerCase().includes(query)) ||
+            (it.brandName && it.brandName.toLowerCase().includes(query)) ||
+            (it.machineNames && it.machineNames.toLowerCase().includes(query))
           );
 
           if (!matchNum && !matchId && !matchCustomer && !matchContact && !matchPhone && !matchCity && !matchItems) {

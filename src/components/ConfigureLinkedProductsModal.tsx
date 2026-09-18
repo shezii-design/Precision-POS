@@ -58,11 +58,11 @@ export const ConfigureLinkedProductsModal: React.FC<ConfigureLinkedProductsModal
   }, [allProducts]);
 
   const filteredProducts = useMemo(() => {
-    const q = searchTerm.toLowerCase().trim();
+    const q = (searchTerm ? searchTerm.toLowerCase() : '').trim();
     return allProducts.filter(p => {
       const matchesSearch = !q || (
-        p.name.toLowerCase().includes(q) ||
-        p.internalId.toLowerCase().includes(q) ||
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.internalId && p.internalId.toLowerCase().includes(q)) ||
         (p.brandName && p.brandName.toLowerCase().includes(q)) ||
         (p.typeName && p.typeName.toLowerCase().includes(q)) ||
         (p.crossReferences && p.crossReferences.toLowerCase().includes(q)) ||

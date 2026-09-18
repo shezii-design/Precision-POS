@@ -297,6 +297,31 @@ export function getRoleDefaultPermissions(role: UserRole): EmployeePermissions {
   }
 }
 
+/**
+ * Generates a SHA-256 cryptographic hash of a secret (PIN or password) for local verification.
+ */
+export async function hashSecret(secret: string): Promise<string> {
+  try {
+    if (typeof window !== 'undefined' && window.crypto?.subtle) {
+      const enc = new TextEncoder();
+      const data = enc.encode(secret.trim());
+      const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch (err) {
+    console.warn('Crypto subtle not available, falling back to simple hash', err);
+  }
+  // Simple fallback hash if subtle crypto is not available in current context
+  let hash = 0;
+  for (let i = 0; i < secret.length; i++) {
+    const char = secret.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return `h_${Math.abs(hash).toString(16)}`;
+}
+
 export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
   {
     id: 'admin-master',
@@ -304,7 +329,9 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
     email: 'admin@inventory.pk',
     phone: '+92 300 1234567',
     pin: '1234',
+    pinHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
     password: 'admin',
+    passwordHash: '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',
     role: 'admin',
     designation: 'Shop Owner & Super Admin',
     status: 'active',
@@ -322,8 +349,6 @@ export const DEFAULT_AUTH_STATE: AuthState = {
   isConfigured: true,
   authMethod: 'pin',
   email: 'admin@inventory.pk',
-  pin: '1234',
-  password: 'admin',
   biometricsEnabled: true,
   rememberSession: true,
   lastUnlockedAt: new Date().toISOString(),
@@ -341,6 +366,9 @@ export function getStoredAuthState(): AuthState {
     if (!parsed.currentUserId) {
       parsed.currentUserId = 'admin-master';
     }
+    // Never allow persisted plaintext credentials in memory state
+    delete parsed.pin;
+    delete parsed.password;
     return parsed;
   } catch (err) {
     console.error('Failed to load auth state', err);
@@ -350,7 +378,11 @@ export function getStoredAuthState(): AuthState {
 
 export function saveAuthState(state: AuthState): void {
   try {
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state));
+    // Sanitize state to prevent storing plaintext PIN or passwords in localStorage
+    const safeState = { ...state };
+    delete safeState.pin;
+    delete safeState.password;
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeState));
   } catch (err) {
     console.error('Failed to save auth state', err);
   }
@@ -501,13 +533,14 @@ export function validateEmployeeDeviceAccess(
 }
 
 /**
- * Authenticates employee by email/username or PIN, checking status and device restriction
+ * Authenticates employee by email/username or PIN, checking status and device restriction.
+ * Verifies against cryptographic hashes (pinHash / passwordHash) or legacy local store.
  */
-export function authenticateEmployee(
+export async function authenticateEmployee(
   identifierOrPin: string, 
   pin?: string, 
   currentDeviceId?: string
-): { success: boolean; employee?: EmployeeAccount; error?: string } {
+): Promise<{ success: boolean; employee?: EmployeeAccount; error?: string }> {
   const employees = getStoredEmployees();
   const deviceId = currentDeviceId || getOrCreateDeviceId();
 
@@ -515,10 +548,19 @@ export function authenticateEmployee(
 
   // Case 1: PIN only provided
   if (!pin) {
-    matched = employees.find(e => String(e.pin) === identifierOrPin.trim() && e.status === 'active');
+    const rawSecret = identifierOrPin.trim();
+    const computedHash = await hashSecret(rawSecret);
+
+    matched = employees.find(e => 
+      ((e.pinHash && e.pinHash === computedHash) || (e.pin && String(e.pin) === rawSecret)) && 
+      e.status === 'active'
+    );
+
     if (!matched) {
       // Check if disabled
-      const inactive = employees.find(e => String(e.pin) === identifierOrPin.trim());
+      const inactive = employees.find(e => 
+        (e.pinHash && e.pinHash === computedHash) || (e.pin && String(e.pin) === rawSecret)
+      );
       if (inactive) {
         return { success: false, error: 'This employee account is currently deactivated.' };
       }
@@ -527,10 +569,18 @@ export function authenticateEmployee(
   } else {
     // Case 2: Email/Username + PIN/Password
     const cleanId = identifierOrPin.trim().toLowerCase();
-    matched = employees.find(
-      e => (e.email.toLowerCase() === cleanId || e.name.toLowerCase() === cleanId) && 
-           (String(e.pin) === pin.trim() || e.password === pin.trim())
-    );
+    const rawSecret = pin.trim();
+    const computedHash = await hashSecret(rawSecret);
+
+    matched = employees.find(e => {
+      const matchId = e.email.toLowerCase() === cleanId || e.name.toLowerCase() === cleanId || e.id.toLowerCase() === cleanId;
+      if (!matchId) return false;
+
+      const pinMatch = (e.pinHash && e.pinHash === computedHash) || (e.pin && String(e.pin) === rawSecret);
+      const pwdMatch = (e.passwordHash && e.passwordHash === computedHash) || (e.password && e.password === rawSecret);
+
+      return pinMatch || pwdMatch;
+    });
 
     if (!matched) {
       return { success: false, error: 'Invalid username/email or PIN/password.' };

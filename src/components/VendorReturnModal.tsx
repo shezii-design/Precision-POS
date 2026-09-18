@@ -169,7 +169,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
       return p.vendorId === selectedVendorId;
     }
     if (vendorName) {
-      return p.vendorName && p.vendorName.toLowerCase().includes(vendorName.toLowerCase());
+      return (p.vendorName && vendorName && p.vendorName.toLowerCase().includes(vendorName.toLowerCase()));
     }
     return true;
   });
@@ -340,13 +340,13 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
       // Group requested quantities by product/item key
       const itemGroupQtyMap = new Map<string, number>();
       for (const it of items) {
-        const key = it.productId || it.internalId || it.productName.trim().toLowerCase();
+        const key = it.productId || it.internalId || (it.productName ? it.productName.trim().toLowerCase() : '');
         itemGroupQtyMap.set(key, (itemGroupQtyMap.get(key) || 0) + (Number(it.quantity) || 0));
       }
 
       // Check each unique item against purchased and previously returned quantities
       for (const it of items) {
-        const key = it.productId || it.internalId || it.productName.trim().toLowerCase();
+        const key = it.productId || it.internalId || (it.productName ? it.productName.trim().toLowerCase() : '');
         const totalRequested = itemGroupQtyMap.get(key) || (Number(it.quantity) || 0);
 
         const { purchasedQty, alreadyReturnedQty, remainingQty } = calculatePurchaseItemReturnableQty(

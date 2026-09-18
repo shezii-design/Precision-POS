@@ -263,7 +263,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
       return s.customerId === selectedCustomerId;
     }
     if (customerName) {
-      return s.customerName && s.customerName.toLowerCase().includes(customerName.toLowerCase());
+      return (s.customerName && customerName && s.customerName.toLowerCase().includes(customerName.toLowerCase()));
     }
     return true;
   });
@@ -440,13 +440,13 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
       // Group requested quantities by product/item key
       const itemGroupQtyMap = new Map<string, number>();
       for (const it of items) {
-        const key = it.productId || it.internalId || it.productName.trim().toLowerCase();
+        const key = it.productId || it.internalId || (it.productName ? it.productName.trim().toLowerCase() : '');
         itemGroupQtyMap.set(key, (itemGroupQtyMap.get(key) || 0) + (Number(it.quantity) || 0));
       }
 
       // Check each unique item against sold and previously returned quantities
       for (const it of items) {
-        const key = it.productId || it.internalId || it.productName.trim().toLowerCase();
+        const key = it.productId || it.internalId || (it.productName ? it.productName.trim().toLowerCase() : '');
         const totalRequested = itemGroupQtyMap.get(key) || (Number(it.quantity) || 0);
 
         const { soldQty, alreadyReturnedQty, remainingQty } = calculateSaleItemReturnableQty(

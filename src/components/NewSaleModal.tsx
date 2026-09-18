@@ -9,7 +9,8 @@ import {
   ProductSellingPrice,
   QuantityUnit, 
   Sale, 
-  SaleItem 
+  SaleItem,
+  Vendor 
 } from '../types';
 import { getDefaultRetailPrice, getProductAvailableTiers, formatPKR, DEFAULT_PRICING_SETTINGS } from '../services/pricing';
 import { getCustomerLastPrice, getNextSaleId, INITIAL_LOCATIONS } from '../services/storage';
@@ -62,6 +63,7 @@ interface NewSaleModalProps {
   onClose: () => void;
   products: Product[];
   customers: Customer[];
+  vendors?: Vendor[];
   sales: Sale[];
   locations?: LocationItem[];
   pricingSettings?: GlobalPricingSettings;
@@ -201,6 +203,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
   onClose,
   products = [],
   customers = [],
+  vendors = [],
   sales = [],
   locations = [],
   pricingSettings = DEFAULT_PRICING_SETTINGS,
@@ -217,9 +220,12 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
   const [saleTime, setSaleTime] = useState<string>(getCurrentTimeString());
 
   // Customer State
-  const [customerMode, setCustomerMode] = useState<'walkin' | 'select' | 'new'>('walkin');
+  const [customerMode, setCustomerMode] = useState<'walkin' | 'select' | 'new' | 'vendor'>('walkin');
   const [customerSearch, setCustomerSearch] = useState<string>('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [vendorSearch, setVendorSearch] = useState<string>('');
+  const [showVendorDropdown, setShowVendorDropdown] = useState<boolean>(false);
   const [newCustomerName, setNewCustomerName] = useState<string>('');
   const [newCustomerPhone, setNewCustomerPhone] = useState<string>('');
   const [showCustomerDropdown, setShowCustomerDropdown] = useState<boolean>(false);
@@ -288,7 +294,14 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
           setSaleTime(getCurrentTimeString());
         }
 
-        if (editingSale.customerId) {
+        if (editingSale.isVendorSale && editingSale.vendorId && vendors) {
+          const matchedVendor = vendors.find(v => v.id === editingSale.vendorId);
+          if (matchedVendor) {
+            setCustomerMode('vendor');
+            setSelectedVendor(matchedVendor);
+            setVendorSearch(matchedVendor.businessName);
+          }
+        } else if (editingSale.customerId) {
           const matchedCust = customers.find(c => c.id === editingSale.customerId);
           if (matchedCust) {
             setCustomerMode('select');
@@ -300,7 +313,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
             setNewCustomerPhone(editingSale.customerPhone || '');
           }
         } else if (editingSale.customerName && editingSale.customerName !== 'Walk-in Customer') {
-          const matchedCust = customers.find(c => c.name.toLowerCase() === editingSale.customerName?.toLowerCase());
+          const matchedCust = customers.find(c => (c.name && c.name.toLowerCase() === editingSale.customerName?.toLowerCase()));
           if (matchedCust) {
             setCustomerMode('select');
             setSelectedCustomer(matchedCust);
@@ -374,7 +387,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
             setCustomerSearch('');
           }
         } else if (validInitialCustomerName) {
-          const matchedCust = customers.find(c => c.name.toLowerCase() === validInitialCustomerName.toLowerCase());
+          const matchedCust = customers.find(c => (c.name && c.name.toLowerCase() === validInitialCustomerName.toLowerCase()));
           if (matchedCust) {
             setCustomerMode('select');
             setSelectedCustomer(matchedCust);
@@ -395,7 +408,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
         // Map initial preset items if provided (e.g. from Company Demand tab)
         if (Array.isArray(initialItems) && initialItems.length > 0) {
           const draftItems: DraftSaleItem[] = initialItems.map(item => {
-            const matchedProd = products.find(p => (item.productId && p.id === item.productId) || (item.internalId && p.internalId.toLowerCase() === item.internalId.toLowerCase()));
+            const matchedProd = products.find(p => (item.productId && p.id === item.productId) || (item.internalId && p.internalId && p.internalId.toLowerCase() === item.internalId.toLowerCase()));
             const tiers = matchedProd ? getProductAvailableTiers(matchedProd, pricingSettings) : [];
             const defaultRetail = matchedProd ? getDefaultRetailPrice(matchedProd) : 0;
             const unitPrice = item.unitPrice !== undefined && item.unitPrice > 0 ? item.unitPrice : defaultRetail;
@@ -444,7 +457,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
         }, 100);
       }
     }
-  }, [isOpen, editingSale?.id, initialCustomerId, initialCustomerName, initialItems?.length]);
+  }, [isOpen, editingSale, initialCustomerId, initialCustomerName, initialItems]);
 
   // Is this sale recording a past date?
   const isBackdated = useMemo(() => {
@@ -471,20 +484,20 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
   // Filtered customer search
   const filteredCustomers = useMemo(() => {
     if (!customerSearch.trim()) return customers.slice(0, 8);
-    const q = customerSearch.toLowerCase().trim();
+    const q = (customerSearch || '').toLowerCase().trim();
     return customers.filter(
-      c => c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q))
+      c => (c.name && c.name.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q))
     ).slice(0, 8);
   }, [customers, customerSearch]);
 
   // Filtered products for selection
   const filteredProducts = useMemo(() => {
     if (!productSearchTerm.trim()) return [];
-    const q = productSearchTerm.toLowerCase().trim();
+    const q = (productSearchTerm || '').toLowerCase().trim();
     return products.filter(p => {
       return (
-        p.name.toLowerCase().includes(q) ||
-        p.internalId.toLowerCase().includes(q) ||
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.internalId && p.internalId.toLowerCase().includes(q)) ||
         (p.brandName && p.brandName.toLowerCase().includes(q)) ||
         (p.typeName && p.typeName.toLowerCase().includes(q)) ||
         (p.crossReferences && p.crossReferences.toLowerCase().includes(q)) ||
@@ -496,15 +509,17 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
   // Helper to determine customer effective name
   const effectiveCustomerName = useMemo(() => {
     if (customerMode === 'select' && selectedCustomer) return selectedCustomer.name;
+    if (customerMode === 'vendor' && selectedVendor) return selectedVendor.businessName;
     if (customerMode === 'new' && newCustomerName.trim()) return newCustomerName.trim();
     return 'Walk-in Customer';
-  }, [customerMode, selectedCustomer, newCustomerName]);
+  }, [customerMode, selectedCustomer, newCustomerName, selectedVendor]);
 
   const effectiveCustomerPhone = useMemo(() => {
     if (customerMode === 'select' && selectedCustomer) return selectedCustomer.phone || '';
+    if (customerMode === 'vendor' && selectedVendor) return selectedVendor.phone || '';
     if (customerMode === 'new' && newCustomerPhone.trim()) return newCustomerPhone.trim();
     return '';
-  }, [customerMode, selectedCustomer, newCustomerPhone]);
+  }, [customerMode, selectedCustomer, newCustomerPhone, selectedVendor]);
 
   // When customer changes, optionally refresh the items with their history prices
   const handleSelectExistingCustomer = (cust: Customer) => {
@@ -525,6 +540,30 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
           priceSource: 'customer_history',
           historyPrice: history.price,
           historyPriceNote: `Customer Last Price from ${history.saleId} (₨ ${history.price})`,
+        };
+      }
+      return item;
+    }));
+  };
+
+    const handleSelectExistingVendor = (vend: Vendor) => {
+    setSelectedVendor(vend);
+    setVendorSearch(vend.businessName);
+    setCustomerMode('vendor');
+    setShowVendorDropdown(false);
+
+    // Re-check prices for existing items in cart for this vendor
+    setSaleItems(prev => prev.map(item => {
+      const history = getCustomerLastPrice(vend.businessName, item.productId, sales);
+      if (history && history.price > 0) {
+        return {
+          ...item,
+          unitPrice: history.price,
+          selectedTierId: 'customer_history',
+          selectedTierName: 'Vendor Last Price',
+          priceSource: 'customer_history',
+          historyPrice: history.price,
+          historyPriceNote: `Vendor Last Price from ${history.saleId} (₨ ${history.price})`,
         };
       }
       return item;
@@ -587,7 +626,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
     // 2. If no customer history or walk-in, load default/retail price tier from inventory
     if (resolvedPrice <= 0) {
       const retailTier = tiers.find(
-        t => t.tierName.toLowerCase().includes('retail') || t.tierId.includes('retail')
+        t => (t.tierName && t.tierName.toLowerCase().includes('retail')) || t.tierId.includes('retail')
       ) || tiers[0];
 
       if (retailTier && retailTier.price > 0) {
@@ -651,7 +690,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
   const handleApplyLocationToAll = (sourceLocId: string, sourceLocName: string, sourceCabin: string) => {
     setSaleItems(prev => prev.map(item => {
       const itemLocs = getItemInventoryLocations(item.productId, item.productName, products, locations);
-      const match = itemLocs.find(l => l.locationId === sourceLocId || l.locationName.toLowerCase() === sourceLocName.toLowerCase());
+      const match = itemLocs.find(l => l.locationId === sourceLocId || (l.locationName && sourceLocName && l.locationName.toLowerCase() === sourceLocName.toLowerCase()));
       if (match) {
         return {
           ...item,
@@ -842,7 +881,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
     const newSale: Sale = {
       id: saleIdToUse,
       date: finalSaleDateIso,
-      customerId: selectedCustomer?.id || editingSale?.customerId,
+      customerId: customerMode === 'vendor' ? (selectedVendor?.id || '') : (selectedCustomer?.id || editingSale?.customerId),
       customerName: effectiveCustomerName,
       customerPhone: effectiveCustomerPhone,
       items: finalSaleItems,
@@ -860,9 +899,9 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
       notes: saleNotes.trim(),
       createdAt: editingSale ? editingSale.createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      vendorId: editingSale?.vendorId,
-      vendorName: editingSale?.vendorName,
-      isVendorSale: editingSale?.isVendorSale,
+      vendorId: customerMode === 'vendor' ? selectedVendor?.id : (customerMode === 'new' || customerMode === 'walkin' ? undefined : editingSale?.vendorId),
+      vendorName: customerMode === 'vendor' ? selectedVendor?.businessName : (customerMode === 'new' || customerMode === 'walkin' ? undefined : editingSale?.vendorName),
+      isVendorSale: customerMode === 'vendor'
     };
 
     setShowNamingPopup(false);
@@ -1086,6 +1125,19 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                 >
                   + New Customer
                 </button>
+                {vendors && vendors.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setCustomerMode('vendor'); setSelectedVendor(null); setVendorSearch(''); }}
+                    className={`flex-1 sm:flex-initial text-center px-2.5 sm:px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                      customerMode === 'vendor'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Sale to Vendor
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1164,100 +1216,156 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     type="text"
                     value={newCustomerName}
                     onChange={(e) => setNewCustomerName(e.target.value)}
-                    placeholder="e.g. Tariq Machinery Works"
-                    className="w-full px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+                    placeholder="Enter customer name"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                    Phone Number (Optional)
+                    Phone Number
                   </label>
                   <input
                     type="text"
                     value={newCustomerPhone}
                     onChange={(e) => setNewCustomerPhone(e.target.value)}
-                    placeholder="e.g. 0300-1234567"
-                    className="w-full px-3 py-2 bg-slate-200 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-red-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+                    placeholder="e.g. 0300 1234567"
                   />
                 </div>
               </div>
             )}
-          </div>
+            
+            {customerMode === 'vendor' && (
+              <div className="relative">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={vendorSearch}
+                    onChange={(e) => {
+                      setVendorSearch(e.target.value);
+                      setShowVendorDropdown(true);
+                      if (!e.target.value) setSelectedVendor(null);
+                    }}
+                    onFocus={() => setShowVendorDropdown(true)}
+                    className="w-full px-3 py-2 pl-9 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    placeholder="Search vendor name..."
+                  />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  {vendorSearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVendorSearch('');
+                        setSelectedVendor(null);
+                        setShowVendorDropdown(false);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
 
-          {/* SECTION 2: PRODUCT SEARCH & ADD MULTIPLE ITEMS */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-red-600" />
-                <span className="text-xs font-black uppercase tracking-wider text-slate-700">
-                  2. Select Products for this Sale
-                </span>
+                {showVendorDropdown && (vendorSearch || !selectedVendor) && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
+                    {(vendors || []).filter(v => (v.businessName && (vendorSearch == null || v.businessName.toLowerCase().includes(vendorSearch.toLowerCase())))).map((vend) => (
+                      <button
+                        key={vend.id}
+                        type="button"
+                        onClick={() => handleSelectExistingVendor(vend)}
+                        className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex flex-col cursor-pointer border-b border-slate-100 last:border-0"
+                      >
+                        <span className="font-bold text-slate-900">{vend.businessName}</span>
+                        {vend.phone && <span className="text-[10px] text-slate-500">{vend.phone}</span>}
+                      </button>
+                    ))}
+                    {(vendors || []).filter(v => (v.businessName && (vendorSearch == null || v.businessName.toLowerCase().includes(vendorSearch.toLowerCase())))).length === 0 && (
+                      <div className="px-3 py-4 text-center text-[11px] text-slate-500 font-medium">
+                        No vendors found.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <span className="text-xs font-bold text-slate-500">
-                {saleItems.length} item{saleItems.length === 1 ? '' : 's'} added
-              </span>
+            )}
             </div>
 
-            {/* Live Search Bar for Items */}
-            <div className="relative">
+            {/* PRODUCT SEARCH & ADD */}
+            <div className="pt-4 border-t border-slate-100">
+              <label className="block text-xs font-bold text-slate-700 mb-2">
+                Search & Add Products
+              </label>
               <div className="relative">
                 <input
-                  ref={productSearchRef}
                   type="text"
+                  ref={productSearchRef}
                   value={productSearchTerm}
-                  onChange={(e) => {
-                    setProductSearchTerm(e.target.value);
-                    setShowProductDropdown(true);
-                  }}
+                  onChange={(e) => setProductSearchTerm(e.target.value)}
                   onFocus={() => setShowProductDropdown(true)}
-                  placeholder="Search inventory by Part Name (sfc-5706), ID (KFH-2501), Brand, Cross Ref..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-200 border-2 border-slate-200 hover:border-slate-300 rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all shadow-sm"
+                  className="w-full px-4 py-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+                  placeholder="Scan barcode, search by name, or internal ID..."
                 />
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 {productSearchTerm && (
                   <button
                     type="button"
-                    onClick={() => setProductSearchTerm('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    onClick={() => {
+                      setProductSearchTerm('');
+                      setShowProductDropdown(false);
+                      if (productSearchRef.current) {
+                        productSearchRef.current.focus();
+                      }
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 )}
-              </div>
 
-              {/* Product search suggestions with tier pricing previews & Cost Price */}
-              {showProductDropdown && productSearchTerm.trim().length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 z-40 overflow-hidden max-h-64 overflow-y-auto">
-                  {filteredProducts.length > 0 ? (
-                    filteredProducts.slice(0, 50).map(prod => {
-                      const prodTiers = getProductAvailableTiers(prod, pricingSettings);
-                      const retailPrice = getDefaultRetailPrice(prod);
-                      const cost = prod.costPrice || 0;
-                      return (
-                        <div
-                          key={prod.id}
-                          onClick={() => handleAddProductToSale(prod)}
-                          className="p-3 hover:bg-red-50/80 cursor-pointer border-b border-slate-100 flex items-center justify-between text-xs transition-colors"
-                        >
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-[11px] font-bold bg-slate-200 text-slate-800 px-1.5 py-0.5 rounded">
-                                {prod.internalId}
-                              </span>
-                              <span className="font-black text-slate-900 text-sm">
-                                {prod.name}
-                              </span>
-                              {prod.brandName && (
-                                <span className="text-[11px] text-slate-500 font-semibold">
-                                  • {prod.brandName}
-                                </span>
-                              )}
-                              {prod.locationName && (
-                                <span className="text-[10px] text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded font-medium flex items-center gap-0.5">
-                                  <MapPin className="w-2.5 h-2.5 text-slate-400" />
-                                  {prod.locationName}{prod.cabinNumber ? ` (${prod.cabinNumber})` : ''}
-                                </span>
-                              )}
+                {/* Dropdown for products */}
+                {showProductDropdown && productSearchTerm.trim().length > 0 && (
+                  <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl max-h-72 overflow-y-auto custom-scrollbar overflow-x-hidden">
+                    {filteredProducts.length > 0 ? (
+                      <div className="flex flex-col py-1">
+                        {filteredProducts.map(prod => {
+                          const prodTiers = getProductAvailableTiers(prod, pricingSettings);
+                          const retailPrice = prodTiers.length > 0 ? prodTiers[0].price : prod.costPrice;
+                          const cost = prod.costPrice;
+
+                          return (
+                            <button
+                              key={prod.id}
+                              type="button"
+                              onClick={() => {
+                                handleAddProductToSale(prod);
+                                setProductSearchTerm('');
+                                setShowProductDropdown(false);
+                                if (productSearchRef.current) productSearchRef.current.focus();
+                              }}
+                              className="w-full text-left px-4 py-3 hover:bg-slate-50 flex flex-col justify-center border-b border-slate-50 last:border-0 transition-colors"
+                            >
+                              <div className="flex w-full items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-slate-900 truncate">{prod.name}</span>
+                                  {prod.internalId && (
+                                    <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px] font-bold shrink-0">
+                                      #{prod.internalId}
+                                    </span>
+                                  )}
+                                  {prod.dimensions && (
+                                    <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold shrink-0">
+                                      {(() => {
+    const d = prod.dimensions;
+    const u = d.inputUnit === 'mm' ? 'mm' : '"';
+    const parts = [];
+    if (d.height) parts.push(`H:${d.height}${u}`);
+    if (d.outerDia) parts.push(`OD:${d.outerDia}${u}`);
+    if (d.innerDia) parts.push(`ID:${d.innerDia}${u}`);
+    return parts.join(' ');
+  })()}
+                                    </span>
+                                  )}
+                                </div>
                             </div>
                             
                             {/* Cost Price & Tier prices preview list */}
@@ -1274,7 +1382,6 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                                 </span>
                               ))}
                             </div>
-                          </div>
 
                           <div className="text-right shrink-0 pl-3">
                             <div className="font-bold text-red-600 text-sm">
@@ -1286,9 +1393,10 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                               Stock: {prod.stockQuantity} {prod.unit}
                             </span>
                           </div>
-                        </div>
+                        </button>
                       );
-                    })
+                    })}
+                  </div>
                   ) : (
                     <div className="p-4 text-center text-xs text-slate-400 font-semibold">
                       No products matching "{productSearchTerm}"
@@ -1508,7 +1616,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                               </span>
                               {tier.markupPercent !== undefined && (
                                 <span className={`text-[10px] ${isSelected ? 'text-red-100' : 'text-slate-400'} font-medium`}>
-                                  (+{tier.tierId === 'tier-general' || tier.tierName.toLowerCase().includes('general') ? 'Fix' : `${tier.markupPercent}%`})
+                                  (+{tier.tierId === 'tier-general' || (tier.tierName && tier.tierName.toLowerCase().includes('general')) ? 'Fix' : `${tier.markupPercent}%`})
                                 </span>
                               )}
                               {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white shrink-0" />}
@@ -1552,7 +1660,7 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                     {/* Dispatch / Sale Location Selector for this specific item (ONLY inventory locations for this item) */}
                     {(() => {
                       const itemInventoryLocations = getItemInventoryLocations(item.productId, item.productName, products, locations);
-                      const activeLocObj = itemInventoryLocations.find(l => l.locationId === item.locationId || l.locationName.toLowerCase() === item.locationName.toLowerCase()) || itemInventoryLocations[0];
+                      const activeLocObj = itemInventoryLocations.find(l => l.locationId === item.locationId || (l.locationName && item.locationName && l.locationName.toLowerCase() === item.locationName.toLowerCase())) || itemInventoryLocations[0];
                       const activeCabins = activeLocObj?.cabins || [];
 
                       return (

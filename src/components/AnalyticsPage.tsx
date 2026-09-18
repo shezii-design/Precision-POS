@@ -112,17 +112,17 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({
   }, [products, sales]);
 
   const filteredRestock = restockNeeded.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (p.name && p.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
     (p.internalId && p.internalId.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const filteredDeadStock = deadStock.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (p.name && p.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
     (p.internalId && p.internalId.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const filteredSmartInsights = smartReorderInsights.filter(i => 
-    i.product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (i.product.name && i.product.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
     (i.product.internalId && i.product.internalId.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 

@@ -28,6 +28,7 @@ import { CustomerFormModal } from './CustomerFormModal';
 import { CustomerLedgerPrintModal } from './CustomerLedgerPrintModal';
 import { InitialSaleItemPreset } from './NewSaleModal';
 import { downloadCustomerLedgerPDF } from '../services/pdfReportGenerator';
+import { exportCustomerLedgerToExcel } from '../services/excel';
 import { 
   ArrowLeft, 
   Building2, 
@@ -73,6 +74,7 @@ interface CustomerDetailsPageProps {
   onUpdateCustomers: (customers: Customer[]) => void;
   onUpdateLedger: (ledger: CustomerLedgerEntry[]) => void;
   onUpdateProducts: (products: Product[]) => void;
+  onUpdateSales?: (sales: Sale[]) => void;
   onViewInvoice?: (sale: Sale) => void;
   onEditSale?: (sale: Sale) => void;
 }
@@ -88,6 +90,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
   onUpdateCustomers,
   onUpdateLedger,
   onUpdateProducts,
+  onUpdateSales,
   onViewInvoice,
   onEditSale,
 }) => {
@@ -99,6 +102,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
   // Modals state
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
   const [editingPaymentEntry, setEditingPaymentEntry] = useState<CustomerLedgerEntry | null>(null);
+  const [paymentPreselectedSaleId, setPaymentPreselectedSaleId] = useState<string | undefined>(undefined);
   const [showMachineModal, setShowMachineModal] = useState<boolean>(false);
   const [editingMachine, setEditingMachine] = useState<CompanyMachine | null>(null);
   const [showEditCustomerModal, setShowEditCustomerModal] = useState<boolean>(false);
@@ -276,22 +280,31 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
   ) => {
     if (typeof window !== 'undefined' && !window.navigator.onLine) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
     if (entryId) {
-      const result = updateCustomerPaymentAndUpdateAll(entryId, entryData, customerLedger, allCustomers);
+      const result = updateCustomerPaymentAndUpdateAll(entryId, entryData, customerLedger, allCustomers, sales);
       onUpdateLedger(result.updatedLedgerEntries);
       onUpdateCustomers(result.updatedCustomers);
+      if (result.updatedSales && onUpdateSales) {
+        onUpdateSales(result.updatedSales);
+      }
     } else {
-      const result = recordCustomerPaymentAndUpdateAll(entryData, customerLedger, allCustomers);
+      const result = recordCustomerPaymentAndUpdateAll(entryData, customerLedger, allCustomers, sales);
       onUpdateLedger(result.updatedLedgerEntries);
       onUpdateCustomers(result.updatedCustomers);
+      if (result.updatedSales && onUpdateSales) {
+        onUpdateSales(result.updatedSales);
+      }
     }
   };
 
   const handleDeletePaymentEntry = (entryId: string) => {
     if (typeof window !== 'undefined' && !window.navigator.onLine) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
     if (window.confirm('Are you sure you want to remove this ledger entry?')) {
-      const result = deleteCustomerPaymentAndUpdateAll(entryId, customerLedger, allCustomers);
+      const result = deleteCustomerPaymentAndUpdateAll(entryId, customerLedger, allCustomers, sales);
       onUpdateLedger(result.updatedLedgerEntries);
       onUpdateCustomers(result.updatedCustomers);
+      if (result.updatedSales && onUpdateSales) {
+        onUpdateSales(result.updatedSales);
+      }
     }
   };
 
@@ -315,7 +328,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
       }
     } else if (row.sourceType === 'payment_received' || row.sourceType === 'cash_refund' || row.sourceType === 'adjustment') {
       // Check if it is a standalone Customer Ledger Payment Entry (CLE-...)
-      const isDirectCLE = row.rawObject && 'id' in row.rawObject && String(row.rawObject.id).startsWith('CLE-');
+      const isDirectCLE = row.rawObject && 'id' in row.rawObject && String(row.rawObject.id).startsWith('CLE-') && !String(row.rawObject.id).startsWith('CLE-CR-');
       const directEntry = isDirectCLE
         ? (row.rawObject as CustomerLedgerEntry)
         : customerLedger.find(e => e.id === row.id || e.id === row.referenceId);
@@ -1098,7 +1111,12 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                         title="Double-click to view or edit details"
                       >
                         <td className="py-3 px-4 text-slate-600 text-[11px]">
-                          {new Date(row.date).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          <div>{new Date(row.date).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                          {!isNaN(new Date(row.date).getTime()) && (
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              {new Date(row.date).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                            </div>
+                          )}
                         </td>
 
                         <td className="py-3 px-4">
@@ -1137,7 +1155,7 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                         </td>
 
                         <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                          {row.rawObject && (row.sourceType === 'payment_received' || row.sourceType === 'cash_refund' || row.sourceType === 'adjustment') && row.rawObject.id?.startsWith('CLE-') ? (
+                          {row.rawObject && (row.sourceType === 'payment_received' || row.sourceType === 'cash_refund' || row.sourceType === 'adjustment') && row.rawObject.id?.startsWith('CLE-') && !row.rawObject.id?.startsWith('CLE-CR-') ? (
                             <div className="flex items-center justify-center gap-1">
                               <button
                                 type="button"
@@ -1280,26 +1298,43 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
                           )}
                         </td>
                         <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                          {onViewInvoice && (
-                            <div className="flex items-center justify-center gap-1">
+                          <div className="flex items-center justify-center gap-1">
+                            {s.amountReceived < s.totalAmount && (
                               <button
                                 type="button"
-                                onClick={() => onViewInvoice(s)}
-                                className="p-1.5 bg-slate-200 hover:bg-red-50 text-slate-700 hover:text-red-700 rounded-lg transition-colors cursor-pointer"
-                                title="View & Print Invoice"
+                                onClick={() => {
+                                  setPaymentPreselectedSaleId(s.id);
+                                  setEditingPaymentEntry(null);
+                                  setShowPaymentModal(true);
+                                }}
+                                className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-bold border border-emerald-200"
+                                title="Receive Payment for this Invoice"
                               >
-                                <Eye className="w-3.5 h-3.5" />
+                                <Wallet className="w-3.5 h-3.5" />
+                                <span>Pay</span>
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => onViewInvoice(s)}
-                                className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors cursor-pointer"
-                                title="Print Invoice"
-                              >
-                                <Printer className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          )}
+                            )}
+                            {onViewInvoice && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => onViewInvoice(s)}
+                                  className="p-1.5 bg-slate-200 hover:bg-red-50 text-slate-700 hover:text-red-700 rounded-lg transition-colors cursor-pointer"
+                                  title="View & Print Invoice"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onViewInvoice(s)}
+                                  className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors cursor-pointer"
+                                  title="Print Invoice"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1315,9 +1350,15 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
       {showPaymentModal && (
         <CustomerPaymentModal
           isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setEditingPaymentEntry(null);
+            setPaymentPreselectedSaleId(undefined);
+          }}
           customers={allCustomers}
+          sales={sales}
           preselectedCustomer={currentCustomer}
+          preselectedSaleId={paymentPreselectedSaleId}
           editingEntry={editingPaymentEntry}
           onSavePayment={handleSavePayment}
         />

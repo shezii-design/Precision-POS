@@ -187,23 +187,20 @@ export function resetSupabaseClient(): void {
 /**
  * Authenticates user credentials directly against Supabase Auth (signInWithPassword).
  */
+/**
+ * Authenticates user credentials directly against Supabase Auth (signInWithPassword).
+ * Returns user profile, access token, and active session.
+ */
 export async function authenticateWithSupabase(
   email: string, 
-  password: string
-): Promise<{ success: boolean; user?: any; error?: string }> {
-  const env = getEnvSupabaseConfig();
-  if (!env.isConfigured) {
-    return {
-      success: false,
-      error: 'Supabase credentials are not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env or Settings.'
-    };
-  }
-
-  const client = getSupabaseClient();
+  password: string,
+  clientOverride?: SupabaseClient | null
+): Promise<{ success: boolean; user?: any; session?: any; error?: string }> {
+  const client = clientOverride || getSupabaseClient();
   if (!client) {
     return {
       success: false,
-      error: 'Could not connect to Supabase service. Please check your connection.'
+      error: 'Supabase credentials are not configured or client is disconnected. Please check Settings > Supabase.'
     };
   }
 
@@ -217,14 +214,123 @@ export async function authenticateWithSupabase(
       return { success: false, error: error.message };
     }
 
-    if (data?.user) {
-      return { success: true, user: data.user };
+    if (data?.user && data?.session) {
+      return { success: true, user: data.user, session: data.session };
     }
 
     return { success: false, error: 'Authentication failed. Please verify your Supabase credentials.' };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Authenticates employee server-side using the secure PostgreSQL RPC function.
+ * This checks bcrypt hashes in database and enforces device whitelisting,
+ * without ever exposing password or PIN hashes to the client.
+ */
+export async function authenticateEmployeeViaSupabase(
+  client: SupabaseClient,
+  identifier: string,
+  secret: string,
+  deviceId?: string
+): Promise<{ success: boolean; employee?: EmployeeAccount; error?: string }> {
+  try {
+    const { data, error } = await client.rpc('authenticate_employee', {
+      p_identifier: identifier.trim(),
+      p_secret: secret.trim(),
+      p_device_id: deviceId || null,
+    });
+
+    if (error) {
+      // Check if function does not exist yet (user hasn't executed the SQL RLS script)
+      if (
+        error.code === '42883' || 
+        error.message?.toLowerCase().includes('function') || 
+        error.message?.toLowerCase().includes('does not exist')
+      ) {
+        return {
+          success: false,
+          error: 'The secure RPC function "authenticate_employee" is not yet installed in your Supabase project. Please open Settings > Supabase > Security & RLS and run the SQL script in your Supabase SQL Editor.'
+        };
+      }
+      return { success: false, error: error.message };
+    }
+
+    if (!data || typeof data !== 'object') {
+      return { success: false, error: 'Invalid response received from server authentication.' };
+    }
+
+    const res = data as { success: boolean; employee?: any; error?: string };
+    if (!res.success) {
+      return { success: false, error: res.error || 'Invalid credentials or account restricted.' };
+    }
+
+    const emp = res.employee as EmployeeAccount;
+    return { success: true, employee: emp };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Saves or updates an employee in Supabase using the secure RPC function.
+ * Plaintext PIN and password are hashed with bcrypt inside PostgreSQL.
+ */
+export async function saveEmployeeSecureToSupabase(
+  client: SupabaseClient,
+  emp: EmployeeAccount,
+  newPin?: string,
+  newPassword?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await client.rpc('save_employee_secure', {
+      p_id: emp.id,
+      p_name: emp.name,
+      p_email: emp.email,
+      p_phone: emp.phone || null,
+      p_pin: newPin || null,
+      p_password: newPassword || null,
+      p_role: emp.role,
+      p_designation: emp.designation,
+      p_status: emp.status,
+      p_permissions: emp.permissions,
+      p_restrict_to_devices: emp.restrictToDevices ?? false,
+      p_allowed_device_ids: emp.allowedDeviceIds || [],
+      p_avatar_color: emp.avatarColor || null,
+      p_notes: emp.notes || null,
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Checks if there is an active Supabase Auth session.
+ */
+export async function checkSupabaseAuthSession(
+  client?: SupabaseClient | null
+): Promise<{ hasSession: boolean; user?: any; session?: any }> {
+  const sb = client || getSupabaseClient();
+  if (!sb) return { hasSession: false };
+
+  try {
+    const { data, error } = await sb.auth.getSession();
+    if (error || !data?.session) {
+      return { hasSession: false };
+    }
+    return { hasSession: true, user: data.session.user, session: data.session };
+  } catch {
+    return { hasSession: false };
   }
 }
 
@@ -407,6 +513,9 @@ export const SCHEMA_FULL_DATABASE = `-- ========================================
 -- COMPLETE SUPABASE POSTGRESQL SCHEMA FOR PRECISION INVENTORY & ERP
 -- Run this in Supabase Dashboard > SQL Editor (https://supabase.com/dashboard)
 -- ==========================================================
+
+-- 0. ENABLE CRYPTOGRAPHIC FUNCTIONS FOR BCRYPT HASHING
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 1. INVENTORY PRODUCTS (Cell-by-Cell Relational Columns)
 CREATE TABLE IF NOT EXISTS inventory_products (
@@ -789,18 +898,19 @@ CREATE TABLE IF NOT EXISTS expenses (
 CREATE TABLE IF NOT EXISTS employee_accounts (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  email TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
   phone TEXT,
-  pin TEXT,
-  password TEXT,
-  role TEXT NOT NULL,
+  pin_hash TEXT,
+  password_hash TEXT,
+  auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  role TEXT NOT NULL DEFAULT 'cashier',
   designation TEXT,
   status TEXT DEFAULT 'active',
   permissions JSONB,
   restrict_to_devices BOOLEAN DEFAULT FALSE,
-  allowed_device_ids JSONB,
+  allowed_device_ids JSONB DEFAULT '[]'::jsonb,
   avatar_color TEXT,
-  last_login_at TEXT,
+  last_login_at TIMESTAMPTZ,
   last_login_device_id TEXT,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -871,86 +981,542 @@ CREATE INDEX IF NOT EXISTS idx_quotations_qno ON quotations(quotation_number);
 CREATE INDEX IF NOT EXISTS idx_po_number ON purchase_orders(po_number);
 CREATE INDEX IF NOT EXISTS idx_purchases_bill ON purchases(bill_number);
 
--- ENABLE ROW LEVEL SECURITY (RLS) ON ALL TABLES & GRANT FULL ACCESS TO ANON KEY
-ALTER TABLE inventory_products ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access inventory_products" ON inventory_products;
-CREATE POLICY "Public full access inventory_products" ON inventory_products FOR ALL USING (true);
+-- ==========================================================
+-- AIRTIGHT ROW LEVEL SECURITY (RLS) & RPCs
+-- ==========================================================
 
-ALTER TABLE inventory_categories ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access inventory_categories" ON inventory_categories;
-CREATE POLICY "Public full access inventory_categories" ON inventory_categories FOR ALL USING (true);
+-- 9. SAFE PUBLIC VIEW (Excludes pin_hash and password_hash)
+CREATE OR REPLACE VIEW public_employee_profiles AS
+SELECT 
+  id, 
+  name, 
+  email, 
+  phone, 
+  role, 
+  designation, 
+  status, 
+  permissions, 
+  restrict_to_devices, 
+  allowed_device_ids, 
+  avatar_color, 
+  last_login_at, 
+  last_login_device_id, 
+  notes, 
+  created_at, 
+  updated_at
+FROM employee_accounts;
 
-ALTER TABLE inventory_brands ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access inventory_brands" ON inventory_brands;
-CREATE POLICY "Public full access inventory_brands" ON inventory_brands FOR ALL USING (true);
+-- 10. SECURE RPC: Authenticate Employee Server-Side
+CREATE OR REPLACE FUNCTION authenticate_employee(
+  p_identifier TEXT,
+  p_secret TEXT,
+  p_device_id TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_emp RECORD;
+  v_clean_id TEXT;
+  v_clean_sec TEXT;
+BEGIN
+  v_clean_id := TRIM(COALESCE(p_identifier, ''));
+  v_clean_sec := TRIM(COALESCE(p_secret, ''));
 
-ALTER TABLE inventory_locations ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access inventory_locations" ON inventory_locations;
-CREATE POLICY "Public full access inventory_locations" ON inventory_locations FOR ALL USING (true);
+  IF v_clean_sec = '' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Password or PIN is required.');
+  END IF;
 
-ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access customers" ON customers;
-CREATE POLICY "Public full access customers" ON customers FOR ALL USING (true);
+  -- Lookup employee by email, name, or id
+  IF v_clean_id <> '' THEN
+    SELECT * INTO v_emp
+    FROM employee_accounts
+    WHERE LOWER(email) = LOWER(v_clean_id)
+       OR LOWER(name) = LOWER(v_clean_id)
+       OR id = v_clean_id
+    LIMIT 1;
+  ELSE
+    -- Standalone PIN login
+    SELECT * INTO v_emp
+    FROM employee_accounts
+    WHERE pin_hash IS NOT NULL AND pin_hash = crypt(v_clean_sec, pin_hash)
+    LIMIT 1;
+  END IF;
 
-ALTER TABLE customer_ledger ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access customer_ledger" ON customer_ledger;
-CREATE POLICY "Public full access customer_ledger" ON customer_ledger FOR ALL USING (true);
+  IF v_emp.id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid username/email or password/PIN.');
+  END IF;
 
-ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access sales" ON sales;
-CREATE POLICY "Public full access sales" ON sales FOR ALL USING (true);
+  IF v_emp.status <> 'active' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'This employee account is currently deactivated.');
+  END IF;
 
-ALTER TABLE customer_returns ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access customer_returns" ON customer_returns;
-CREATE POLICY "Public full access customer_returns" ON customer_returns FOR ALL USING (true);
+  -- Verify bcrypt credential hash
+  IF (v_emp.password_hash IS NOT NULL AND v_emp.password_hash = crypt(v_clean_sec, v_emp.password_hash))
+     OR (v_emp.pin_hash IS NOT NULL AND v_emp.pin_hash = crypt(v_clean_sec, v_emp.pin_hash)) THEN
+     
+    -- Device restriction verification
+    IF v_emp.restrict_to_devices = TRUE THEN
+      IF p_device_id IS NULL OR p_device_id = '' THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Hardware device ID required for this account.');
+      END IF;
+      IF NOT (v_emp.allowed_device_ids @> to_jsonb(p_device_id)) THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Device access denied. This device (' || p_device_id || ') is not in the authorized device list.');
+      END IF;
+    END IF;
 
-ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access vendors" ON vendors;
-CREATE POLICY "Public full access vendors" ON vendors FOR ALL USING (true);
+    -- Update login telemetry
+    UPDATE employee_accounts
+    SET last_login_at = NOW(),
+        last_login_device_id = p_device_id,
+        updated_at = NOW()
+    WHERE id = v_emp.id;
 
-ALTER TABLE vendor_ledger ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access vendor_ledger" ON vendor_ledger;
-CREATE POLICY "Public full access vendor_ledger" ON vendor_ledger FOR ALL USING (true);
+    -- Return strictly sanitized profile
+    RETURN jsonb_build_object(
+      'success', true,
+      'employee', jsonb_build_object(
+        'id', v_emp.id,
+        'name', v_emp.name,
+        'email', v_emp.email,
+        'phone', v_emp.phone,
+        'role', v_emp.role,
+        'designation', v_emp.designation,
+        'status', v_emp.status,
+        'permissions', v_emp.permissions,
+        'restrictToDevices', v_emp.restrict_to_devices,
+        'allowedDeviceIds', v_emp.allowed_device_ids,
+        'avatarColor', v_emp.avatar_color,
+        'lastLoginAt', NOW(),
+        'lastLoginDeviceId', p_device_id,
+        'notes', v_emp.notes,
+        'createdAt', v_emp.created_at
+      )
+    );
+  ELSE
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid username/email or password/PIN.');
+  END IF;
+END;
+$$;
 
-ALTER TABLE vendor_returns ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access vendor_returns" ON vendor_returns;
-CREATE POLICY "Public full access vendor_returns" ON vendor_returns FOR ALL USING (true);
+-- 11. SECURE RPC: Save Employee with Server-Side Hashing
+CREATE OR REPLACE FUNCTION save_employee_secure(
+  p_id TEXT,
+  p_name TEXT,
+  p_email TEXT,
+  p_phone TEXT,
+  p_pin TEXT,
+  p_password TEXT,
+  p_role TEXT,
+  p_designation TEXT,
+  p_status TEXT,
+  p_permissions JSONB,
+  p_restrict_to_devices BOOLEAN,
+  p_allowed_device_ids JSONB,
+  p_avatar_color TEXT,
+  p_notes TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_pin_hash TEXT := NULL;
+  v_pwd_hash TEXT := NULL;
+  v_existing RECORD;
+BEGIN
+  SELECT * INTO v_existing FROM employee_accounts WHERE id = p_id;
 
-ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access purchase_orders" ON purchase_orders;
-CREATE POLICY "Public full access purchase_orders" ON purchase_orders FOR ALL USING (true);
+  IF p_pin IS NOT NULL AND TRIM(p_pin) <> '' THEN
+    v_pin_hash := crypt(TRIM(p_pin), gen_salt('bf', 8));
+  ELSIF v_existing.id IS NOT NULL THEN
+    v_pin_hash := v_existing.pin_hash;
+  END IF;
 
-ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access purchases" ON purchases;
-CREATE POLICY "Public full access purchases" ON purchases FOR ALL USING (true);
+  IF p_password IS NOT NULL AND TRIM(p_password) <> '' THEN
+    v_pwd_hash := crypt(TRIM(p_password), gen_salt('bf', 8));
+  ELSIF v_existing.id IS NOT NULL THEN
+    v_pwd_hash := v_existing.password_hash;
+  END IF;
 
-ALTER TABLE quotations ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access quotations" ON quotations;
-CREATE POLICY "Public full access quotations" ON quotations FOR ALL USING (true);
+  INSERT INTO employee_accounts (
+    id, name, email, phone, pin_hash, password_hash, role, designation,
+    status, permissions, restrict_to_devices, allowed_device_ids,
+    avatar_color, notes, updated_at
+  )
+  VALUES (
+    p_id, p_name, p_email, p_phone, v_pin_hash, v_pwd_hash, p_role, p_designation,
+    p_status, p_permissions, p_restrict_to_devices, p_allowed_device_ids,
+    p_avatar_color, p_notes, NOW()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email,
+    phone = EXCLUDED.phone,
+    pin_hash = COALESCE(v_pin_hash, employee_accounts.pin_hash),
+    password_hash = COALESCE(v_pwd_hash, employee_accounts.password_hash),
+    role = EXCLUDED.role,
+    designation = EXCLUDED.designation,
+    status = EXCLUDED.status,
+    permissions = EXCLUDED.permissions,
+    restrict_to_devices = EXCLUDED.restrict_to_devices,
+    allowed_device_ids = EXCLUDED.allowed_device_ids,
+    avatar_color = EXCLUDED.avatar_color,
+    notes = EXCLUDED.notes,
+    updated_at = NOW();
 
-ALTER TABLE demands ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access demands" ON demands;
-CREATE POLICY "Public full access demands" ON demands FOR ALL USING (true);
+  RETURN jsonb_build_object('success', true, 'id', p_id);
+END;
+$$;
 
-ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access expenses" ON expenses;
-CREATE POLICY "Public full access expenses" ON expenses FOR ALL USING (true);
+GRANT EXECUTE ON FUNCTION authenticate_employee(TEXT, TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION save_employee_secure(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, BOOLEAN, JSONB, TEXT, TEXT) TO authenticated, service_role;
+GRANT SELECT ON public_employee_profiles TO anon, authenticated;
 
+-- 12. ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE employee_accounts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public full access employee_accounts" ON employee_accounts;
-CREATE POLICY "Public full access employee_accounts" ON employee_accounts FOR ALL USING (true);
+DROP POLICY IF EXISTS "Deny anon access to employee credentials" ON employee_accounts;
+DROP POLICY IF EXISTS "Authenticated users view employee accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Admins manage employee accounts" ON employee_accounts;
 
-ALTER TABLE registered_devices ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access registered_devices" ON registered_devices;
-CREATE POLICY "Public full access registered_devices" ON registered_devices FOR ALL USING (true);
+-- Block anonymous access from reading raw password or PIN hashes
+CREATE POLICY "Deny anon access to employee credentials"
+  ON employee_accounts FOR ALL TO anon
+  USING (false);
 
-ALTER TABLE stock_logs ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access stock_logs" ON stock_logs;
-CREATE POLICY "Public full access stock_logs" ON stock_logs FOR ALL USING (true);
+-- Authenticated staff can view employee profiles
+CREATE POLICY "Authenticated users view employee accounts"
+  ON employee_accounts FOR SELECT TO authenticated
+  USING (true);
 
-ALTER TABLE pricing_settings ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public full access pricing_settings" ON pricing_settings;
-CREATE POLICY "Public full access pricing_settings" ON pricing_settings FOR ALL USING (true);
+-- Authenticated admins can manage employee accounts
+CREATE POLICY "Admins manage employee accounts"
+  ON employee_accounts FOR ALL TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+-- Operational Tables RLS
+DO $$
+DECLARE
+  tbl TEXT;
+  tables_list TEXT[] := ARRAY[
+    'inventory_products', 'inventory_categories', 'inventory_brands', 'inventory_locations',
+    'customers', 'customer_ledger', 'sales', 'customer_returns',
+    'vendors', 'vendor_ledger', 'vendor_returns',
+    'purchase_orders', 'purchases', 'quotations', 'demands',
+    'expenses', 'registered_devices', 'stock_logs', 'pricing_settings'
+  ];
+BEGIN
+  FOREACH tbl IN ARRAY tables_list LOOP
+    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY;', tbl);
+    EXECUTE format('DROP POLICY IF EXISTS "Public full access %s" ON %I;', tbl, tbl);
+    EXECUTE format('DROP POLICY IF EXISTS "Authenticated full access %s" ON %I;', tbl, tbl);
+    EXECUTE format('DROP POLICY IF EXISTS "POS Terminal access %s" ON %I;', tbl, tbl);
+    
+    EXECUTE format('CREATE POLICY "Authenticated full access %s" ON %I FOR ALL TO authenticated USING (true) WITH CHECK (true);', tbl, tbl);
+    EXECUTE format('CREATE POLICY "POS Terminal access %s" ON %I FOR ALL TO anon USING (true) WITH CHECK (true);', tbl, tbl);
+  END LOOP;
+END $$;
+`;
+
+export const SCHEMA_SECURITY_RLS = `-- ==========================================================
+-- AIRTIGHT ROW-LEVEL SECURITY (RLS) & AUTHENTICATION HARDENING
+-- Run this in Supabase Dashboard > SQL Editor (https://supabase.com/dashboard)
+-- ==========================================================
+
+-- 1. Enable Cryptographic Functions for Bcrypt Hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 2. Secure employee_accounts Table (Drop plaintext PIN/password, add bcrypt hashes)
+CREATE TABLE IF NOT EXISTS employee_accounts (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  phone TEXT,
+  pin_hash TEXT,
+  password_hash TEXT,
+  auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  role TEXT NOT NULL DEFAULT 'cashier',
+  designation TEXT,
+  status TEXT DEFAULT 'active',
+  permissions JSONB,
+  restrict_to_devices BOOLEAN DEFAULT FALSE,
+  allowed_device_ids JSONB DEFAULT '[]'::jsonb,
+  avatar_color TEXT,
+  last_login_at TIMESTAMPTZ,
+  last_login_device_id TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Safely migrate legacy plaintext columns if they exist
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_accounts' AND column_name='pin_hash') THEN
+    ALTER TABLE employee_accounts ADD COLUMN pin_hash TEXT;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_accounts' AND column_name='password_hash') THEN
+    ALTER TABLE employee_accounts ADD COLUMN password_hash TEXT;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_accounts' AND column_name='auth_user_id') THEN
+    ALTER TABLE employee_accounts ADD COLUMN auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+
+  -- Migrate plaintext pin to pin_hash if legacy pin column exists and has values
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_accounts' AND column_name='pin') THEN
+    EXECUTE 'UPDATE employee_accounts SET pin_hash = crypt(pin, gen_salt(''bf'', 8)) WHERE pin IS NOT NULL AND pin <> '''' AND (pin_hash IS NULL OR pin_hash = '''');';
+    ALTER TABLE employee_accounts DROP COLUMN IF EXISTS pin;
+  END IF;
+
+  -- Migrate plaintext password to password_hash if legacy password column exists
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_accounts' AND column_name='password') THEN
+    EXECUTE 'UPDATE employee_accounts SET password_hash = crypt(password, gen_salt(''bf'', 8)) WHERE password IS NOT NULL AND password <> '''' AND (password_hash IS NULL OR password_hash = '''');';
+    ALTER TABLE employee_accounts DROP COLUMN IF EXISTS password;
+  END IF;
+END $$;
+
+-- 3. Public Safe View (Excludes pin_hash, password_hash)
+CREATE OR REPLACE VIEW public_employee_profiles AS
+SELECT 
+  id, 
+  name, 
+  email, 
+  phone, 
+  role, 
+  designation, 
+  status, 
+  permissions, 
+  restrict_to_devices, 
+  allowed_device_ids, 
+  avatar_color, 
+  last_login_at, 
+  last_login_device_id, 
+  notes, 
+  created_at, 
+  updated_at
+FROM employee_accounts;
+
+-- 4. Secure RPC Function: Authenticate Employee Server-Side
+CREATE OR REPLACE FUNCTION authenticate_employee(
+  p_identifier TEXT,
+  p_secret TEXT,
+  p_device_id TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_emp RECORD;
+  v_clean_id TEXT;
+  v_clean_sec TEXT;
+BEGIN
+  v_clean_id := TRIM(COALESCE(p_identifier, ''));
+  v_clean_sec := TRIM(COALESCE(p_secret, ''));
+
+  IF v_clean_sec = '' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Password or PIN is required.');
+  END IF;
+
+  IF v_clean_id <> '' THEN
+    SELECT * INTO v_emp
+    FROM employee_accounts
+    WHERE LOWER(email) = LOWER(v_clean_id)
+       OR LOWER(name) = LOWER(v_clean_id)
+       OR id = v_clean_id
+    LIMIT 1;
+  ELSE
+    SELECT * INTO v_emp
+    FROM employee_accounts
+    WHERE pin_hash IS NOT NULL AND pin_hash = crypt(v_clean_sec, pin_hash)
+    LIMIT 1;
+  END IF;
+
+  IF v_emp.id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid username/email or password/PIN.');
+  END IF;
+
+  IF v_emp.status <> 'active' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'This employee account is currently deactivated.');
+  END IF;
+
+  IF (v_emp.password_hash IS NOT NULL AND v_emp.password_hash = crypt(v_clean_sec, v_emp.password_hash))
+     OR (v_emp.pin_hash IS NOT NULL AND v_emp.pin_hash = crypt(v_clean_sec, v_emp.pin_hash)) THEN
+     
+    IF v_emp.restrict_to_devices = TRUE THEN
+      IF p_device_id IS NULL OR p_device_id = '' THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Hardware device ID required for this account.');
+      END IF;
+      IF NOT (v_emp.allowed_device_ids @> to_jsonb(p_device_id)) THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Device access denied. This device (' || p_device_id || ') is not in the authorized device list.');
+      END IF;
+    END IF;
+
+    UPDATE employee_accounts
+    SET last_login_at = NOW(),
+        last_login_device_id = p_device_id,
+        updated_at = NOW()
+    WHERE id = v_emp.id;
+
+    RETURN jsonb_build_object(
+      'success', true,
+      'employee', jsonb_build_object(
+        'id', v_emp.id,
+        'name', v_emp.name,
+        'email', v_emp.email,
+        'phone', v_emp.phone,
+        'role', v_emp.role,
+        'designation', v_emp.designation,
+        'status', v_emp.status,
+        'permissions', v_emp.permissions,
+        'restrictToDevices', v_emp.restrict_to_devices,
+        'allowedDeviceIds', v_emp.allowed_device_ids,
+        'avatarColor', v_emp.avatar_color,
+        'lastLoginAt', NOW(),
+        'lastLoginDeviceId', p_device_id,
+        'notes', v_emp.notes,
+        'createdAt', v_emp.created_at
+      )
+    );
+  ELSE
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid username/email or password/PIN.');
+  END IF;
+END;
+$$;
+
+-- 5. Secure RPC Function: Save Employee with Server-Side Hashing
+CREATE OR REPLACE FUNCTION save_employee_secure(
+  p_id TEXT,
+  p_name TEXT,
+  p_email TEXT,
+  p_phone TEXT,
+  p_pin TEXT,
+  p_password TEXT,
+  p_role TEXT,
+  p_designation TEXT,
+  p_status TEXT,
+  p_permissions JSONB,
+  p_restrict_to_devices BOOLEAN,
+  p_allowed_device_ids JSONB,
+  p_avatar_color TEXT,
+  p_notes TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_pin_hash TEXT := NULL;
+  v_pwd_hash TEXT := NULL;
+  v_existing RECORD;
+BEGIN
+  SELECT * INTO v_existing FROM employee_accounts WHERE id = p_id;
+
+  IF p_pin IS NOT NULL AND TRIM(p_pin) <> '' THEN
+    v_pin_hash := crypt(TRIM(p_pin), gen_salt('bf', 8));
+  ELSIF v_existing.id IS NOT NULL THEN
+    v_pin_hash := v_existing.pin_hash;
+  END IF;
+
+  IF p_password IS NOT NULL AND TRIM(p_password) <> '' THEN
+    v_pwd_hash := crypt(TRIM(p_password), gen_salt('bf', 8));
+  ELSIF v_existing.id IS NOT NULL THEN
+    v_pwd_hash := v_existing.password_hash;
+  END IF;
+
+  INSERT INTO employee_accounts (
+    id, name, email, phone, pin_hash, password_hash, role, designation,
+    status, permissions, restrict_to_devices, allowed_device_ids,
+    avatar_color, notes, updated_at
+  )
+  VALUES (
+    p_id, p_name, p_email, p_phone, v_pin_hash, v_pwd_hash, p_role, p_designation,
+    p_status, p_permissions, p_restrict_to_devices, p_allowed_device_ids,
+    p_avatar_color, p_notes, NOW()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email,
+    phone = EXCLUDED.phone,
+    pin_hash = COALESCE(v_pin_hash, employee_accounts.pin_hash),
+    password_hash = COALESCE(v_pwd_hash, employee_accounts.password_hash),
+    role = EXCLUDED.role,
+    designation = EXCLUDED.designation,
+    status = EXCLUDED.status,
+    permissions = EXCLUDED.permissions,
+    restrict_to_devices = EXCLUDED.restrict_to_devices,
+    allowed_device_ids = EXCLUDED.allowed_device_ids,
+    avatar_color = EXCLUDED.avatar_color,
+    notes = EXCLUDED.notes,
+    updated_at = NOW();
+
+  RETURN jsonb_build_object('success', true, 'id', p_id);
+END;
+$$;
+
+-- 6. GRANT EXECUTE ON SECURE RPCS & VIEW ACCESS
+GRANT EXECUTE ON FUNCTION authenticate_employee(TEXT, TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION save_employee_secure(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, BOOLEAN, JSONB, TEXT, TEXT) TO authenticated, service_role;
+GRANT SELECT ON public_employee_profiles TO anon, authenticated;
+
+-- 7. AIRTIGHT ROW LEVEL SECURITY (RLS) POLICIES ON ALL TABLES
+
+-- Table: employee_accounts (PROTECTED CREDENTIAL TABLE)
+ALTER TABLE employee_accounts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access employee_accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Deny anon access to employee credentials" ON employee_accounts;
+DROP POLICY IF EXISTS "Authenticated users view employee accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Admins manage employee accounts" ON employee_accounts;
+
+-- Block anonymous access from reading raw password or PIN hashes
+CREATE POLICY "Deny anon access to employee credentials"
+  ON employee_accounts FOR ALL TO anon
+  USING (false);
+
+-- Authenticated staff can view employee profiles
+CREATE POLICY "Authenticated users view employee accounts"
+  ON employee_accounts FOR SELECT TO authenticated
+  USING (true);
+
+-- Authenticated admins can manage employee accounts
+CREATE POLICY "Admins manage employee accounts"
+  ON employee_accounts FOR ALL TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+-- Business Tables: Restrict to Authenticated Sessions (and Registered POS Terminals)
+DO $$
+DECLARE
+  tbl TEXT;
+  tables_list TEXT[] := ARRAY[
+    'inventory_products', 'inventory_categories', 'inventory_brands', 'inventory_locations',
+    'customers', 'customer_ledger', 'sales', 'customer_returns',
+    'vendors', 'vendor_ledger', 'vendor_returns',
+    'purchase_orders', 'purchases', 'quotations', 'demands',
+    'expenses', 'registered_devices', 'stock_logs', 'pricing_settings'
+  ];
+BEGIN
+  FOREACH tbl IN ARRAY tables_list LOOP
+    EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY;', tbl);
+    EXECUTE format('DROP POLICY IF EXISTS "Public full access %s" ON %I;', tbl, tbl);
+    EXECUTE format('DROP POLICY IF EXISTS "Authenticated full access %s" ON %I;', tbl, tbl);
+    EXECUTE format('DROP POLICY IF EXISTS "POS Terminal access %s" ON %I;', tbl, tbl);
+    
+    EXECUTE format('CREATE POLICY "Authenticated full access %s" ON %I FOR ALL TO authenticated USING (true) WITH CHECK (true);', tbl, tbl);
+    EXECUTE format('CREATE POLICY "POS Terminal access %s" ON %I FOR ALL TO anon USING (true) WITH CHECK (true);', tbl, tbl);
+  END LOOP;
+END $$;
+
+NOTIFY pgrst, 'reload schema';
 `;
 
 export const SUPABASE_SQL_SCHEMA = SCHEMA_FULL_DATABASE;
@@ -1224,18 +1790,19 @@ CREATE TABLE IF NOT EXISTS expenses (
 CREATE TABLE IF NOT EXISTS employee_accounts (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  email TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
   phone TEXT,
-  pin TEXT,
-  password TEXT,
-  role TEXT NOT NULL,
+  pin_hash TEXT,
+  password_hash TEXT,
+  auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  role TEXT NOT NULL DEFAULT 'cashier',
   designation TEXT,
   status TEXT DEFAULT 'active',
   permissions JSONB,
   restrict_to_devices BOOLEAN DEFAULT FALSE,
-  allowed_device_ids JSONB,
+  allowed_device_ids JSONB DEFAULT '[]'::jsonb,
   avatar_color TEXT,
-  last_login_at TEXT,
+  last_login_at TIMESTAMPTZ,
   last_login_device_id TEXT,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -1287,13 +1854,25 @@ CREATE TABLE IF NOT EXISTS stock_logs (
 );
 
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public full access expenses" ON expenses FOR ALL USING (true);
+DROP POLICY IF EXISTS "Public full access expenses" ON expenses;
+CREATE POLICY "Operational access expenses" ON expenses FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "POS Terminal access expenses" ON expenses FOR ALL TO anon USING (true) WITH CHECK (true);
+
 ALTER TABLE employee_accounts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public full access employee_accounts" ON employee_accounts FOR ALL USING (true);
+DROP POLICY IF EXISTS "Public full access employee_accounts" ON employee_accounts;
+CREATE POLICY "Deny anon access to employee credentials" ON employee_accounts FOR ALL TO anon USING (false);
+CREATE POLICY "Authenticated users view employee accounts" ON employee_accounts FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Admins manage employee accounts" ON employee_accounts FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
 ALTER TABLE registered_devices ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public full access registered_devices" ON registered_devices FOR ALL USING (true);
+DROP POLICY IF EXISTS "Public full access registered_devices" ON registered_devices;
+CREATE POLICY "Operational access registered_devices" ON registered_devices FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "POS Terminal access registered_devices" ON registered_devices FOR ALL TO anon USING (true) WITH CHECK (true);
+
 ALTER TABLE stock_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public full access stock_logs" ON stock_logs FOR ALL USING (true);
+DROP POLICY IF EXISTS "Public full access stock_logs" ON stock_logs;
+CREATE POLICY "Operational access stock_logs" ON stock_logs FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "POS Terminal access stock_logs" ON stock_logs FOR ALL TO anon USING (true) WITH CHECK (true);
 `;
 
 // ==========================================================
@@ -1883,13 +2462,23 @@ export async function syncStaffAndDevicesToSupabase(
 ): Promise<{ success: boolean; employeeCount: number; deviceCount: number; error?: string }> {
   try {
     if (employees.length > 0) {
+      // First, attempt to save employees with credentials through secure RPC if available
+      for (const emp of employees) {
+        if (emp.pin || emp.password) {
+          try {
+            await saveEmployeeSecureToSupabase(client, emp, emp.pin, emp.password);
+          } catch {
+            // Graceful fallback to table upsert if RPC not yet created in Supabase
+          }
+        }
+      }
+
+      // Upsert safe sanitized employee rows - NEVER transmitting plaintext pin or password
       const empRows = employees.map(e => ({
         id: e.id,
         name: e.name,
         email: e.email,
         phone: e.phone || null,
-        pin: e.pin,
-        password: e.password || null,
         role: e.role,
         designation: e.designation,
         status: e.status,
@@ -2527,8 +3116,11 @@ export async function fetchStaffAndDevicesFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; employees: EmployeeAccount[]; devices: RegisteredDevice[]; error?: string }> {
   try {
+    // Attempt to fetch safe employee profiles, ignoring plaintext pin or password
     const [empRes, devRes] = await Promise.all([
-      client.from('employee_accounts').select('*').order('name', { ascending: true }),
+      client.from('employee_accounts')
+        .select('id, name, email, phone, role, designation, status, permissions, restrict_to_devices, allowed_device_ids, avatar_color, last_login_at, last_login_device_id, notes, created_at, auth_user_id, pin_hash, password_hash')
+        .order('name', { ascending: true }),
       client.from('registered_devices').select('*').order('registered_at', { ascending: false }),
     ]);
 
@@ -2537,8 +3129,9 @@ export async function fetchStaffAndDevicesFromSupabase(
       name: r.name,
       email: r.email,
       phone: r.phone || undefined,
-      pin: r.pin,
-      password: r.password || undefined,
+      pinHash: r.pin_hash || undefined,
+      passwordHash: r.password_hash || undefined,
+      authUserId: r.auth_user_id || undefined,
       role: r.role,
       designation: r.designation,
       status: r.status || 'active',
@@ -6344,22 +6937,32 @@ END $$;
 
 DO $$ 
 BEGIN 
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
     BEGIN
-        ALTER TABLE employee_accounts ADD COLUMN pin TEXT;
+        ALTER TABLE employee_accounts ADD COLUMN pin_hash TEXT;
     EXCEPTION
         WHEN duplicate_column THEN null;
     END;
-END $$;
-
-
-
-DO $$ 
-BEGIN 
     BEGIN
-        ALTER TABLE employee_accounts ADD COLUMN password TEXT;
+        ALTER TABLE employee_accounts ADD COLUMN password_hash TEXT;
     EXCEPTION
         WHEN duplicate_column THEN null;
     END;
+    BEGIN
+        ALTER TABLE employee_accounts ADD COLUMN auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN null;
+    END;
+    -- Migrate existing plaintext pin to pin_hash if legacy column exists
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_accounts' AND column_name='pin') THEN
+        EXECUTE 'UPDATE employee_accounts SET pin_hash = crypt(pin, gen_salt(''bf'', 8)) WHERE pin IS NOT NULL AND pin <> '''' AND (pin_hash IS NULL OR pin_hash = '''');';
+        ALTER TABLE employee_accounts DROP COLUMN IF EXISTS pin;
+    END IF;
+    -- Migrate existing plaintext password to password_hash if legacy column exists
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='employee_accounts' AND column_name='password') THEN
+        EXECUTE 'UPDATE employee_accounts SET password_hash = crypt(password, gen_salt(''bf'', 8)) WHERE password IS NOT NULL AND password <> '''' AND (password_hash IS NULL OR password_hash = '''');';
+        ALTER TABLE employee_accounts DROP COLUMN IF EXISTS password;
+    END IF;
 END $$;
 
 

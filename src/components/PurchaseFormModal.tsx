@@ -89,11 +89,11 @@ export const PurchaseFormModal: React.FC<PurchaseFormModalProps> = ({
   // Filtered products for quick item add
   const filteredProducts = useMemo(() => {
     if (!searchProductQuery.trim()) return [];
-    const q = searchProductQuery.toLowerCase().trim();
+    const q = (searchProductQuery ? searchProductQuery.toLowerCase() : '').trim();
     return products.filter(p => {
       return (
-        p.name.toLowerCase().includes(q) ||
-        p.internalId.toLowerCase().includes(q) ||
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.internalId && p.internalId.toLowerCase().includes(q)) ||
         (p.brandName && p.brandName.toLowerCase().includes(q)) ||
         (p.typeName && p.typeName.toLowerCase().includes(q))
       );

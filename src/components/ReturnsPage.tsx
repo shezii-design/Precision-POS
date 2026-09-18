@@ -85,15 +85,15 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
     return customerReturns.filter(ret => {
       // 1. Search Query
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchNumber = ret.returnNumber?.toLowerCase().includes(q) || ret.id?.toLowerCase().includes(q);
-        const matchCreditNote = ret.creditNoteNumber?.toLowerCase().includes(q);
-        const matchCustomer = ret.customerName?.toLowerCase().includes(q) || ret.customerPhone?.includes(q);
-        const matchSaleId = ret.saleId?.toLowerCase().includes(q);
+        const q = (searchQuery ? searchQuery.toLowerCase() : '').trim();
+        const matchNumber = (ret.returnNumber && ret.returnNumber.toLowerCase().includes(q)) || (ret.id && ret.id.toLowerCase().includes(q));
+        const matchCreditNote = (ret.creditNoteNumber && ret.creditNoteNumber.toLowerCase().includes(q));
+        const matchCustomer = (ret.customerName && ret.customerName.toLowerCase().includes(q)) || ret.customerPhone?.includes(q);
+        const matchSaleId = (ret.saleId && ret.saleId.toLowerCase().includes(q));
         const matchItems = ret.items?.some(it => 
-          it.productName?.toLowerCase().includes(q) || 
-          it.internalId?.toLowerCase().includes(q) ||
-          it.reason?.toLowerCase().includes(q)
+          (it.productName && it.productName.toLowerCase().includes(q)) || 
+          (it.internalId && it.internalId.toLowerCase().includes(q)) ||
+          (it.reason && it.reason.toLowerCase().includes(q))
         );
 
         if (!matchNumber && !matchCreditNote && !matchCustomer && !matchSaleId && !matchItems) {
@@ -144,15 +144,15 @@ export const ReturnsPage: React.FC<ReturnsPageProps> = ({
     return vendorReturns.filter(ret => {
       // 1. Search Query
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchNumber = ret.returnNumber?.toLowerCase().includes(q) || ret.id?.toLowerCase().includes(q);
-        const matchDebitNote = ret.debitNoteNumber?.toLowerCase().includes(q);
-        const matchVendor = ret.vendorName?.toLowerCase().includes(q);
-        const matchPurchaseId = ret.purchaseId?.toLowerCase().includes(q);
+        const q = (searchQuery ? searchQuery.toLowerCase() : '').trim();
+        const matchNumber = (ret.returnNumber && ret.returnNumber.toLowerCase().includes(q)) || (ret.id && ret.id.toLowerCase().includes(q));
+        const matchDebitNote = (ret.debitNoteNumber && ret.debitNoteNumber.toLowerCase().includes(q));
+        const matchVendor = (ret.vendorName && ret.vendorName.toLowerCase().includes(q));
+        const matchPurchaseId = (ret.purchaseId && ret.purchaseId.toLowerCase().includes(q));
         const matchItems = ret.items?.some(it => 
-          it.productName?.toLowerCase().includes(q) || 
-          it.internalId?.toLowerCase().includes(q) ||
-          it.reason?.toLowerCase().includes(q)
+          (it.productName && it.productName.toLowerCase().includes(q)) || 
+          (it.internalId && it.internalId.toLowerCase().includes(q)) ||
+          (it.reason && it.reason.toLowerCase().includes(q))
         );
 
         if (!matchNumber && !matchDebitNote && !matchVendor && !matchPurchaseId && !matchItems) {

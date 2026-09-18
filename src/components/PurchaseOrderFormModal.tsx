@@ -171,7 +171,7 @@ export const PurchaseOrderFormModal: React.FC<PurchaseOrderFormModalProps> = ({
     if (!productSearchQuery.trim()) {
       return products.slice(0, 8);
     }
-    const q = productSearchQuery.toLowerCase().trim();
+    const q = (productSearchQuery ? productSearchQuery.toLowerCase() : '').trim();
     return products.filter(p => 
       (p.name && p.name.toLowerCase().includes(q)) ||
       (p.internalId && p.internalId.toLowerCase().includes(q)) ||

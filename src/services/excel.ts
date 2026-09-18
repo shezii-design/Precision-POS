@@ -489,3 +489,95 @@ export function exportAnalyticsToExcel(products: Product[], sales: Sale[], fileN
 
   XLSX.writeFile(workbook, fileName);
 }
+
+export function exportVendorLedgerToExcel(vendorName: string, ledgerRows: any[], currentBalance: number, fileName?: string): void {
+  // Ensure rows are strictly sorted chronologically ascending by timestamp
+  const sorted = [...ledgerRows].sort((a, b) => {
+    const tA = new Date(a.date || a.createdAt || 0).getTime();
+    const tB = new Date(b.date || b.createdAt || 0).getTime();
+    return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+  });
+
+  const rows = sorted.map(r => {
+    const d = new Date(r.date || r.createdAt);
+    const valid = !isNaN(d.getTime());
+    const dateStr = valid ? d.toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }) : String(r.date || '');
+    const timeStr = valid ? d.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+
+    return {
+      'Date': sanitizeFormulaCell(dateStr),
+      'Time': sanitizeFormulaCell(timeStr),
+      'Type': sanitizeFormulaCell(r.sourceType === 'opening_balance' ? 'Opening Balance' : r.sourceType === 'cash_sent' ? 'Cash Sent' : r.sourceType === 'cash_received' ? 'Cash Received' : r.sourceType === 'purchase' ? 'Purchase Bill' : r.sourceType === 'sale' ? 'Sale (Invoice)' : 'Adjustment'),
+      'Ref / Bill No': sanitizeFormulaCell(r.billNumber || r.entryCode || ''),
+      'Description': sanitizeFormulaCell(r.description || ''),
+      'Debit (Rs)': r.debit || 0,
+      'Credit (Rs)': r.credit || 0,
+      'Running Balance (Rs)': r.runningBalance
+    };
+  });
+
+  const finalFileName = fileName || `${vendorName.replace(/\s+/g, '_')}_Ledger_Statement.xlsx`;
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Ledger Statement');
+
+  const colWidths = [
+    { wch: 15 }, // Date
+    { wch: 12 }, // Time
+    { wch: 20 }, // Type
+    { wch: 20 }, // Ref
+    { wch: 45 }, // Description
+    { wch: 15 }, // Debit
+    { wch: 15 }, // Credit
+    { wch: 20 }, // Balance
+  ];
+  worksheet['!cols'] = colWidths;
+
+  XLSX.writeFile(workbook, finalFileName);
+}
+
+export function exportCustomerLedgerToExcel(customerName: string, ledgerRows: any[], currentBalance: number, fileName?: string): void {
+  // Ensure rows are strictly sorted chronologically ascending by timestamp
+  const sorted = [...ledgerRows].sort((a, b) => {
+    const tA = new Date(a.date || a.createdAt || 0).getTime();
+    const tB = new Date(b.date || b.createdAt || 0).getTime();
+    return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+  });
+
+  const rows = sorted.map(r => {
+    const d = new Date(r.date || r.createdAt);
+    const valid = !isNaN(d.getTime());
+    const dateStr = valid ? d.toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }) : String(r.date || '');
+    const timeStr = valid ? d.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+
+    return {
+      'Date': sanitizeFormulaCell(dateStr),
+      'Time': sanitizeFormulaCell(timeStr),
+      'Type': sanitizeFormulaCell(r.sourceType === 'opening_balance' ? 'Opening Balance' : r.sourceType === 'payment_received' ? 'Payment Received' : r.sourceType === 'cash_refund' ? 'Cash Refund' : r.sourceType === 'sale' ? 'Sale (Invoice)' : 'Adjustment'),
+      'Ref / Invoice No': sanitizeFormulaCell(r.billNumber || r.entryCode || ''),
+      'Description': sanitizeFormulaCell(r.description || ''),
+      'Debit (Rs)': r.debit || 0,
+      'Credit (Rs)': r.credit || 0,
+      'Running Balance (Rs)': r.runningBalance
+    };
+  });
+
+  const finalFileName = fileName || `${customerName.replace(/\s+/g, '_')}_Ledger_Statement.xlsx`;
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Ledger Statement');
+
+  const colWidths = [
+    { wch: 15 }, // Date
+    { wch: 12 }, // Time
+    { wch: 20 }, // Type
+    { wch: 20 }, // Ref
+    { wch: 45 }, // Description
+    { wch: 15 }, // Debit
+    { wch: 15 }, // Credit
+    { wch: 20 }, // Balance
+  ];
+  worksheet['!cols'] = colWidths;
+
+  XLSX.writeFile(workbook, finalFileName);
+}

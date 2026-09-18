@@ -768,7 +768,7 @@ export default function App() {
     // 1. Check if product exists in inventory by name or productId
     const matchedProd = products.find(p => 
       (demand.productId && p.id === demand.productId) ||
-      p.name.toLowerCase() === demand.itemName.toLowerCase()
+      (p.name && demand.itemName && p.name.toLowerCase() === demand.itemName.toLowerCase())
     );
 
     const defaultRetail = matchedProd ? getDefaultRetailPrice(matchedProd) : undefined;
@@ -999,7 +999,58 @@ export default function App() {
   };
 
   const handleSaveCashEntry = (entryData: Omit<VendorLedgerEntry, 'id' | 'createdAt'>, entryId?: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.'); return; }
+    
+    // Check if this payment is being applied to a specific Sale to Vendor
+    let saleUpdated = false;
+    if (!entryId && entryData.type === 'cash_received' && entryData.referenceId) {
+      setSales(prev => {
+        const updated = prev.map(s => {
+          if (s.id === entryData.referenceId && s.isVendorSale) {
+            saleUpdated = true;
+            const newReceived = (s.amountReceived || 0) + Number(entryData.credit);
+            const newBalance = Math.max(0, (s.netAmount !== undefined ? s.netAmount : s.totalAmount) - newReceived);
+            return {
+              ...s,
+              amountReceived: newReceived,
+              balanceDue: newBalance,
+              paymentStatus: newBalance <= 0 ? 'paid' as const : (newReceived > 0 ? 'partial' as const : 'credit' as const),
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return s;
+        });
+        saveStoredSales(updated);
+        return updated;
+      });
+    }
+
+    // Check if this cash sent is being applied to a specific Purchase Bill
+    let purchaseUpdated = false;
+    if (!entryId && entryData.type === 'cash_sent' && entryData.referenceId) {
+      setPurchases(prev => {
+        const updated = prev.map(p => {
+          if (p.id === entryData.referenceId) {
+            purchaseUpdated = true;
+            const newPaid = (p.amountPaid || 0) + Number(entryData.debit);
+            const totalToPay = p.netAmount !== undefined ? p.netAmount : p.totalAmount;
+            const newBalance = Math.max(0, totalToPay - newPaid);
+            return {
+              ...p,
+              amountPaid: newPaid,
+              balanceDue: newBalance,
+              netBalanceDue: newBalance,
+              paymentStatus: newBalance <= 0 ? 'paid' as const : (newPaid > 0 ? 'partial' as const : 'credit' as const),
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return p;
+        });
+        saveStoredPurchases(updated);
+        return updated;
+      });
+    }
+
     if (entryId) {
       const res = updateCashEntryAndUpdateAll(entryId, entryData, ledgerEntries, vendors);
       setLedgerEntries(res.updatedLedgerEntries);
@@ -1009,7 +1060,8 @@ export default function App() {
       const res = recordCashEntryAndUpdateAll(entryData, ledgerEntries, vendors);
       setLedgerEntries(res.updatedLedgerEntries);
       setVendors(res.updatedVendors);
-      showToast('Payment Entry Recorded', `${entryData.type === 'cash_sent' ? 'Cash Sent' : 'Payment Received'}: ${formatPKR(Number(entryData.amount))}`);
+      const tag = purchaseUpdated ? ' (Purchase Bill Updated)' : saleUpdated ? ' (Invoice Updated)' : '';
+      showToast('Payment Entry Recorded', `${entryData.type === 'cash_sent' ? 'Cash Sent' : 'Payment Received'}: ${formatPKR(Number(entryData.amount))}${tag}`);
     }
     setShowCashModal(false);
     setEditingLedgerEntry(null);
@@ -1809,9 +1861,9 @@ export default function App() {
       setProducts([...importedProducts, ...products]);
     } else {
       // Overwrite matching internal IDs or append new
-      const existingMap = new Map(products.map(p => [p.internalId.toLowerCase(), p]));
+      const existingMap = new Map(products.map(p => [p.internalId ? p.internalId.toLowerCase() : p.id, p]));
       importedProducts.forEach(imp => {
-        existingMap.set(imp.internalId.toLowerCase(), imp);
+        existingMap.set(imp.internalId ? imp.internalId.toLowerCase() : imp.id, imp);
       });
       setProducts(Array.from(existingMap.values()));
     }
@@ -2059,6 +2111,7 @@ export default function App() {
           <PurchasesPage
             purchases={purchases}
             vendors={vendors}
+        sales={sales}
             products={products}
             onOpenNewPurchase={isActionAllowed(currentEmployee, 'canCreatePurchases') ? (vendorId) => handleOpenPurchaseModal(vendorId) : undefined}
             onViewPurchase={(purchase) => {
@@ -2082,6 +2135,7 @@ export default function App() {
           <PurchaseOrdersPage
             purchaseOrders={purchaseOrders}
             vendors={vendors}
+        sales={sales}
             products={products}
             purchases={purchases}
             onOpenCreatePO={isActionAllowed(currentEmployee, 'canCreatePurchaseOrders') ? handleOpenCreatePO : undefined}
@@ -2101,7 +2155,7 @@ export default function App() {
             products={products}
             customers={customers}
             vendors={vendors}
-            sales={sales}
+        sales={sales}
             purchases={purchases}
             onOpenCustomerReturnModal={isActionAllowed(currentEmployee, 'canProcessReturns') ? handleOpenCustomerReturnModal : undefined}
             onOpenVendorReturnModal={isActionAllowed(currentEmployee, 'canProcessReturns') ? handleOpenVendorReturnModal : undefined}
@@ -2131,6 +2185,10 @@ export default function App() {
             onUpdateCustomers={setCustomers}
             onUpdateLedger={setCustomerLedger}
             onUpdateProducts={setProducts}
+            onUpdateSales={(updatedSales) => {
+              setSales(updatedSales);
+              saveStoredSales(updatedSales);
+            }}
             onViewInvoice={handleViewInvoice}
             onEditSale={isActionAllowed(currentEmployee, 'canEditSales') ? handleEditSale : undefined}
           />
@@ -2139,8 +2197,8 @@ export default function App() {
             <VendorDetailsPage
               vendor={selectedVendorForDetails}
               vendors={vendors}
+        sales={sales}
               purchases={purchases}
-              sales={sales}
               ledgerEntries={ledgerEntries}
               products={products}
               purchaseOrders={purchaseOrders}
@@ -2164,8 +2222,8 @@ export default function App() {
           ) : (
             <VendorsPage
               vendors={vendors}
+        sales={sales}
               purchases={purchases}
-              sales={sales}
               ledgerEntries={ledgerEntries}
               products={products}
               onSelectVendor={handleSelectVendor}
@@ -2787,6 +2845,8 @@ export default function App() {
       {/* 9. POS / New Sale Modal (F5 shortcut triggerable from anywhere) */}
       <NewSaleModal
         isOpen={showNewSaleModal}
+        vendors={vendors}
+        sales={sales}
         onClose={() => {
           setShowNewSaleModal(false);
           setEditingSaleForModal(null);
@@ -2799,7 +2859,6 @@ export default function App() {
         }}
         products={products}
         customers={customers}
-        sales={sales}
         locations={locations}
         pricingSettings={pricingSettings}
         editingSale={editingSaleForModal}
@@ -2848,6 +2907,8 @@ export default function App() {
           setCashModalVendorId(undefined);
         }}
         vendors={vendors}
+        sales={sales}
+        purchases={purchases}
         selectedVendorId={cashModalVendorId}
         editingEntry={editingLedgerEntry}
         onSaveEntry={handleSaveCashEntry}
@@ -2862,6 +2923,7 @@ export default function App() {
           setPurchaseModalVendorId(undefined);
         }}
         vendors={vendors}
+        sales={sales}
         selectedVendorId={purchaseModalVendorId}
         products={products}
         editingPurchase={editingPurchase}
@@ -2920,6 +2982,7 @@ export default function App() {
           setEditingVendorReturn(null);
         }}
         vendors={vendors}
+        sales={sales}
         products={products}
         purchases={purchases}
         vendorReturns={vendorReturns}
@@ -3004,6 +3067,7 @@ export default function App() {
         onSavePO={handleSavePO}
         editingPO={editingPOForModal}
         vendors={vendors}
+        sales={sales}
         products={products}
         initialVendorId={poModalVendorId}
         purchaseOrdersList={purchaseOrders}
@@ -3019,6 +3083,7 @@ export default function App() {
         purchaseOrder={activePOForReceive}
         products={products}
         vendors={vendors}
+        sales={sales}
         onProcessReceiving={handleProcessPOCargoReceiving}
       />
 
@@ -3031,6 +3096,7 @@ export default function App() {
         }}
         purchaseOrder={viewingPO}
         vendors={vendors}
+        sales={sales}
         onEdit={handleOpenEditPO}
         onReceive={handleOpenReceiveCargo}
         onDelete={handleDeletePO}

@@ -45,6 +45,7 @@ import {
   syncAllModulesToSupabase,
   fetchAllFromSupabase,
   SCHEMA_FULL_DATABASE,
+  SCHEMA_SECURITY_RLS,
   SCHEMA_IDEMPOTENT_UPDATE,
   SCHEMA_PRODUCTS_ONLY,
   SCHEMA_CUSTOMERS_LEDGER,
@@ -163,7 +164,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
 
   // UI Navigation
   const [activeTab, setActiveTab] = useState<'connection' | 'sync' | 'schema' | 'guide' | 'columns'>('connection');
-  const [selectedSchemaTab, setSelectedSchemaTab] = useState<'full' | 'upgrade' | 'products' | 'customers' | 'vendors' | 'quotations' | 'expenses'>('full');
+  const [selectedSchemaTab, setSelectedSchemaTab] = useState<'full' | 'security' | 'upgrade' | 'products' | 'customers' | 'vendors' | 'quotations' | 'expenses'>('full');
   const [copiedSql, setCopiedSql] = useState<boolean>(false);
 
   // On initial open, run a quiet connection test if credentials exist
@@ -448,6 +449,8 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
 
   const getCurrentSql = () => {
     switch (selectedSchemaTab) {
+      case 'security':
+        return SCHEMA_SECURITY_RLS;
       case 'products':
         return SCHEMA_PRODUCTS_ONLY;
       case 'customers':
@@ -1231,6 +1234,16 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                   </button>
                   <button
                     type="button"
+                    onClick={() => setSelectedSchemaTab('security')}
+                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      selectedSchemaTab === 'security' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    <span>Security & RLS (Auth)</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setSelectedSchemaTab('upgrade')}
                     className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                       selectedSchemaTab === 'upgrade' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
@@ -1396,6 +1409,31 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                       Click <strong>Sync All to Cloud</strong> in the Cloud Sync Hub. All your local products, price tiers, customer ledgers, and vendor bills are now permanently backed up and synced in PostgreSQL!
                     </p>
                   </div>
+                </div>
+
+                {/* Security & RLS Hardening Guide */}
+                <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Airtight Security & Row-Level Security (RLS) Checklist</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-950 leading-relaxed">
+                    To eliminate client-side credential exposure and secure your database tables:
+                  </p>
+                  <ul className="text-[11px] text-emerald-900 space-y-1 list-disc pl-4">
+                    <li>
+                      <strong>Zero Plaintext Credentials:</strong> In <strong>SQL Schema Scripts &gt; Security &amp; RLS (Auth)</strong>, run the script in Supabase SQL Editor. This drops raw PIN/password columns and adds salted bcrypt hashes (<code className="bg-emerald-100/80 px-1 py-0.5 rounded font-mono">pin_hash</code>, <code className="bg-emerald-100/80 px-1 py-0.5 rounded font-mono">password_hash</code>).
+                    </li>
+                    <li>
+                      <strong>Server-Side Verification RPC:</strong> Authentication is executed via PostgreSQL function <code className="bg-emerald-100/80 px-1 py-0.5 rounded font-mono">authenticate_employee</code>, keeping hashes safely on the server.
+                    </li>
+                    <li>
+                      <strong>Denied Anon Access:</strong> Raw credential rows are completely blocked from public/anonymous queries via strict Row-Level Security (<code className="bg-emerald-100/80 px-1 py-0.5 rounded font-mono">USING (false)</code>).
+                    </li>
+                    <li>
+                      <strong>Public View:</strong> Safe staff profiles are queried through <code className="bg-emerald-100/80 px-1 py-0.5 rounded font-mono">public_employee_profiles</code> which strips all hash and credential columns.
+                    </li>
+                  </ul>
                 </div>
 
               </div>

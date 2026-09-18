@@ -15,6 +15,7 @@ import {
   saveCustomer, 
   deleteCustomer, 
   recordCustomerPaymentAndUpdateAll,
+  updateCustomerPaymentAndUpdateAll,
   saveCompanyMachineAndSyncInventory
 } from '../services/storage';
 import { downloadCustomerLedgerPDF } from '../services/pdfReportGenerator';
@@ -61,6 +62,7 @@ interface CustomersPageProps {
   onUpdateCustomers: (customers: Customer[]) => void;
   onUpdateLedger: (ledger: CustomerLedgerEntry[]) => void;
   onUpdateProducts: (products: Product[]) => void;
+  onUpdateSales?: (sales: Sale[]) => void;
   onViewInvoice?: (sale: Sale) => void;
   onEditSale?: (sale: Sale) => void;
 }
@@ -75,6 +77,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
   onUpdateCustomers,
   onUpdateLedger,
   onUpdateProducts,
+  onUpdateSales,
   onViewInvoice,
   onEditSale,
 }) => {
@@ -116,7 +119,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
         safeSales,
         safeCustomerLedger
       );
-      const custSales = safeSales.filter(s => s.customerId === cust.id || (s.customerName && s.customerName.toLowerCase() === cust.name.toLowerCase()));
+      const custSales = safeSales.filter(s => s.customerId === cust.id || (s.customerName && s.customerName.toLowerCase() === (cust.name ? cust.name.toLowerCase() : '')));
       const machineCount = cust.machines?.length || 0;
       const totalDemandItems = cust.machines?.reduce((s, m) => s + (m.items?.length || 0), 0) || 0;
 
@@ -173,17 +176,17 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
 
     // Filter by Search
     if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase().trim();
+      const q = (searchTerm ? searchTerm.toLowerCase() : '').trim();
       list = list.filter(c => 
-        c.name.toLowerCase().includes(q) ||
+        (c.name && c.name.toLowerCase().includes(q)) ||
         (c.contactPerson && c.contactPerson.toLowerCase().includes(q)) ||
         (c.phone && c.phone.includes(q)) ||
         (c.city && c.city.toLowerCase().includes(q)) ||
         (c.ntn && c.ntn.includes(q)) ||
         (c.machines && c.machines.some(m => 
-          m.machineName.toLowerCase().includes(q) || 
+          (m.machineName ? m.machineName.toLowerCase() : '').includes(q) || 
           (m.operatorName && m.operatorName.toLowerCase().includes(q)) ||
-          (m.items && m.items.some(i => i.productName.toLowerCase().includes(q) || (i.customerItemNumber && i.customerItemNumber.toLowerCase().includes(q))))
+          (m.items && m.items.some(i => (i.productName && i.productName.toLowerCase().includes(q)) || (i.customerItemNumber && i.customerItemNumber.toLowerCase().includes(q))))
         ))
       );
     }
@@ -199,7 +202,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
 
     // Filter by City
     if (cityFilter !== 'all') {
-      list = list.filter(c => c.city && c.city.trim().toLowerCase() === cityFilter.toLowerCase());
+      list = list.filter(c => c.city && c.city.trim().toLowerCase() === (cityFilter ? cityFilter.toLowerCase() : ''));
     }
 
     return list;
@@ -232,9 +235,14 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
     entryId?: string
   ) => {
     if (typeof window !== 'undefined' && !window.navigator.onLine) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
-    const result = recordCustomerPaymentAndUpdateAll(entryData, customerLedger, customers);
+    const result = entryId
+      ? updateCustomerPaymentAndUpdateAll(entryId, entryData, customerLedger, customers, sales)
+      : recordCustomerPaymentAndUpdateAll(entryData, customerLedger, customers, sales);
     onUpdateLedger(result.updatedLedgerEntries);
     onUpdateCustomers(result.updatedCustomers);
+    if (result.updatedSales && onUpdateSales) {
+      onUpdateSales(result.updatedSales);
+    }
   };
 
   // If a single customer is selected, show the Customer Details / Demand / Ledger page
@@ -253,6 +261,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
           onUpdateCustomers={onUpdateCustomers}
           onUpdateLedger={onUpdateLedger}
           onUpdateProducts={onUpdateProducts}
+          onUpdateSales={onUpdateSales}
           onViewInvoice={onViewInvoice}
           onEditSale={onEditSale}
         />
@@ -728,6 +737,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
           customers={customers}
+          sales={sales}
           preselectedCustomer={paymentPreselectedCustomer}
           onSavePayment={handleSavePayment}
         />

@@ -208,9 +208,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 <body>
   <div class="header">
     <div>
-      <h1 class="company">{activeTab === 'original' ? 'PRECISION INVENTORY' : 'King Filter House'}
+      <h1 class="company">King Filter House
                 </h1>
-      <div class="sub">Your Filteration Solution<br>03226600734, 03222000734</div>
+      <div class="sub">Your Filteration Solution<br>03226600734, 03222000734<br>125-C Shoaib Bilal Market, Opp General Bus Stand Faisalabad</div>
     </div>
     <div class="meta">
       <h2 class="inv-title">INVOICE: ${sale.id}</h2>
@@ -396,12 +396,10 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-red-600 inline-block"></span>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                  {activeTab === 'original' ? 'PRECISION INVENTORY' : 'King Filter House'}
+                  King Filter House
                 </h1>
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                {activeTab === 'original' ? 'Automotive Filters & Precision Machinery Spares' : <span dangerouslySetInnerHTML={{ __html: 'Your Filteration Solution<br />03226600734, 03222000734' }} />}
-              </p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5 leading-relaxed" dangerouslySetInnerHTML={{ __html: 'Your Filteration Solution<br />03226600734, 03222000734<br />125-C Shoaib Bilal Market, Opp General Bus Stand Faisalabad' }} />
               <p className="text-[11px] text-slate-400 mt-0.5">
                 Pakistan • PKR Currency Official Sales Receipt
               </p>

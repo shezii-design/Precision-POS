@@ -186,8 +186,11 @@ export interface EmployeeAccount {
   name: string; // Full name e.g. "Muhammad Bilal"
   email: string; // Email or username e.g. "cashier1" or "bilal@khanfilters.pk"
   phone?: string;
-  pin: string; // 4-6 digit quick PIN
-  password?: string;
+  pin?: string; // Optional legacy / in-flight plaintext PIN
+  pinHash?: string; // Cryptographic hash (bcrypt / SHA-256 for secure verification)
+  password?: string; // Optional legacy / in-flight plaintext password
+  passwordHash?: string; // Cryptographic hash
+  authUserId?: string; // Mapped Supabase auth.users UUID
   role: UserRole;
   designation: string; // e.g. "Front Counter Cashier", "Store Incharge"
   status: 'active' | 'inactive';
@@ -207,7 +210,7 @@ export interface EmployeeAccount {
 export interface AuthState {
   isLocked: boolean;
   isConfigured: boolean;
-  authMethod: 'pin' | 'password' | 'biometric' | 'none';
+  authMethod: 'pin' | 'password' | 'biometric' | 'supabase_auth' | 'none';
   email?: string;
   pin?: string;
   password?: string;
@@ -216,6 +219,12 @@ export interface AuthState {
   rememberSession: boolean;
   lastUnlockedAt?: string;
   currentUserId?: string; // ID of active logged-in employee or 'admin-master'
+  supabaseSession?: {
+    accessToken?: string;
+    userEmail?: string;
+    userId?: string;
+    expiresAt?: number;
+  };
 }
 
 export interface SupabaseConfig {
@@ -327,6 +336,7 @@ export interface Customer {
   ntn?: string; // National Tax Number
   strn?: string; // Sales Tax Registration Number
   openingBalance?: number; // Initial balance customer owes us in PKR
+  openingBalanceDate?: string; // ISO date string of opening balance
   notes?: string;
   totalPurchases?: number;
   machines?: CompanyMachine[]; // List of company's machines & demand items
@@ -506,6 +516,7 @@ export interface Vendor {
   address?: string;
   city?: string;
   openingBalance: number; // Initial balance we owe to vendor (in PKR)
+  openingBalanceDate?: string; // ISO date string of opening balance
   linkedProductIds: string[]; // IDs of products sourced / linked to this vendor
   notes?: string;
   createdAt: string;

@@ -824,7 +824,12 @@ export function getStoredCustomerLedger(): CustomerLedgerEntry[] {
       saveStoredCustomerLedger(INITIAL_CUSTOMER_LEDGER);
       return INITIAL_CUSTOMER_LEDGER;
     }
-    return JSON.parse(raw);
+    const parsed: CustomerLedgerEntry[] = JSON.parse(raw);
+    return parsed.sort((a, b) => {
+      const tA = new Date(a.date || a.createdAt).getTime();
+      const tB = new Date(b.date || b.createdAt).getTime();
+      return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+    });
   } catch (err) {
     return INITIAL_CUSTOMER_LEDGER;
   }
@@ -897,14 +902,22 @@ export function calculateCustomerNetBalance(
     (customerId && s.customerId === customerId) || 
     (cNameLower && s.customerName && s.customerName.trim().toLowerCase() === cNameLower)
   );
-  const totalInvoicedSales = customerSales.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-  const totalSalesCashReceived = customerSales.reduce((sum, s) => sum + (Number(s.amountReceived) || 0), 0);
 
   // 2. Filter direct ledger entries for this customer
   const customerEntries = ledgerEntries.filter(e => 
     (customerId && e.customerId === customerId) || 
     (cNameLower && e.customerName && e.customerName.trim().toLowerCase() === cNameLower)
   );
+
+  const totalInvoicedSales = customerSales.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
+  const totalSalesCashReceived = customerSales.reduce((sum, s) => {
+    // Deduct direct payments recorded in customer ledger for this invoice to prevent double counting
+    const directForThisSale = customerEntries
+      .filter(e => (e.referenceId === s.id || e.billNumber === s.id) && e.type === 'payment_received')
+      .reduce((acc, e) => acc + (Number(e.amount ?? e.credit) || 0), 0);
+    const checkoutCash = Math.max(0, (Number(s.amountReceived) || 0) - directForThisSale);
+    return sum + checkoutCash;
+  }, 0);
   
   let ledgerDebits = 0;
   let ledgerCredits = 0;
@@ -953,7 +966,7 @@ export function computeCustomerLedgerRows(
   const openEntry = directEntries.find(e => e.type === 'opening_balance');
   let openDebit = 0;
   let openCredit = 0;
-  let openDate = customer.createdAt || new Date(Date.now() - 365 * 86400000).toISOString();
+  let openDate = customer.openingBalanceDate || customer.createdAt || new Date(Date.now() - 365 * 86400000).toISOString();
 
   if (openEntry) {
     openDebit = Number(openEntry.debit) || (Number(openEntry.amount) > 0 ? Number(openEntry.amount) : 0);
@@ -1004,10 +1017,16 @@ export function computeCustomerLedgerRows(
     });
 
     // Payment on Invoice Row (Credit) - Recorded AFTER the invoice entry
-    const amountReceived = Number(sale.amountReceived) || 0;
-    if (amountReceived > 0) {
-      const isFull = amountReceived >= (Number(sale.totalAmount) || 0);
-      const isHalf = !isFull && Math.abs(amountReceived - Math.round((Number(sale.totalAmount) || 0) / 2)) <= 1;
+    // Only display initial payment made at checkout; subsequent payments against this invoice
+    // are displayed as individual ledger entries with their own date/time and slip references.
+    const directPaymentsForSale = directEntries
+      .filter(e => (e.referenceId === sale.id || e.billNumber === sale.id) && e.type === 'payment_received')
+      .reduce((acc, e) => acc + (Number(e.amount ?? e.credit) || 0), 0);
+    const amountReceivedAtCheckout = Math.max(0, (Number(sale.amountReceived) || 0) - directPaymentsForSale);
+
+    if (amountReceivedAtCheckout > 0) {
+      const isFull = amountReceivedAtCheckout >= (Number(sale.totalAmount) || 0);
+      const isHalf = !isFull && Math.abs(amountReceivedAtCheckout - Math.round((Number(sale.totalAmount) || 0) / 2)) <= 1;
       const isPartial = !isFull;
       
       // Sequenced with slightly forward sub-second timestamp so strict chronological ordering is maintained
@@ -1015,14 +1034,14 @@ export function computeCustomerLedgerRows(
       const payDate = baseMs > 0 ? new Date(baseMs + 1000).toISOString() : saleDate;
 
       let payCode = 'Cash Paid';
-      let payDesc = `Payment received for ${sale.id} (Full Cash Paid: ₨ ${amountReceived.toLocaleString()})`;
+      let payDesc = `Payment received for ${sale.id} (Full Cash Paid: ₨ ${amountReceivedAtCheckout.toLocaleString()})`;
       
       if (isHalf) {
         payCode = 'Half Paid';
-        payDesc = `Half / 50% payment received for ${sale.id} (Paid: ₨ ${amountReceived.toLocaleString()}, Balance Due: ₨ ${(sale.balanceDue || 0).toLocaleString()})`;
+        payDesc = `Half / 50% payment received for ${sale.id} (Paid: ₨ ${amountReceivedAtCheckout.toLocaleString()}, Balance Due: ₨ ${(sale.balanceDue || 0).toLocaleString()})`;
       } else if (isPartial) {
         payCode = 'Semi-Paid';
-        payDesc = `Partial payment received for ${sale.id} (Paid: ₨ ${amountReceived.toLocaleString()}, Balance Due: ₨ ${(sale.balanceDue || 0).toLocaleString()})`;
+        payDesc = `Partial payment received for ${sale.id} (Paid: ₨ ${amountReceivedAtCheckout.toLocaleString()}, Balance Due: ₨ ${(sale.balanceDue || 0).toLocaleString()})`;
       }
 
       rows.push({
@@ -1034,7 +1053,7 @@ export function computeCustomerLedgerRows(
         referenceId: sale.id,
         description: payDesc,
         debit: 0,
-        credit: amountReceived,
+        credit: amountReceivedAtCheckout,
         runningBalance: 0,
         paymentMethod: 'Cash',
         rawObject: sale,
@@ -1077,20 +1096,18 @@ export function computeCustomerLedgerRows(
     });
   }
 
-  // 5. Sort chronologically by calendar date with deterministic accounting priority
+  // 5. Sort strictly chronologically (oldest to newest) by timestamp (date / createdAt)
   rows.sort((a, b) => {
-    const dayA = extractCalendarDate(a.date);
-    const dayB = extractCalendarDate(b.date);
-    if (dayA !== dayB) {
-      return dayA.localeCompare(dayB);
+    const timeA = parseDateTimestamp(a.date);
+    const timeB = parseDateTimestamp(b.date);
+    if (timeA !== timeB && timeA > 0 && timeB > 0) {
+      return timeA - timeB;
     }
 
-    // Standard accounting priority on the same day:
-    // 1) Opening Balance (Opening balance brought forward)
-    // 2) Sales Invoice (Debit - customer is billed for goods)
-    // 3) Payment Received (Credit - payment received against bills / on account)
-    // 4) Cash Refund (Debit - money refunded back to customer)
-    // 5) Adjustments
+    // Same millisecond tiebreaker: invoice before its immediate payment
+    if (a.id.startsWith('sale-inv') && b.id.startsWith('sale-pay')) return -1;
+    if (a.id.startsWith('sale-pay') && b.id.startsWith('sale-inv')) return 1;
+
     const priorityOrder: Record<string, number> = {
       opening_balance: 1,
       sale: 2,
@@ -1101,14 +1118,6 @@ export function computeCustomerLedgerRows(
     const pA = priorityOrder[a.sourceType] || 10;
     const pB = priorityOrder[b.sourceType] || 10;
     if (pA !== pB) return pA - pB;
-
-    // Sub-second timestamp tiebreaker
-    const timeA = parseDateTimestamp(a.date);
-    const timeB = parseDateTimestamp(b.date);
-    if (timeA !== timeB) return timeA - timeB;
-
-    if (a.id.startsWith('sale-inv') && b.id.startsWith('sale-pay')) return -1;
-    if (a.id.startsWith('sale-pay') && b.id.startsWith('sale-inv')) return 1;
 
     return a.id.localeCompare(b.id);
   });
@@ -1130,13 +1139,19 @@ export function recordCustomerPayment(
   entryData: Omit<CustomerLedgerEntry, 'id' | 'createdAt'>,
   currentLedger: CustomerLedgerEntry[]
 ): CustomerLedgerEntry[] {
+  const entryDate = entryData.date || new Date().toISOString();
   const newEntry: CustomerLedgerEntry = {
     ...entryData,
     id: `CLE-${Date.now()}`,
-    createdAt: new Date().toISOString(),
+    date: entryDate,
+    createdAt: (entryData as any).createdAt || entryDate,
   };
 
-  const updatedLedger = [newEntry, ...currentLedger];
+  const updatedLedger = [...currentLedger, newEntry].sort((a, b) => {
+    const tA = new Date(a.date || a.createdAt).getTime();
+    const tB = new Date(b.date || b.createdAt).getTime();
+    return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+  });
   saveStoredCustomerLedger(updatedLedger);
   return updatedLedger;
 }
@@ -1145,7 +1160,13 @@ export function updateCustomerPayment(
   updatedEntry: CustomerLedgerEntry,
   currentLedger: CustomerLedgerEntry[]
 ): CustomerLedgerEntry[] {
-  const updatedLedger = currentLedger.map(e => e.id === updatedEntry.id ? { ...updatedEntry, updatedAt: new Date().toISOString() } : e);
+  const updatedLedger = currentLedger
+    .map(e => e.id === updatedEntry.id ? { ...updatedEntry, updatedAt: new Date().toISOString() } : e)
+    .sort((a, b) => {
+      const tA = new Date(a.date || a.createdAt).getTime();
+      const tB = new Date(b.date || b.createdAt).getTime();
+      return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+    });
   saveStoredCustomerLedger(updatedLedger);
   return updatedLedger;
 }
@@ -1162,15 +1183,47 @@ export function deleteCustomerPayment(
 export function recordCustomerPaymentAndUpdateAll(
   entryData: Omit<CustomerLedgerEntry, 'id' | 'createdAt'>,
   currentLedger: CustomerLedgerEntry[],
-  currentCustomers: Customer[]
+  currentCustomers: Customer[],
+  currentSales?: Sale[]
 ): {
   updatedLedgerEntries: CustomerLedgerEntry[];
   updatedCustomers: Customer[];
+  updatedSales?: Sale[];
 } {
   const updatedLedger = recordCustomerPayment(entryData, currentLedger);
+  const salesList = currentSales || getStoredSales();
+  let updatedSales = [...salesList];
+
+  if (entryData.type === 'payment_received' && entryData.referenceId) {
+    const saleId = entryData.referenceId;
+    let saleUpdated = false;
+    updatedSales = updatedSales.map(s => {
+      if (s.id === saleId) {
+        saleUpdated = true;
+        const payAmount = Number(entryData.credit ?? entryData.amount ?? 0);
+        const newReceived = (s.amountReceived || 0) + payAmount;
+        const totalToPay = s.netAmount !== undefined ? s.netAmount : s.totalAmount;
+        const newBalance = Math.max(0, totalToPay - newReceived);
+        return {
+          ...s,
+          amountReceived: newReceived,
+          balanceDue: newBalance,
+          netBalanceDue: newBalance,
+          paymentStatus: newBalance <= 0 ? ('paid' as const) : (newReceived > 0 ? ('partial' as const) : ('credit' as const)),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return s;
+    });
+    if (saleUpdated) {
+      saveStoredSales(updatedSales);
+    }
+  }
+
   return {
     updatedLedgerEntries: updatedLedger,
     updatedCustomers: currentCustomers,
+    updatedSales,
   };
 }
 
@@ -1178,19 +1231,77 @@ export function updateCustomerPaymentAndUpdateAll(
   entryId: string,
   entryData: Partial<CustomerLedgerEntry>,
   currentLedger: CustomerLedgerEntry[],
-  currentCustomers: Customer[]
+  currentCustomers: Customer[],
+  currentSales?: Sale[]
 ): {
   updatedLedgerEntries: CustomerLedgerEntry[];
   updatedCustomers: Customer[];
+  updatedSales?: Sale[];
 } {
   const existing = currentLedger.find(e => e.id === entryId);
+  const salesList = currentSales || getStoredSales();
+  let updatedSales = [...salesList];
+
   if (!existing) {
     return {
       updatedLedgerEntries: currentLedger,
       updatedCustomers: currentCustomers,
+      updatedSales,
     };
   }
+
+  let salesChanged = false;
   const isPayment = (entryData.type || existing.type) === 'payment_received';
+  const newAmount = Number(entryData.amount ?? existing.amount);
+  const oldAmount = Number(existing.amount ?? existing.credit ?? 0);
+  const targetRefId = entryData.referenceId !== undefined ? entryData.referenceId : existing.referenceId;
+
+  // If previous entry was against a sale, rollback previous payment
+  if (existing.type === 'payment_received' && existing.referenceId) {
+    updatedSales = updatedSales.map(s => {
+      if (s.id === existing.referenceId) {
+        salesChanged = true;
+        const reversedReceived = Math.max(0, (s.amountReceived || 0) - oldAmount);
+        const totalToPay = s.netAmount !== undefined ? s.netAmount : s.totalAmount;
+        const newBalance = Math.max(0, totalToPay - reversedReceived);
+        return {
+          ...s,
+          amountReceived: reversedReceived,
+          balanceDue: newBalance,
+          netBalanceDue: newBalance,
+          paymentStatus: newBalance <= 0 ? ('paid' as const) : (reversedReceived > 0 ? ('partial' as const) : ('credit' as const)),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return s;
+    });
+  }
+
+  // If new / updated entry is against a sale, apply new payment
+  if (isPayment && targetRefId) {
+    updatedSales = updatedSales.map(s => {
+      if (s.id === targetRefId) {
+        salesChanged = true;
+        const newReceived = (s.amountReceived || 0) + newAmount;
+        const totalToPay = s.netAmount !== undefined ? s.netAmount : s.totalAmount;
+        const newBalance = Math.max(0, totalToPay - newReceived);
+        return {
+          ...s,
+          amountReceived: newReceived,
+          balanceDue: newBalance,
+          netBalanceDue: newBalance,
+          paymentStatus: newBalance <= 0 ? ('paid' as const) : (newReceived > 0 ? ('partial' as const) : ('credit' as const)),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return s;
+    });
+  }
+
+  if (salesChanged) {
+    saveStoredSales(updatedSales);
+  }
+
   const updatedEntry: CustomerLedgerEntry = {
     ...existing,
     ...entryData,
@@ -1204,21 +1315,54 @@ export function updateCustomerPaymentAndUpdateAll(
   return {
     updatedLedgerEntries: updatedLedger,
     updatedCustomers: currentCustomers,
+    updatedSales,
   };
 }
 
 export function deleteCustomerPaymentAndUpdateAll(
   entryId: string,
   currentLedger: CustomerLedgerEntry[],
-  currentCustomers: Customer[]
+  currentCustomers: Customer[],
+  currentSales?: Sale[]
 ): {
   updatedLedgerEntries: CustomerLedgerEntry[];
   updatedCustomers: Customer[];
+  updatedSales?: Sale[];
 } {
+  const existing = currentLedger.find(e => e.id === entryId);
+  const salesList = currentSales || getStoredSales();
+  let updatedSales = [...salesList];
+
+  if (existing && existing.type === 'payment_received' && existing.referenceId) {
+    const payAmount = Number(existing.credit ?? existing.amount ?? 0);
+    let salesChanged = false;
+    updatedSales = updatedSales.map(s => {
+      if (s.id === existing.referenceId) {
+        salesChanged = true;
+        const reversedReceived = Math.max(0, (s.amountReceived || 0) - payAmount);
+        const totalToPay = s.netAmount !== undefined ? s.netAmount : s.totalAmount;
+        const newBalance = Math.max(0, totalToPay - reversedReceived);
+        return {
+          ...s,
+          amountReceived: reversedReceived,
+          balanceDue: newBalance,
+          netBalanceDue: newBalance,
+          paymentStatus: newBalance <= 0 ? ('paid' as const) : (reversedReceived > 0 ? ('partial' as const) : ('credit' as const)),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return s;
+    });
+    if (salesChanged) {
+      saveStoredSales(updatedSales);
+    }
+  }
+
   const updatedLedger = deleteCustomerPayment(entryId, currentLedger);
   return {
     updatedLedgerEntries: updatedLedger,
     updatedCustomers: currentCustomers,
+    updatedSales,
   };
 }
 
@@ -1468,7 +1612,12 @@ export function getStoredVendorLedger(): VendorLedgerEntry[] {
       saveStoredVendorLedger(INITIAL_LEDGER_ENTRIES);
       return INITIAL_LEDGER_ENTRIES;
     }
-    return JSON.parse(raw);
+    const parsed: VendorLedgerEntry[] = JSON.parse(raw);
+    return parsed.sort((a, b) => {
+      const tA = new Date(a.date || a.createdAt).getTime();
+      const tB = new Date(b.date || b.createdAt).getTime();
+      return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+    });
   } catch (err) {
     return INITIAL_LEDGER_ENTRIES;
   }
@@ -1632,7 +1781,7 @@ export function getVendorFullLedger(
   const openEntry = vEntries.find(e => e.type === 'opening_balance');
   let openDebit = 0;
   let openCredit = 0;
-  let openDate = vendor.createdAt || new Date(Date.now() - 365 * 86400000).toISOString();
+  let openDate = vendor.openingBalanceDate || vendor.createdAt || new Date(Date.now() - 365 * 86400000).toISOString();
 
   if (openEntry) {
     openDebit = Number(openEntry.debit) || (Number(openEntry.amount) < 0 ? Math.abs(Number(openEntry.amount)) : 0);
@@ -1750,36 +1899,27 @@ export function getVendorFullLedger(
     });
   }
 
-  // Sort chronologically (oldest to newest) with deterministic accounting priority
+  // Sort strictly chronologically (oldest to newest) by timestamp (date / createdAt)
   rawRows.sort((a, b) => {
-    const dayA = extractCalendarDate(a.date);
-    const dayB = extractCalendarDate(b.date);
-    if (dayA !== dayB) {
-      return dayA.localeCompare(dayB);
+    // 1. Strict chronological ordering by timestamp (earlier times before later times, e.g. 2pm before 3pm)
+    const timeA = new Date(a.date).getTime();
+    const timeB = new Date(b.date).getTime();
+    if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) {
+      return timeA - timeB;
     }
 
-    // Same calendar day priority for Vendor Ledger:
-    // 1. Opening Balance (Initial opening amount we owe)
-    // 2. Purchase Bill (Credit - increases amount we owe)
-    // 3. Cash Sent (Debit - payments sent settling bills)
-    // 4. Sale to Vendor (Debit - sales offsetting purchases)
-    // 5. Cash Received (Credit - volume rebates / refunds from vendor)
-    // 6. Adjustments
+    // 2. Fallback priority if identical millisecond:
     const priority: Record<string, number> = {
       opening_balance: 1,
       purchase: 2,
-      cash_sent: 3,
-      sale: 4,
+      sale: 3,
+      cash_sent: 4,
       cash_received: 5,
       adjustment: 6,
     };
     const pA = priority[a.sourceType] || 10;
     const pB = priority[b.sourceType] || 10;
     if (pA !== pB) return pA - pB;
-
-    const timeA = parseDateTimestamp(a.date);
-    const timeB = parseDateTimestamp(b.date);
-    if (timeA !== timeB) return timeA - timeB;
 
     return a.id.localeCompare(b.id);
   });
@@ -2081,18 +2221,24 @@ export function recordCashEntry(
   const prefix = isSent ? 'CSH' : 'RCV';
   const nextNum = 1000 + currentLedger.length + 1;
   const newId = `${prefix}-${nextNum}`;
+  const entryDate = entry.date || new Date().toISOString();
 
   const newEntry: VendorLedgerEntry = {
     ...entry,
     id: newId,
+    date: entryDate,
     entryCode: entry.entryCode || (isSent ? 'Cash' : 'Cash Recv'),
-    debit: isSent ? entry.amount : 0,
-    credit: !isSent ? entry.amount : 0,
-    createdAt: new Date().toISOString(),
+    debit: entry.debit !== undefined ? entry.debit : (isSent ? entry.amount : 0),
+    credit: entry.credit !== undefined ? entry.credit : (!isSent ? entry.amount : 0),
+    createdAt: (entry as any).createdAt || entryDate,
     updatedAt: new Date().toISOString(),
   };
 
-  const updatedLedger = [newEntry, ...currentLedger];
+  const updatedLedger = [...currentLedger, newEntry].sort((a, b) => {
+    const tA = new Date(a.date || a.createdAt).getTime();
+    const tB = new Date(b.date || b.createdAt).getTime();
+    return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+  });
   saveStoredVendorLedger(updatedLedger);
   return updatedLedger;
 }
@@ -2108,12 +2254,18 @@ export function updateCashEntry(
   const updated = {
     ...editedEntry,
     entryCode: editedEntry.entryCode || (isSent ? 'Cash' : 'Cash Recv'),
-    debit: isSent ? editedEntry.amount : (editedEntry.debit || 0),
-    credit: !isSent ? editedEntry.amount : (editedEntry.credit || 0),
+    debit: editedEntry.debit !== undefined ? editedEntry.debit : (isSent ? editedEntry.amount : 0),
+    credit: editedEntry.credit !== undefined ? editedEntry.credit : (!isSent ? editedEntry.amount : 0),
     updatedAt: new Date().toISOString(),
   };
 
-  const updatedLedger = currentLedger.map(e => (e.id === editedEntry.id ? updated : e));
+  const updatedLedger = currentLedger
+    .map(e => (e.id === editedEntry.id ? updated : e))
+    .sort((a, b) => {
+      const tA = new Date(a.date || a.createdAt).getTime();
+      const tB = new Date(b.date || b.createdAt).getTime();
+      return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+    });
   saveStoredVendorLedger(updatedLedger);
   return updatedLedger;
 }

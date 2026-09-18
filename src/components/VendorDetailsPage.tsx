@@ -41,6 +41,7 @@ import {
 } from '../services/storage';
 import { VendorLedgerPrintModal } from './VendorLedgerPrintModal';
 import { downloadVendorLedgerPDF } from '../services/pdfReportGenerator';
+import { exportVendorLedgerToExcel } from '../services/excel';
 
 interface VendorDetailsPageProps {
   vendor: Vendor;
@@ -151,11 +152,15 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [sales, vendor.id]);
 
-  // Vendor's cash entries (sent and received)
+  // Vendor's cash entries (sent and received) - strictly chronological
   const vendorCashEntries = useMemo(() => {
     return ledgerEntries
       .filter(e => e.vendorId === vendor.id && (e.type === 'cash_sent' || e.type === 'cash_received'))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => {
+        const tA = new Date(a.date || a.createdAt).getTime();
+        const tB = new Date(b.date || b.createdAt).getTime();
+        return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+      });
   }, [ledgerEntries, vendor.id]);
 
   // Linked products
@@ -298,6 +303,16 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
             >
               <Download className="w-4 h-4 text-amber-700" />
               <span className="hidden md:inline">Download PDF</span>
+            </button>
+            <button
+              type="button"
+              id="btn-vendor-details-download-excel"
+              onClick={() => exportVendorLedgerToExcel(vendor.businessName || vendor.name, fullLedger, currentBalance)}
+              className="p-2 sm:px-3 sm:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="Download complete vendor statement report as Excel"
+            >
+              <Download className="w-4 h-4 text-emerald-700" />
+              <span className="hidden md:inline">Download Excel</span>
             </button>
 
             <button
@@ -671,11 +686,22 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
                       </tr>
                     ) : (
                       filteredLedger.map((row, index) => {
-                        const dateFormatted = new Date(row.date).toLocaleDateString('en-PK', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        });
+                        const dateObj = new Date(row.date);
+                        const isValidDate = !isNaN(dateObj.getTime());
+                        const dateFormatted = isValidDate
+                          ? dateObj.toLocaleDateString('en-PK', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : String(row.date || '—');
+                        const timeFormatted = isValidDate
+                          ? dateObj.toLocaleTimeString('en-PK', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true,
+                            })
+                          : '';
 
                         return (
                           <tr
@@ -686,7 +712,10 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
                             title="Double-click to edit or view details"
                           >
                             <td className="px-4 py-3 whitespace-nowrap font-medium text-neutral-600">
-                              {dateFormatted}
+                              <div>{dateFormatted}</div>
+                              {timeFormatted && (
+                                <div className="text-[10px] text-neutral-400 font-mono">{timeFormatted}</div>
+                              )}
                             </td>
 
                             <td className="px-3 py-3 whitespace-nowrap">

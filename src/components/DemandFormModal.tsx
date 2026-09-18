@@ -117,20 +117,20 @@ export const DemandFormModal: React.FC<DemandFormModalProps> = ({
   // Filtered customer suggestions
   const customerSuggestions = useMemo(() => {
     if (!customerName.trim()) return customers.slice(0, 6);
-    const q = customerName.toLowerCase();
+    const q = (customerName ? customerName.toLowerCase() : '');
     return customers
-      .filter(c => c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q)) || (c.city && c.city.toLowerCase().includes(q)))
+      .filter(c => (c.name && c.name.toLowerCase()).includes(q) || (c.phone && c.phone.includes(q)) || (c.city && c.city.toLowerCase().includes(q)))
       .slice(0, 6);
   }, [customerName, customers]);
 
   // Filtered product suggestions
   const productSuggestions = useMemo(() => {
     if (!itemName.trim()) return products.slice(0, 6);
-    const q = itemName.toLowerCase();
+    const q = (itemName ? itemName.toLowerCase() : '');
     return products
       .filter(p => 
-        p.name.toLowerCase().includes(q) || 
-        p.internalId.toLowerCase().includes(q) || 
+        (p.name && p.name.toLowerCase().includes(q)) || 
+        (p.internalId && p.internalId.toLowerCase().includes(q)) || 
         (p.brandName && p.brandName.toLowerCase().includes(q)) ||
         (p.crossReferences && p.crossReferences.toLowerCase().includes(q))
       )

@@ -34,6 +34,8 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
   const [city, setCity] = useState<string>('');
   const [address, setAddress] = useState<string>('');
   const [openingBalance, setOpeningBalance] = useState<number | string>(0);
+  const [openingBalanceDate, setOpeningBalanceDate] = useState<string>('');
+  const [openingBalanceTime, setOpeningBalanceTime] = useState<string>('00:00');
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string>('');
 
@@ -48,6 +50,22 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
         setCity(editingVendor.city || '');
         setAddress(editingVendor.address || '');
         setOpeningBalance(editingVendor.openingBalance || 0);
+
+        const rawDate = editingVendor.openingBalanceDate || editingVendor.createdAt;
+        if (rawDate) {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            setOpeningBalanceDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+            setOpeningBalanceTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+          } else {
+            setOpeningBalanceDate(new Date().toISOString().slice(0, 10));
+            setOpeningBalanceTime('00:00');
+          }
+        } else {
+          setOpeningBalanceDate(new Date().toISOString().slice(0, 10));
+          setOpeningBalanceTime('00:00');
+        }
+
         setNotes(editingVendor.notes || '');
       } else {
         setBusinessName('');
@@ -58,6 +76,9 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
         setCity('');
         setAddress('');
         setOpeningBalance(0);
+        const now = new Date();
+        setOpeningBalanceDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
+        setOpeningBalanceTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
         setNotes('');
       }
       setError('');
@@ -83,6 +104,22 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
 
     const numBalance = Number(openingBalance) || 0;
 
+    let finalOpenDate = '';
+    if (openingBalanceDate) {
+      const [year, month, day] = openingBalanceDate.split('-').map(Number);
+      let hours = 0;
+      let minutes = 0;
+      if (openingBalanceTime) {
+        const [h, m] = openingBalanceTime.split(':').map(Number);
+        hours = isNaN(h) ? 0 : h;
+        minutes = isNaN(m) ? 0 : m;
+      }
+      const combined = new Date(year, month - 1, day, hours, minutes, 0);
+      finalOpenDate = isNaN(combined.getTime()) ? new Date().toISOString() : combined.toISOString();
+    } else {
+      finalOpenDate = editingVendor?.openingBalanceDate || editingVendor?.createdAt || new Date().toISOString();
+    }
+
     const vendorToSave: Vendor = {
       id: editingVendor ? editingVendor.id : `vend-${Date.now()}`,
       businessName: businessName.trim(),
@@ -93,9 +130,10 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
       city: city.trim() || undefined,
       address: address.trim() || undefined,
       openingBalance: numBalance,
+      openingBalanceDate: finalOpenDate,
       linkedProductIds: editingVendor ? (editingVendor.linkedProductIds || []) : [],
       notes: notes.trim() || undefined,
-      createdAt: editingVendor ? editingVendor.createdAt : new Date().toISOString(),
+      createdAt: editingVendor ? editingVendor.createdAt : finalOpenDate,
       updatedAt: new Date().toISOString(),
     };
 
@@ -271,27 +309,65 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
             </div>
           </div>
 
-          {/* Opening Balance (Initial Balance We Owe to Them) */}
-          <div>
-            <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
-              Initial Opening Balance (We Owe in PKR)
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                id="vendor-opening-balance-input"
-                min="0"
-                step="any"
-                placeholder="0"
-                value={openingBalance}
-                onChange={e => setOpeningBalance(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-bold text-neutral-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none"
-              />
-              <span className="absolute left-3 top-2.5 text-neutral-500 font-semibold text-sm">₨</span>
+          {/* Opening Balance, Date and Time */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
+                Opening Balance (PKR)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  id="vendor-opening-balance-input"
+                  min="0"
+                  step="any"
+                  placeholder="0"
+                  value={openingBalance}
+                  onChange={e => setOpeningBalance(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-bold text-neutral-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none"
+                />
+                <span className="absolute left-3 top-2.5 text-neutral-500 font-semibold text-sm">₨</span>
+              </div>
+              <p className="mt-1 text-[11px] text-neutral-400">
+                Amount previously owed
+              </p>
             </div>
-            <p className="mt-1 text-[11px] text-neutral-400">
-              Amount previously owed to this vendor before recording new purchases/cash
-            </p>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
+                Opening Date
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  id="vendor-opening-balance-date-input"
+                  value={openingBalanceDate}
+                  onChange={e => setOpeningBalanceDate(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-medium text-neutral-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none"
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-neutral-400">
+                Ledger start date
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
+                Opening Time
+              </label>
+              <div className="relative">
+                <input
+                  type="time"
+                  id="vendor-opening-balance-time-input"
+                  value={openingBalanceTime}
+                  onChange={e => setOpeningBalanceTime(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-sm font-medium text-neutral-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none"
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-neutral-400">
+                Time for ledger sorting
+              </p>
+            </div>
           </div>
 
           {/* Notes */}
