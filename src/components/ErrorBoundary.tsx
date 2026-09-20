@@ -134,3 +134,71 @@ export class ErrorBoundary extends (React.Component as any)<Props, State> {
     return this.props.children;
   }
 }
+
+interface SectionProps {
+  children: ReactNode;
+  fallbackTitle?: string;
+  onReset?: () => void;
+  key?: React.Key;
+}
+
+interface SectionState {
+  hasError: boolean;
+  errorMessage: string;
+}
+
+export class SectionErrorBoundary extends (React.Component as any)<SectionProps, SectionState> {
+  constructor(props: SectionProps) {
+    super(props);
+    this.state = {
+      hasError: false,
+      errorMessage: '',
+    };
+  }
+
+  public static getDerivedStateFromError(error: Error): SectionState {
+    return {
+      hasError: true,
+      errorMessage: error?.message || 'Component failed to load',
+    };
+  }
+
+  public componentDidCatch(error: Error, errorInfo: any) {
+    console.error('Section Error caught:', error, errorInfo);
+  }
+
+  private handleRetry = () => {
+    this.setState({ hasError: false, errorMessage: '' });
+    if (this.props.onReset) {
+      this.props.onReset();
+    }
+  };
+
+  public render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 bg-red-50/80 border border-red-200 rounded-2xl text-center space-y-3 my-4">
+          <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <h3 className="text-sm font-bold text-red-900">
+            {this.props.fallbackTitle || 'Unable to display this section'}
+          </h3>
+          <p className="text-xs text-red-700 max-w-md mx-auto font-mono">
+            {this.state.errorMessage}
+          </p>
+          <button
+            type="button"
+            onClick={this.handleRetry}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-xs"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Try Again</span>
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}

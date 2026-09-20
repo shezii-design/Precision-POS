@@ -45,13 +45,6 @@ import {
   syncAllModulesToSupabase,
   fetchAllFromSupabase,
   SCHEMA_FULL_DATABASE,
-  SCHEMA_SECURITY_RLS,
-  SCHEMA_IDEMPOTENT_UPDATE,
-  SCHEMA_PRODUCTS_ONLY,
-  SCHEMA_CUSTOMERS_LEDGER,
-  SCHEMA_VENDORS_PURCHASING,
-  SCHEMA_QUOTATIONS_DEMANDS,
-  SCHEMA_EXPENSES_STAFF,
   resetSupabaseClient
 } from '../services/supabase';
 import { 
@@ -163,9 +156,9 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
   const [syncFeedback, setSyncFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   // UI Navigation
-  const [activeTab, setActiveTab] = useState<'connection' | 'sync' | 'schema' | 'guide' | 'columns'>('connection');
-  const [selectedSchemaTab, setSelectedSchemaTab] = useState<'full' | 'security' | 'upgrade' | 'products' | 'customers' | 'vendors' | 'quotations' | 'expenses'>('full');
+  const [activeTab, setActiveTab] = useState<'connection' | 'sync' | 'guide' | 'columns'>('connection');
   const [copiedSql, setCopiedSql] = useState<boolean>(false);
+  const [showSqlViewer, setShowSqlViewer] = useState<boolean>(false);
 
   // On initial open, run a quiet connection test if credentials exist
   useEffect(() => {
@@ -196,28 +189,32 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
       return;
     }
 
-    const res = await testSupabaseConnection(targetUrl, targetKey);
-    setIsTesting(false);
-    setTestResult(res);
+    try {
+      const res = await testSupabaseConnection(targetUrl, targetKey);
+      setIsTesting(false);
+      setTestResult(res);
 
-    if (res.success) {
-      const updatedConfig: SupabaseConfig = {
-        ...config,
-        url: targetUrl,
-        anonKey: targetKey,
-        enabled: true,
-        syncStatus: 'connected',
-        lastSyncedAt: config.lastSyncedAt || new Date().toISOString(),
-      };
-      onSaveConfig(updatedConfig);
-      const totalRecords = res.tables ? res.tables.reduce((sum, t) => sum + (t.rowCount || 0), 0) : 0;
-      setSyncFeedback({ success: true, message: `Connected to Supabase! Latency: ${res.latencyMs}ms (${totalRecords} records found)` });
-    } else {
-      setSyncFeedback({ success: false, message: `Connection failed: ${res.message}` });
+      if (res.success) {
+        const updatedConfig: SupabaseConfig = {
+          ...config,
+          url: targetUrl,
+          anonKey: targetKey,
+          enabled: true,
+          syncStatus: 'connected',
+          lastSyncedAt: config.lastSyncedAt || new Date().toISOString(),
+        };
+        onSaveConfig(updatedConfig);
+        const totalRecords = res.tables ? res.tables.reduce((sum, t) => sum + (t.rowCount || 0), 0) : 0;
+        setSyncFeedback({ success: true, message: `Connected to Supabase! Latency: ${res.latencyMs}ms (${totalRecords} records found)` });
+      } else {
+        setSyncFeedback({ success: false, message: `Connection failed: ${res.message}` });
+      }
+    } catch (err: unknown) {
+      setIsTesting(false);
+      const msg = err instanceof Error ? err.message : 'Network drop or server unreachable while testing connection.';
+      setSyncFeedback({ success: false, message: msg });
     }
   };
-
-
 
   const handlePushAllToCloud = async () => {
     const client = getSupabaseClient(config);
@@ -229,49 +226,55 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     setIsSyncingAll(true);
     setSyncFeedback(null);
 
-    const bundle = {
-      products,
-      brands,
-      types,
-      locations,
-      customers,
-      customerLedger,
-      sales,
-      customerReturns,
-      vendors,
-      vendorLedger,
-      vendorReturns,
-      purchases,
-      purchaseOrders,
-      quotations,
-      demands,
-      expenses,
-      employees,
-      registeredDevices,
-      stockLogs,
-      pricingSettings,
-    };
+    try {
+      const bundle = {
+        products,
+        brands,
+        types,
+        locations,
+        customers,
+        customerLedger,
+        sales,
+        customerReturns,
+        vendors,
+        vendorLedger,
+        vendorReturns,
+        purchases,
+        purchaseOrders,
+        quotations,
+        demands,
+        expenses,
+        employees,
+        registeredDevices,
+        stockLogs,
+        pricingSettings,
+      };
 
-    const res = await syncAllModulesToSupabase(client, bundle);
-    setIsSyncingAll(false);
+      const res = await syncAllModulesToSupabase(client, bundle);
+      setIsSyncingAll(false);
 
-    if (res.success) {
-      setSyncFeedback({ success: true, message: res.message });
-      onSaveConfig({
-        ...config,
-        url: config.url || envConfig.url,
-        anonKey: config.anonKey || envConfig.anonKey,
-        enabled: true,
-        lastSyncedAt: new Date().toISOString(),
-        syncStatus: 'connected',
-      });
-      // Re-run connection test to refresh table row counts
-      handleTestConnection(config.url || envConfig.url, config.anonKey || envConfig.anonKey);
-    } else {
-      setSyncFeedback({ 
-        success: false, 
-        message: `Sync encountered issues: ${res.errors.join(' | ') || res.message}` 
-      });
+      if (res.success) {
+        setSyncFeedback({ success: true, message: res.message });
+        onSaveConfig({
+          ...config,
+          url: config.url || envConfig.url,
+          anonKey: config.anonKey || envConfig.anonKey,
+          enabled: true,
+          lastSyncedAt: new Date().toISOString(),
+          syncStatus: 'connected',
+        });
+        // Re-run connection test to refresh table row counts
+        handleTestConnection(config.url || envConfig.url, config.anonKey || envConfig.anonKey);
+      } else {
+        setSyncFeedback({ 
+          success: false, 
+          message: `Sync encountered issues: ${res.errors.join(' | ') || res.message}` 
+        });
+      }
+    } catch (err: unknown) {
+      setIsSyncingAll(false);
+      const msg = err instanceof Error ? err.message : 'Network error occurred while syncing data to cloud.';
+      setSyncFeedback({ success: false, message: msg });
     }
   };
 
@@ -285,22 +288,28 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     setIsPullingAll(true);
     setSyncFeedback(null);
 
-    const res = await fetchAllFromSupabase(client);
-    setIsPullingAll(false);
+    try {
+      const res = await fetchAllFromSupabase(client);
+      setIsPullingAll(false);
 
-    if (res.success && res.data) {
-      if (onImportFullBackup) {
-        onImportFullBackup(res.data);
-      } else if (onImportBackup && res.data.products) {
-        onImportBackup(res.data.products);
+      if (res.success && res.data) {
+        if (onImportFullBackup) {
+          onImportFullBackup(res.data);
+        } else if (onImportBackup && res.data.products) {
+          onImportBackup(res.data.products);
+        }
+        setSyncFeedback({ 
+          success: true, 
+          message: `Successfully loaded all ERP data from Supabase! (${res.data.products?.length || 0} products, ${res.data.sales?.length || 0} sales, ${res.data.customers?.length || 0} customers, ${res.data.purchases?.length || 0} purchases)` 
+        });
+        handleTestConnection(config.url || envConfig.url, config.anonKey || envConfig.anonKey);
+      } else {
+        setSyncFeedback({ success: false, message: `Download failed: ${res.error}` });
       }
-      setSyncFeedback({ 
-        success: true, 
-        message: `Successfully loaded all ERP data from Supabase! (${res.data.products?.length || 0} products, ${res.data.sales?.length || 0} sales, ${res.data.customers?.length || 0} customers, ${res.data.purchases?.length || 0} purchases)` 
-      });
-      handleTestConnection(config.url || envConfig.url, config.anonKey || envConfig.anonKey);
-    } else {
-      setSyncFeedback({ success: false, message: `Download failed: ${res.error}` });
+    } catch (err: unknown) {
+      setIsPullingAll(false);
+      const msg = err instanceof Error ? err.message : 'Network drop occurred while downloading data from Supabase.';
+      setSyncFeedback({ success: false, message: msg });
     }
   };
 
@@ -447,30 +456,8 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     }
   };
 
-  const getCurrentSql = () => {
-    switch (selectedSchemaTab) {
-      case 'security':
-        return SCHEMA_SECURITY_RLS;
-      case 'products':
-        return SCHEMA_PRODUCTS_ONLY;
-      case 'customers':
-        return SCHEMA_CUSTOMERS_LEDGER;
-      case 'vendors':
-        return SCHEMA_VENDORS_PURCHASING;
-      case 'quotations':
-        return SCHEMA_QUOTATIONS_DEMANDS;
-      case 'expenses':
-        return SCHEMA_EXPENSES_STAFF;
-      case 'upgrade':
-        return SCHEMA_IDEMPOTENT_UPDATE;
-      case 'full':
-      default:
-        return SCHEMA_FULL_DATABASE;
-    }
-  };
-
-  const handleCopySql = () => {
-    navigator.clipboard.writeText(getCurrentSql());
+  const handleCopyMasterSql = () => {
+    navigator.clipboard.writeText(SCHEMA_FULL_DATABASE);
     setCopiedSql(true);
     setTimeout(() => setCopiedSql(false), 2500);
   };
@@ -594,19 +581,6 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Cloud Sync Hub</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('schema')}
-            className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-t border-x shrink-0 flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'schema'
-                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-sm'
-                : 'text-slate-600 hover:text-slate-900 border-transparent'
-            }`}
-          >
-            <FileCode2 className="w-3.5 h-3.5" />
-            <span>SQL Schema Scripts</span>
           </button>
 
           <button
@@ -803,11 +777,14 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                         ) : (
                           <button
                             type="button"
-                            onClick={() => setActiveTab('schema')}
+                            onClick={() => {
+                              setShowSqlViewer(true);
+                              handleCopyMasterSql();
+                            }}
                             className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100/80 hover:bg-amber-200 px-2 py-0.5 rounded-md cursor-pointer transition-colors"
                           >
                             <AlertTriangle className="w-3 h-3" />
-                            Run SQL
+                            Run Master SQL
                           </button>
                         )}
                       </div>
@@ -816,43 +793,77 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                 </div>
               </div>
 
-              {/* Quick SQL Schema Action Card */}
-              <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-700 shadow-md">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <FileCode2 className="w-4 h-4 text-emerald-400" />
-                    <h4 className="text-xs font-black uppercase tracking-wider text-white">
-                      Where is the Database SQL Code?
-                    </h4>
+              {/* Single Master SQL Schema Action Card & Viewer */}
+              <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-4 sm:p-5 space-y-4 border border-slate-700 shadow-md">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <FileCode2 className="w-4 h-4 text-emerald-400" />
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/30">
+                        Single Master Script
+                      </span>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-white">
+                        Database Master SQL Script
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      The single complete PostgreSQL schema with all ERP tables, relational columns, performance indexes, RLS security policies, and atomic transaction RPCs.
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-300">
-                    The complete PostgreSQL DDL schema with all 20 tables, relational columns (dimensions, prices, sales, ledgers), indexes, and RLS policies is ready to copy or view.
-                  </p>
+
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    <button
+                      type="button"
+                      id="btn-copy-master-sql"
+                      onClick={handleCopyMasterSql}
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    >
+                      {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedSql ? 'Master SQL Copied!' : 'Copy Master SQL'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowSqlViewer(!showSqlViewer)}
+                      className="px-3.5 py-2 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer border border-white/20"
+                    >
+                      <FileCode2 className="w-3.5 h-3.5" />
+                      <span>{showSqlViewer ? 'Hide SQL Code' : 'View SQL Code'}</span>
+                    </button>
+
+                    <a
+                      href="https://supabase.com/dashboard/project/_/sql"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-2 bg-slate-700/80 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-600"
+                    >
+                      <span>Supabase SQL Editor</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(SCHEMA_FULL_DATABASE);
-                      setCopiedSql(true);
-                      setTimeout(() => setCopiedSql(false), 2500);
-                    }}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
-                  >
-                    {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedSql ? 'Master SQL Copied!' : 'Copy Master SQL'}</span>
-                  </button>
+                {/* Collapsible/Expandable SQL Code Viewer */}
+                {showSqlViewer && (
+                  <div className="space-y-2 pt-3 border-t border-slate-700/80">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-400 font-mono text-[11px]">
+                          {SCHEMA_FULL_DATABASE.split('\n').length} lines • Idempotent & Safe
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400">
+                        Paste into <strong>Supabase Dashboard &gt; SQL Editor</strong> and click <strong>Run</strong>
+                      </span>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('schema')}
-                    className="px-3.5 py-2 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer border border-white/20"
-                  >
-                    <FileCode2 className="w-3.5 h-3.5" />
-                    <span>View SQL Scripts</span>
-                  </button>
-                </div>
+                    <div className="relative">
+                      <pre className="p-4 bg-slate-950 text-emerald-400 rounded-xl text-[11px] font-mono overflow-x-auto max-h-96 leading-relaxed border border-slate-800 shadow-inner">
+                        {SCHEMA_FULL_DATABASE}
+                      </pre>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1215,135 +1226,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
           )}
 
           {/* ========================================================= */}
-          {/* TAB 3: SQL SCHEMA SCRIPTS                                 */}
-          {/* ========================================================= */}
-          {activeTab === 'schema' && (
-            <div className="space-y-3">
-              
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-                {/* Script Selector Sub-tabs */}
-                <div className="flex items-center gap-1.5 overflow-x-auto bg-slate-200 p-1 rounded-xl scrollbar-thin">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSchemaTab('full')}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'full' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    All 15 Tables (Master)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSchemaTab('security')}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1 ${
-                      selectedSchemaTab === 'security' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                    <span>Security & RLS (Auth)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSchemaTab('upgrade')}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'upgrade' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Idempotent Upgrade Script (Safe)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSchemaTab('products')}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'products' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Products & Inventory
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSchemaTab('customers')}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'customers' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Customers & Ledger
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSchemaTab('vendors')}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'vendors' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Vendors & Purchasing
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSchemaTab('quotations')}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'quotations' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Quotations & Demands
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSchemaTab('expenses')}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                      selectedSchemaTab === 'expenses' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Expenses & Staff
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] font-mono text-slate-500 hidden sm:inline">
-                    {getCurrentSql().split('\n').length} lines
-                  </span>
-                  <button
-                    type="button"
-                    id="btn-copy-supabase-sql"
-                    onClick={handleCopySql}
-                    className="text-xs text-white bg-red-600 hover:bg-red-700 font-bold flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl transition-colors cursor-pointer shrink-0 shadow-sm"
-                  >
-                    {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedSql ? 'Copied to Clipboard!' : 'Copy SQL Script'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Code display block */}
-              <div className="relative">
-                <div className="absolute top-2 right-3 z-10 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-700/60 text-[10px] text-emerald-400 font-mono">
-                  <span>PostgreSQL DDL & RLS</span>
-                </div>
-                <pre className="p-4 bg-slate-950 text-emerald-400 rounded-2xl text-[11px] font-mono overflow-x-auto max-h-80 leading-relaxed border border-slate-800 shadow-inner">
-                  {getCurrentSql()}
-                </pre>
-              </div>
-
-              <div className="p-3 bg-slate-200 border border-slate-200 rounded-xl text-[11px] text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span>
-                  Paste this script into <strong>Supabase Dashboard &gt; SQL Editor &gt; New query</strong> and click <strong>Run</strong>.
-                </span>
-                <a
-                  href="https://supabase.com/dashboard/project/_/sql"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold text-red-600 hover:text-red-700 flex items-center gap-1 shrink-0"
-                >
-                  <span>Open Supabase SQL Editor</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* TAB 4: STEP-BY-STEP SETUP GUIDE                           */}
+          {/* TAB 3: STEP-BY-STEP SETUP GUIDE                           */}
           {/* ========================================================= */}
           {activeTab === 'guide' && (
             <div className="space-y-4">
@@ -1391,9 +1274,9 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     3
                   </div>
                   <div className="space-y-1 flex-1">
-                    <h4 className="font-bold text-slate-900">Run the SQL Setup Script</h4>
+                    <h4 className="font-bold text-slate-900">Run the Master SQL Setup Script</h4>
                     <p className="text-slate-600">
-                      Go to the <strong>SQL Schema Scripts</strong> tab in this modal, copy the script, then go to <strong>Supabase Dashboard &gt; SQL Editor</strong>, paste it, and click <strong>Run</strong>.
+                      Go to the <strong>Connection &amp; Health</strong> tab in this modal and click <strong>Copy Master SQL</strong> (or click <strong>View SQL Code</strong>), then go to <strong>Supabase Dashboard &gt; SQL Editor</strong>, paste it, and click <strong>Run</strong>.
                     </p>
                   </div>
                 </div>

@@ -136,6 +136,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
   const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showPinInForm, setShowPinInForm] = useState<boolean>(false);
+  const [showPasswordInForm, setShowPasswordInForm] = useState<boolean>(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string>('');
   const [editingDeviceNameId, setEditingDeviceNameId] = useState<string | null>(null);
   const [customDeviceNameInput, setCustomDeviceNameInput] = useState<string>('');
@@ -305,8 +306,15 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
       return;
     }
 
+    const isMaster = formData.id === 'admin-master';
+
     if (!formData.pin || formData.pin.length < 4) {
       showNotification('PIN must be at least 4 digits.');
+      return;
+    }
+
+    if (formData.password && formData.password.trim().length > 0 && formData.password.trim().length < 6) {
+      showNotification('Password must be at least 6 characters long.');
       return;
     }
 
@@ -328,31 +336,52 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
       phone: formData.phone.trim(),
       pin: formData.pin.trim(),
       password: formData.password?.trim() || undefined,
-      role: formData.role,
-      designation: formData.designation.trim() || ROLE_INFO[formData.role].label,
-      status: formData.status,
-      permissions: formData.permissions,
-      restrictToDevices: formData.restrictToDevices,
+      role: isMaster ? 'admin' : formData.role,
+      designation: isMaster ? 'Shop Owner & Super Admin' : (formData.designation.trim() || ROLE_INFO[formData.role].label),
+      status: isMaster ? 'active' : formData.status,
+      permissions: isMaster ? SUPER_ADMIN_PERMISSIONS : formData.permissions,
+      restrictToDevices: isMaster ? false : formData.restrictToDevices,
       allowedDeviceIds: allowedDevices,
       avatarColor: formData.avatarColor,
       createdAt: editingEmployee ? editingEmployee.createdAt : new Date().toISOString(),
       notes: formData.notes.trim()
     };
 
-    const saved = await saveEmployeeWithCredentials(
-      employeeRecord, 
-      formData.pin.trim(), 
-      formData.password?.trim()
-    );
+    try {
+      const saved = await saveEmployeeWithCredentials(
+        employeeRecord, 
+        formData.pin.trim(), 
+        formData.password?.trim()
+      );
 
-    const updatedList = employees.map(e => e.id === saved.id ? saved : e);
-    if (!employees.some(e => e.id === saved.id)) {
-      updatedList.push(saved);
+      const updatedList = employees.map(e => e.id === saved.id ? saved : e);
+      if (!employees.some(e => e.id === saved.id)) {
+        updatedList.push(saved);
+      }
+      onUpdateEmployees(updatedList);
+      setIsCreatingNew(false);
+      setEditingEmployee(null);
+      if (isMaster) {
+        if (saved.backendSync?.success) {
+          showNotification('Master Administrator credentials updated securely and synced to backend database.');
+        } else if (saved.backendSync?.error) {
+          showNotification(`Master Admin credentials saved locally. Backend notice: ${saved.backendSync.error}`);
+        } else {
+          showNotification('Master Administrator credentials updated securely in-app.');
+        }
+      } else {
+        if (saved.backendSync?.success) {
+          showNotification(`Employee ${saved.name} saved and synced to backend database.`);
+        } else if (saved.backendSync?.error) {
+          showNotification(`Employee ${saved.name} saved locally. Backend notice: ${saved.backendSync.error}`);
+        } else {
+          showNotification(`Employee ${saved.name} saved successfully with active login access.`);
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to securely save employee credentials. Please check connection and try again.';
+      showNotification(msg);
     }
-    onUpdateEmployees(updatedList);
-    setIsCreatingNew(false);
-    setEditingEmployee(null);
-    showNotification(`Employee ${saved.name} saved successfully with active login access.`);
   };
 
   const handleDelete = (emp: EmployeeAccount) => {
@@ -552,26 +581,49 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
-                      {editingEmployee ? `Edit Employee Account: ${editingEmployee.name}` : 'Create New Employee Account'}
+                      {editingEmployee?.id === 'admin-master'
+                        ? 'Master Administrator Credentials (System Owner)'
+                        : editingEmployee 
+                        ? `Edit Employee Account: ${editingEmployee.name}` 
+                        : 'Create New Employee Account'}
                     </h3>
-                    <p className="text-xs text-slate-500">Configure credentials, access preset, and granular permissions</p>
+                    <p className="text-xs text-slate-500">
+                      {editingEmployee?.id === 'admin-master'
+                        ? 'Configure your in-app master login username, password, and security PIN'
+                        : 'Configure credentials, access preset, and granular permissions'}
+                    </p>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => { setIsCreatingNew(false); setEditingEmployee(null); }}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-300 rounded-lg font-bold"
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-300 rounded-lg font-bold cursor-pointer"
                 >
                   Back to List
                 </button>
               </div>
 
+              {/* In-app Master Credentials Notice */}
+              {editingEmployee?.id === 'admin-master' && (
+                <div className="p-4 bg-gradient-to-r from-red-50 to-amber-50 border border-red-200 rounded-2xl text-xs text-red-950 flex items-start gap-3 shadow-xs">
+                  <div className="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-red-900">Secure In-App Master Account Configuration</h5>
+                    <p className="text-red-800/90 mt-0.5 leading-relaxed">
+                      Master credentials are strictly managed within this authenticated administrator session and never exposed on the public login page. These credentials grant root system control.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* 1. Basic Account Credentials */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
                 <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <Users className="w-4 h-4 text-blue-600" />
-                  <span>1. Employee Profile & Quick Login</span>
+                  <span>{editingEmployee?.id === 'admin-master' ? '1. Master Administrator Login & Password' : '1. Employee Profile & Quick Login'}</span>
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -583,19 +635,21 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                       placeholder="e.g. Muhammad Bilal"
                       value={formData.name}
                       onChange={e => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Email or Username *</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      {editingEmployee?.id === 'admin-master' ? 'Master Username / Email *' : 'Email or Username *'}
+                    </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. cashier1 or bilal@shop.pk"
+                      placeholder="e.g. admin or admin@inventory.pk"
                       value={formData.email}
                       onChange={e => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     />
                   </div>
 
@@ -606,7 +660,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                       placeholder="e.g. 0300-1234567"
                       value={formData.phone}
                       onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     />
                   </div>
 
@@ -616,7 +670,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setShowPinInForm(!showPinInForm)}
-                        className="text-[11px] text-blue-600 hover:underline flex items-center gap-0.5"
+                        className="text-[11px] text-blue-600 hover:underline flex items-center gap-0.5 cursor-pointer"
                       >
                         {showPinInForm ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                         <span>{showPinInForm ? 'Hide' : 'Show'}</span>
@@ -631,12 +685,12 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                         placeholder="1234"
                         value={formData.pin}
                         onChange={e => setFormData({ ...formData, pin: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-mono font-bold tracking-widest focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-mono font-bold tracking-widest focus:ring-2 focus:ring-blue-500 focus:bg-white"
                       />
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, pin: Math.floor(1000 + Math.random() * 9000).toString() })}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-blue-600 text-[10px] font-bold"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-blue-600 text-[10px] font-bold cursor-pointer"
                         title="Generate random PIN"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
@@ -645,13 +699,25 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Login Password (Optional)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-700">
+                        {editingEmployee?.id === 'admin-master' ? 'Master Password *' : 'Login Password (Optional)'}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswordInForm(!showPasswordInForm)}
+                        className="text-[11px] text-blue-600 hover:underline flex items-center gap-0.5 cursor-pointer"
+                      >
+                        {showPasswordInForm ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        <span>{showPasswordInForm ? 'Hide' : 'Show'}</span>
+                      </button>
+                    </div>
                     <input
-                      type="text"
-                      placeholder="Optional alphanumeric password"
+                      type={showPasswordInForm ? 'text' : 'password'}
+                      placeholder={editingEmployee?.id === 'admin-master' ? 'Set master password (min 6 chars)' : 'Optional alphanumeric password'}
                       value={formData.password || ''}
                       onChange={e => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                      className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white"
                     />
                   </div>
                 </div>
@@ -659,20 +725,27 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">Role Preset</label>
-                    <select
-                      value={formData.role}
-                      onChange={e => handleRoleChange(e.target.value as UserRole)}
-                      className="w-full px-3 py-2 bg-slate-200 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="cashier">Sales Cashier (Sales & POS Only)</option>
-                      <option value="procurement">Purchasing Incharge (Purchases & POs Only)</option>
-                      <option value="stockkeeper">Store & Warehouse Keeper (Stock Adjustments)</option>
-                      <option value="accountant">Accountant / Auditor (Ledgers & P&L)</option>
-                      <option value="editor">General Editor (Full Operational Edit)</option>
-                      <option value="viewer">Read-Only Viewer (No Edits)</option>
-                      <option value="admin">Super Admin (Unrestricted Full Access)</option>
-                      <option value="custom">Custom Configuration</option>
-                    </select>
+                    {formData.id === 'admin-master' ? (
+                      <div className="w-full px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-700 flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-red-600" />
+                        <span>Super Admin (Root System Access)</span>
+                      </div>
+                    ) : (
+                      <select
+                        value={formData.role}
+                        onChange={e => handleRoleChange(e.target.value as UserRole)}
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="cashier">Sales Cashier (Sales & POS Only)</option>
+                        <option value="procurement">Purchasing Incharge (Purchases & POs Only)</option>
+                        <option value="stockkeeper">Store & Warehouse Keeper (Stock Adjustments)</option>
+                        <option value="accountant">Accountant / Auditor (Ledgers & P&L)</option>
+                        <option value="editor">General Editor (Full Operational Edit)</option>
+                        <option value="viewer">Read-Only Viewer (No Edits)</option>
+                        <option value="admin">Super Admin (Unrestricted Full Access)</option>
+                        <option value="custom">Custom Configuration</option>
+                      </select>
+                    )}
                   </div>
 
                   <div>
@@ -1160,6 +1233,47 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
           ) : activeTab === 'employees' ? (
             /* EMPLOYEES DIRECTORY TABLE */
             <div className="space-y-4">
+              {/* In-App Master Administrator Security Card */}
+              {(() => {
+                const masterAdmin = employees.find(e => e.id === 'admin-master') || employees.find(e => e.role === 'admin');
+                if (!masterAdmin) return null;
+                const isUsingDefault = masterAdmin.pin === '1234' || masterAdmin.password === 'admin';
+                return (
+                  <div className="bg-gradient-to-r from-slate-900 via-red-950 to-slate-900 text-white p-4 sm:p-5 rounded-2xl border border-red-800/50 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-start sm:items-center gap-3.5">
+                      <div className="w-11 h-11 rounded-xl bg-red-600/30 border border-red-500/40 flex items-center justify-center shrink-0 shadow-inner">
+                        <ShieldCheck className="w-6 h-6 text-red-400" />
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="text-sm font-black text-white">Master Administrator Credentials</h4>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-300 border border-red-500/30">
+                            Root System Access
+                          </span>
+                          {isUsingDefault && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                              Default Login Active
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-300 mt-1">
+                          Login ID: <span className="font-mono text-red-200 font-bold">{masterAdmin.email}</span> • Kept securely inside the app • Never exposed on login screen
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleStartEdit(masterAdmin)}
+                      className="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-950/40 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                    >
+                      <Lock className="w-4 h-4" />
+                      <span>Configure Master Login</span>
+                    </button>
+                  </div>
+                );
+              })()}
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {filteredEmployees.map(emp => {
                   const isCurrent = emp.id === currentUserId;

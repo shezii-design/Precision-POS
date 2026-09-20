@@ -1,4 +1,6 @@
 import { calculateProductStockValue } from "../services/storage";
+import { calculateSaleCogs, calculateSaleItemCogs } from "../services/sales";
+import { addFinancial, roundCurrency } from "../services/financialMath";
 import React, { useState, useMemo } from 'react';
 import { 
   Product, 
@@ -271,27 +273,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     const netSales = Math.max(0, grossSales - salesReturnsAmount);
 
     // Cost of Goods Sold (FIFO basis from items)
+    const prodMap = new Map<string, Product>();
+    products.forEach(p => {
+      if (p.id) prodMap.set(p.id, p);
+      if (p.internalId) prodMap.set(p.internalId, p);
+    });
+
     let fifoCOGS = 0;
     periodSales.forEach(s => {
-      s.items.forEach(it => {
-        const itemCost = it.cogs !== undefined && it.cogs > 0 ? it.cogs : (it.costPrice || 0);
-        fifoCOGS += itemCost * (it.quantity || 1);
-      });
+      fifoCOGS = addFinancial(fifoCOGS, calculateSaleCogs(s, prodMap, true));
     });
 
     // Deduct vendor return cost relief
     const vendorReturnsAmount = periodVendorReturns.reduce((sum, r) => sum + (Number(r.totalAmount) || 0), 0);
-    const totalCOGS = Math.max(0, fifoCOGS);
+    const totalCOGS = Math.max(0, roundCurrency(fifoCOGS));
 
     // Gross Profit
-    const grossProfit = netSales - totalCOGS;
+    const grossProfit = roundCurrency(netSales - totalCOGS);
     const grossMarginPercent = netSales > 0 ? (grossProfit / netSales) * 100 : 0;
 
     // Operating Expenses
     const totalExpenses = periodExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     // Net Profit / Net Income
-    const netProfit = grossProfit + restockFeesCollected - totalExpenses;
+    const netProfit = roundCurrency(grossProfit + restockFeesCollected - totalExpenses);
     const netMarginPercent = netSales > 0 ? (netProfit / netSales) * 100 : 0;
 
     // Purchases Spend
@@ -324,7 +329,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       customerReturnsCount: periodCustomerReturns.length,
       expensesCount: periodExpenses.length,
     };
-  }, [periodSales, periodPurchases, periodCustomerReturns, periodVendorReturns, periodExpenses]);
+  }, [periodSales, periodPurchases, periodCustomerReturns, periodVendorReturns, periodExpenses, products]);
 
   // 3. Balance Sheet & Asset Snapshot (Current Overall)
   const assetSnapshots = useMemo(() => {
@@ -422,7 +427,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
         const itemQty = Number(item.quantity) || 1;
         const itemRevenue = (Number(item.unitPrice) || 0) * itemQty;
-        const itemCost = (item.cogs !== undefined && item.cogs > 0 ? item.cogs : (item.costPrice || 0)) * itemQty;
+        const prodMap = new Map<string, Product>();
+        if (prod.id) prodMap.set(prod.id, prod);
+        const { lineCogs: itemCost } = calculateSaleItemCogs(item, prodMap, false);
 
         current.unitsSold += itemQty;
         current.revenue += itemRevenue;
@@ -529,10 +536,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       };
 
       const sTotal = Number(s.totalAmount) || 0;
-      let sCogs = 0;
-      s.items.forEach(it => {
-        sCogs += (it.cogs || it.costPrice || 0) * (it.quantity || 1);
+      const prodMap = new Map<string, Product>();
+      products.forEach(p => {
+        if (p.id) prodMap.set(p.id, p);
+        if (p.internalId) prodMap.set(p.internalId, p);
       });
+      const sCogs = calculateSaleCogs(s, prodMap, true);
 
       entry.sales += sTotal;
       entry.cogs += sCogs;
@@ -575,7 +584,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     });
 
     return Array.from(daysMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-  }, [dateRange, periodSales, periodPurchases, periodExpenses]);
+  }, [dateRange, periodSales, periodPurchases, periodExpenses, products]);
 
   // 7. Recent Operational Activity Feed (Sales, Purchases, Returns, Cargo POs, Demands)
   const recentActivities = useMemo(() => {

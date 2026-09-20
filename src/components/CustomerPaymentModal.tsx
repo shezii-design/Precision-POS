@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Customer, CustomerLedgerEntry, CustomerLedgerEntryType, Sale } from '../types';
 import { formatPKR } from '../services/pricing';
+import { roundCurrency, subtractFinancial, safeFinancialNumber } from '../services/financialMath';
 import { 
   X, 
   Wallet, 
@@ -89,8 +90,8 @@ export const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
           setTargetSaleId(preselectedSaleId);
           const targetSale = sales.find(s => s.id === preselectedSaleId);
           if (targetSale) {
-            const due = targetSale.netBalanceDue ?? targetSale.balanceDue ?? Math.max(0, (targetSale.netAmount ?? targetSale.totalAmount) - (targetSale.amountReceived || 0));
-            setAmount(due > 0 ? String(due) : '');
+            const due = targetSale.netBalanceDue ?? targetSale.balanceDue ?? Math.max(0, subtractFinancial(targetSale.netAmount ?? targetSale.totalAmount, targetSale.amountReceived || 0));
+            setAmount(due > 0 ? String(roundCurrency(due)) : '');
             setReceiptNumber(targetSale.id);
             setNotes(`Payment received for Invoice #${targetSale.id}`);
           } else {
@@ -148,7 +149,7 @@ export const CustomerPaymentModal: React.FC<CustomerPaymentModalProps> = ({
       return;
     }
 
-    const numAmount = parseFloat(amount);
+    const numAmount = roundCurrency(parseFloat(amount));
     if (isNaN(numAmount) || numAmount <= 0) {
       setError('Please enter a valid positive payment amount in PKR.');
       return;

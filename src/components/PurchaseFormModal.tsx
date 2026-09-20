@@ -19,6 +19,13 @@ import {
 } from 'lucide-react';
 import { Purchase, PurchaseItem, Vendor, Product } from '../types';
 import { formatPKR } from '../services/pricing';
+import {
+  roundCurrency,
+  addFinancial,
+  subtractFinancial,
+  safeFinancialNumber,
+  multiplyFinancial
+} from '../services/financialMath';
 
 interface PurchaseFormModalProps {
   isOpen: boolean;
@@ -157,13 +164,13 @@ export const PurchaseFormModal: React.FC<PurchaseFormModalProps> = ({
 
   // Calculations
   const subtotal = useMemo(() => {
-    return items.reduce((sum, it) => sum + (it.totalPrice || 0), 0);
+    return items.reduce((sum, it) => addFinancial(sum, it.totalPrice || 0), 0);
   }, [items]);
 
-  const numDiscount = Number(discountAmount) || 0;
-  const totalAmount = Math.max(0, subtotal - numDiscount);
-  const numPaid = Number(amountPaid) || 0;
-  const balanceDue = Math.max(0, totalAmount - numPaid);
+  const numDiscount = safeFinancialNumber(discountAmount, 0);
+  const totalAmount = Math.max(0, subtractFinancial(subtotal, numDiscount));
+  const numPaid = safeFinancialNumber(amountPaid, 0);
+  const balanceDue = Math.max(0, subtractFinancial(totalAmount, numPaid));
 
   const paymentStatus: 'paid' | 'partial' | 'unpaid' = useMemo(() => {
     if (totalAmount === 0) return 'paid';

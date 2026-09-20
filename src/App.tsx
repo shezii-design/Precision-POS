@@ -113,7 +113,18 @@ import { autoUpdateProductsROP, calculateSmartROP, buildProductSalesMap } from '
 import { ParsedDimensionQuery } from './services/dimensions';
 import { formatPKR, formatPKRShort, generateProductSellingPrices, getDefaultRetailPrice } from './services/pricing';
 import { exportProductsToCSV, exportProductsToExcel } from './services/excel';
-import { getSupabaseClient, syncAllModulesToSupabase, syncSalesToSupabase, fetchAllFromSupabase, wipeAllSupabaseData } from './services/supabase';
+import { 
+  getSupabaseClient, 
+  syncAllModulesToSupabase, 
+  syncSalesToSupabase, 
+  fetchAllFromSupabase, 
+  wipeAllSupabaseData,
+  executeSaleTransactionSupabase,
+  executePurchaseTransactionSupabase,
+  executeCustomerReturnTransactionSupabase,
+  syncStaffAndDevicesToSupabase
+} from './services/supabase';
+import { SectionErrorBoundary } from './components/ErrorBoundary';
 
 // Components
 import { Navbar } from './components/Navbar';
@@ -897,6 +908,28 @@ export default function App() {
 
       setCustomers(res.updatedCustomers);
 
+      // Trigger server-side ACID stored procedure on Supabase if connected
+      if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+        try {
+          const client = getSupabaseClient(supabaseConfig);
+          if (client) {
+            executeSaleTransactionSupabase(client, newSale)
+              .then(rpcRes => {
+                if (rpcRes.success) {
+                  console.info('Supabase ACID Sale Transaction committed:', rpcRes.saleId);
+                } else {
+                  console.warn('Supabase ACID Sale RPC warning (local state intact):', rpcRes.error);
+                }
+              })
+              .catch(err => {
+                console.warn('Supabase Sale RPC network drop (local fallback active):', err);
+              });
+          }
+        } catch (err) {
+          console.warn('Error initiating Supabase sale RPC:', err);
+        }
+      }
+
       // If this sale fulfilled an active demand, update demand status to fulfilled and link sale ID
       if (activeDemandIdForSale) {
         const res = updateDemandStatus(
@@ -1101,6 +1134,28 @@ export default function App() {
       setVendors(res.updatedVendors);
       setLedgerEntries(res.updatedLedgerEntries);
       showToast(`Purchase ${purchase.billNumber || purchase.id} Recorded`, `Stock & Ledger updated: ${formatPKR(purchase.totalAmount)}`);
+
+      // Trigger server-side ACID stored procedure on Supabase if connected
+      if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+        try {
+          const client = getSupabaseClient(supabaseConfig);
+          if (client) {
+            executePurchaseTransactionSupabase(client, purchase)
+              .then(rpcRes => {
+                if (rpcRes.success) {
+                  console.info('Supabase ACID Purchase Transaction committed:', rpcRes.purchaseId);
+                } else {
+                  console.warn('Supabase ACID Purchase RPC warning (local state intact):', rpcRes.error);
+                }
+              })
+              .catch(err => {
+                console.warn('Supabase Purchase RPC network drop (local fallback active):', err);
+              });
+          }
+        } catch (err) {
+          console.warn('Error initiating Supabase purchase RPC:', err);
+        }
+      }
     }
     setShowPurchaseModal(false);
     setEditingPurchase(null);
@@ -1201,6 +1256,28 @@ export default function App() {
       setCustomerLedger(res.updatedLedger);
       setSales(res.updatedSales);
       showToast(`Customer Return ${returnDoc.returnNumber} Recorded`, `Credit Note: Rs. ${returnDoc.totalRefundAmount.toLocaleString()}`);
+
+      // Trigger server-side ACID stored procedure on Supabase if connected
+      if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+        try {
+          const client = getSupabaseClient(supabaseConfig);
+          if (client) {
+            executeCustomerReturnTransactionSupabase(client, returnDoc)
+              .then(rpcRes => {
+                if (rpcRes.success) {
+                  console.info('Supabase ACID Customer Return Transaction committed:', rpcRes.returnId);
+                } else {
+                  console.warn('Supabase ACID Customer Return RPC warning (local state intact):', rpcRes.error);
+                }
+              })
+              .catch(err => {
+                console.warn('Supabase Return RPC network drop (local fallback active):', err);
+              });
+          }
+        } catch (err) {
+          console.warn('Error initiating Supabase return RPC:', err);
+        }
+      }
     }
 
     setShowCustomerReturnModal(false);
@@ -1988,7 +2065,7 @@ export default function App() {
             sessionStorage.removeItem('kfh_dismissed_low_stock_banner');
           } catch {}
         }}
-        onOpenSecuritySettings={() => setShowSecurityModal(true)}
+        onOpenSecuritySettings={() => setShowStaffModal(true)}
         onOpenWipeData={() => setShowWipeDataModal(true)}
         onOpenStaffManagement={() => setShowStaffModal(true)}
         onOpenSwitchUser={() => { setAuthState(prev => ({ ...prev, isLocked: true, currentUserId: undefined })); }}
@@ -2032,6 +2109,7 @@ export default function App() {
           />
         )}
 
+        <SectionErrorBoundary key={currentView} fallbackTitle={`Unable to display ${currentView} view`}>
         {currentView === 'dashboard' ? (
           <DashboardPage
             products={products}
@@ -2718,6 +2796,7 @@ export default function App() {
         </section>
         </>
         )}
+        </SectionErrorBoundary>
       </main>
 
       {/* FOOTER */}
@@ -3159,6 +3238,12 @@ export default function App() {
         onUpdateEmployees={(updated) => {
           setEmployees(updated);
           saveStoredEmployees(updated);
+          const client = getSupabaseClient(supabaseConfig);
+          if (client) {
+            syncStaffAndDevicesToSupabase(client, updated, getStoredRegisteredDevices()).catch(err => {
+              console.warn('Immediate employee sync error:', err);
+            });
+          }
         }}
         activeDeviceId={deviceInfo.deviceId}
         currentDeviceId={deviceInfo.deviceId}

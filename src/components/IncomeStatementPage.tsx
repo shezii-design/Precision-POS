@@ -40,6 +40,8 @@ import {
   Search
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { calculateSaleCogs } from '../services/sales';
+import { addFinancial, roundCurrency } from '../services/financialMath';
 
 interface IncomeStatementPageProps {
   sales: Sale[];
@@ -268,36 +270,46 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
 
     const targetSales = sales.filter(s => isTarget(s.date || s.createdAt));
     const targetPurchases = purchases.filter(p => isTarget(p.date || p.createdAt));
-    const targetCustomerReturns = customerReturns.filter(r => isTarget(r.returnDate || r.createdAt));
-    const targetVendorReturns = vendorReturns.filter(r => isTarget(r.returnDate || r.createdAt));
+    const targetCustomerReturns = customerReturns.filter(r => isTarget(r.date || (r as any).returnDate || r.createdAt));
+    const targetVendorReturns = vendorReturns.filter(r => isTarget(r.date || (r as any).returnDate || r.createdAt));
     const targetExpenses = expenses.filter(e => isTarget(e.date || e.createdAt));
 
+    // Products lookup map for fast O(1) matching
+    const prodMap = new Map<string, Product>();
+    products.forEach(p => {
+      if (p.id) prodMap.set(p.id, p);
+      if (p.internalId) prodMap.set(p.internalId, p);
+    });
+
     // 1. Revenue Calculations
-    const grossSales = targetSales.reduce((sum, s) => sum + (Number(s.totalAmount) || 0) + (Number(s.discount) || 0), 0);
-    const salesDiscounts = targetSales.reduce((sum, s) => sum + (Number(s.discount) || 0), 0);
+    const salesDiscounts = targetSales.reduce((sum, s) => sum + (Number(s.discountAmount) || Number((s as any).discount) || 0), 0);
     const invoicedSales = targetSales.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-    const salesReturns = targetCustomerReturns.reduce((sum, r) => sum + (Number(r.totalReturnAmount) || 0), 0);
-    const restockFeesCollected = targetCustomerReturns.reduce((sum, r) => sum + (Number(r.restockFee) || 0), 0);
+    const grossSales = invoicedSales + salesDiscounts;
+    const salesReturns = targetCustomerReturns.reduce((sum, r) => sum + (Number(r.totalRefundAmount) || Number((r as any).totalReturnAmount) || Number(r.subtotal) || 0), 0);
+    const restockFeesCollected = targetCustomerReturns.reduce((sum, r) => sum + (Number(r.deductionOrRestockFee) || Number((r as any).restockFee) || 0), 0);
     const netSales = Math.max(0, invoicedSales - salesReturns);
 
     // 2. Cost of Goods Sold (COGS)
+    // Accurately calculate FIFO COGS without double-multiplying by item.quantity
     let fifoCOGS = 0;
     targetSales.forEach(s => {
-      s.items.forEach(it => {
-        const cost = it.cogs !== undefined && it.cogs > 0 ? it.cogs : (it.costPrice || 0);
-        fifoCOGS += cost * (it.quantity || 1);
-      });
+      fifoCOGS = addFinancial(fifoCOGS, calculateSaleCogs(s, prodMap, true));
     });
 
+    // Damaged / scrap inventory losses written off from customer returns
     const damagedLoss = targetCustomerReturns.reduce((sum, r) => {
-      // If items were marked scrap/damaged, count their cost
-      return sum + r.items.filter(it => it.condition === 'damaged' || it.action === 'scrap').reduce((iSum, it) => iSum + ((it.costPrice || 0) * it.quantity), 0);
+      const returnLoss = (r.items || []).filter(it => it.condition === 'damaged' || it.condition === 'scrap' || (it as any).action === 'scrap').reduce((iSum, it) => {
+        const prod = prodMap.get(it.productId) || (it.internalId ? prodMap.get(it.internalId) : undefined);
+        const unitCost = Number((it as any).costPrice) || Number(prod?.costPrice) || Number((it as any).unitCost) || Number(it.returnRate) || 0;
+        return iSum + (unitCost * (Number(it.quantity) || 1));
+      }, 0);
+      return sum + returnLoss;
     }, 0);
 
-    const totalCOGS = Math.max(0, fifoCOGS + damagedLoss);
+    const totalCOGS = Math.max(0, roundCurrency(fifoCOGS + damagedLoss));
 
     // 3. Gross Profit
-    const grossProfit = netSales - totalCOGS;
+    const grossProfit = roundCurrency(netSales - totalCOGS);
     const grossProfitMargin = netSales > 0 ? (grossProfit / netSales) * 100 : 0;
 
     // 4. Operating Expenses by Category
@@ -311,14 +323,14 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
     const totalOperatingExpenses = targetExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     // 5. Operating Income (EBIT)
-    const operatingIncome = grossProfit - totalOperatingExpenses;
+    const operatingIncome = roundCurrency(grossProfit - totalOperatingExpenses);
     const operatingMargin = netSales > 0 ? (operatingIncome / netSales) * 100 : 0;
 
     // 6. Other Income
     const otherIncomeTotal = restockFeesCollected;
 
     // 7. Net Profit / Net Income
-    const netIncome = operatingIncome + otherIncomeTotal;
+    const netIncome = roundCurrency(operatingIncome + otherIncomeTotal);
     const netProfitMargin = netSales > 0 ? (netIncome / netSales) * 100 : 0;
 
     return {
@@ -351,12 +363,12 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
   // Main Period Statement
   const statement = useMemo(() => {
     return calculateStatementForDates(dateBoundaries.start, dateBoundaries.end);
-  }, [dateBoundaries, sales, purchases, customerReturns, vendorReturns, expenses]);
+  }, [dateBoundaries, sales, purchases, customerReturns, vendorReturns, expenses, products]);
 
   // Prior Period Statement (for Comparison Mode)
   const priorStatement = useMemo(() => {
     return calculateStatementForDates(dateBoundaries.prevStart, dateBoundaries.prevEnd);
-  }, [dateBoundaries, sales, purchases, customerReturns, vendorReturns, expenses]);
+  }, [dateBoundaries, sales, purchases, customerReturns, vendorReturns, expenses, products]);
 
   // Handle Expense Modal Actions
   const handleOpenAddExpense = () => {

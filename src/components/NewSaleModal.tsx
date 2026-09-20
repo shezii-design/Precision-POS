@@ -14,6 +14,15 @@ import {
 } from '../types';
 import { getDefaultRetailPrice, getProductAvailableTiers, formatPKR, DEFAULT_PRICING_SETTINGS } from '../services/pricing';
 import { getCustomerLastPrice, getNextSaleId, INITIAL_LOCATIONS } from '../services/storage';
+import {
+  roundCurrency,
+  addFinancial,
+  multiplyFinancial,
+  subtractFinancial,
+  safeFinancialNumber,
+  calculateOrderDiscount,
+  calculatePaymentBreakdown
+} from '../services/financialMath';
 import { 
   ShoppingCart, 
   Plus, 
@@ -768,53 +777,38 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
 
   // Calculations
   const subtotal = useMemo(() => {
-    return saleItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+    return saleItems.reduce((acc, item) => {
+      const lineGross = multiplyFinancial(safeFinancialNumber(item.quantity, 0), safeFinancialNumber(item.unitPrice, 0));
+      return addFinancial(acc, lineGross);
+    }, 0);
   }, [saleItems]);
 
   const totalCost = useMemo(() => {
-    return saleItems.reduce((acc, item) => acc + (item.quantity * (item.costPrice || 0)), 0);
+    return saleItems.reduce((acc, item) => {
+      const lineCost = multiplyFinancial(safeFinancialNumber(item.quantity, 0), safeFinancialNumber(item.costPrice, 0));
+      return addFinancial(acc, lineCost);
+    }, 0);
   }, [saleItems]);
 
-  const discountAmount = useMemo(() => {
-    if (!discountValue || isNaN(discountValue) || discountValue <= 0) return 0;
-    if (discountType === 'percentage') {
-      const pct = Math.min(100, Math.max(0, discountValue));
-      return Math.round((subtotal * pct) / 100);
-    }
-    return Math.min(subtotal, discountValue);
+  const discountDetails = useMemo(() => {
+    return calculateOrderDiscount(subtotal, discountType, discountValue);
   }, [subtotal, discountType, discountValue]);
 
-  const totalAmount = useMemo(() => {
-    return Math.max(0, subtotal - discountAmount);
-  }, [subtotal, discountAmount]);
+  const discountAmount = discountDetails.discountAmount;
+  const totalAmount = discountDetails.totalAfterDiscount;
 
-  const numericReceived = useMemo(() => {
-    if (amountReceived === '' || amountReceived === undefined || amountReceived === null) {
-      return totalAmount; // Default to exact cash if blank
-    }
-    const parsed = Number(amountReceived);
-    return isNaN(parsed) ? 0 : parsed;
+  const paymentBreakdown = useMemo(() => {
+    const rawInput = (amountReceived === '' || amountReceived === undefined || amountReceived === null)
+      ? totalAmount
+      : amountReceived;
+    return calculatePaymentBreakdown(totalAmount, rawInput);
   }, [amountReceived, totalAmount]);
 
-  const paymentType: PaymentType = useMemo(() => {
-    if (numericReceived >= totalAmount) return 'cash';
-    if (numericReceived > 0) return 'partial';
-    return 'credit';
-  }, [numericReceived, totalAmount]);
-
-  const paymentStatus: 'paid' | 'partial' | 'credit' = useMemo(() => {
-    if (numericReceived >= totalAmount) return 'paid';
-    if (numericReceived > 0) return 'partial';
-    return 'credit';
-  }, [numericReceived, totalAmount]);
-
-  const balanceDue = useMemo(() => {
-    return Math.max(0, totalAmount - numericReceived);
-  }, [totalAmount, numericReceived]);
-
-  const changeGiven = useMemo(() => {
-    return Math.max(0, numericReceived - totalAmount);
-  }, [numericReceived, totalAmount]);
+  const numericReceived = paymentBreakdown.numericReceived;
+  const paymentType: PaymentType = paymentBreakdown.paymentType;
+  const paymentStatus: 'paid' | 'partial' | 'credit' = paymentBreakdown.paymentStatus;
+  const balanceDue = paymentBreakdown.balanceDue;
+  const changeGiven = paymentBreakdown.changeGiven;
 
   // Trigger popup when user wants to finish sale
   const handleInitiateCompletion = () => {

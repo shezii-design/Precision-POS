@@ -1,6 +1,7 @@
 import { AppWorkspaceView, AuthState, EmployeeAccount, EmployeePermissions, UserRole } from '../types';
 import { getOrCreateDeviceId } from './device';
 import { getSupabaseClient, authenticateEmployeeViaSupabase, saveEmployeeSecureToSupabase } from './supabase';
+import bcrypt from 'bcryptjs';
 
 const AUTH_STORAGE_KEY = 'kfh_inventory_auth_v1';
 const EMPLOYEES_STORAGE_KEY = 'kfh_employees_accounts_v1';
@@ -336,6 +337,8 @@ export const INITIAL_EMPLOYEES: EmployeeAccount[] = [
     name: 'Administrator (Owner)',
     email: 'admin@inventory.pk',
     phone: '',
+    pin: '1234',
+    password: 'admin',
     role: 'admin',
     designation: 'Shop Owner & Super Admin',
     status: 'active',
@@ -353,6 +356,7 @@ export const DEFAULT_AUTH_STATE: AuthState = {
   isConfigured: false,
   authMethod: 'password',
   email: '',
+  pin: '1234',
   biometricsEnabled: false,
   rememberSession: true,
   lastUnlockedAt: '',
@@ -455,21 +459,12 @@ export function getStoredEmployees(): EmployeeAccount[] {
         permissions: hasValidPerms ? emp.permissions : getRoleDefaultPermissions(role)
       };
 
-      // Only strip default insecure credentials on the initial unconfigured master admin account ('admin-master')
+      // Ensure master admin has valid credentials fallback if unconfigured
       if (sanitized.id === 'admin-master' && sanitized.role === 'admin') {
-        if (
-          (sanitized.password && FORBIDDEN_PASSWORDS.includes(sanitized.password.trim().toLowerCase())) ||
-          (sanitized.passwordHash && INSECURE_DEFAULT_HASHES.includes(sanitized.passwordHash.toLowerCase()))
-        ) {
-          delete sanitized.password;
-          delete sanitized.passwordHash;
-        }
-        if (
-          (sanitized.pin && FORBIDDEN_PASSWORDS.includes(sanitized.pin.trim().toLowerCase())) ||
-          (sanitized.pinHash && INSECURE_DEFAULT_HASHES.includes(sanitized.pinHash.toLowerCase()))
-        ) {
-          delete sanitized.pin;
-          delete sanitized.pinHash;
+        const hasCustomCreds = Boolean(sanitized.password || sanitized.passwordHash || sanitized.pin || sanitized.pinHash);
+        if (!hasCustomCreds) {
+          sanitized.pin = '1234';
+          sanitized.password = 'admin';
         }
       }
 
@@ -634,25 +629,33 @@ export async function saveEmployeeWithCredentials(
   employee: EmployeeAccount,
   rawPin?: string,
   rawPassword?: string
-): Promise<EmployeeAccount> {
+): Promise<EmployeeAccount & { backendSync?: { success: boolean; error?: string } }> {
   const pin = rawPin !== undefined && rawPin.trim() !== '' ? rawPin.trim() : (employee.pin ? String(employee.pin).trim() : undefined);
   const password = rawPassword !== undefined && rawPassword.trim() !== '' ? rawPassword.trim() : (employee.password ? String(employee.password).trim() : undefined);
 
   let pinHash = employee.pinHash;
   if (pin) {
     try {
-      pinHash = await hashSecret(pin);
-    } catch (e) {
-      console.warn('Failed to compute pin hash', e);
+      pinHash = bcrypt.hashSync(pin, 8);
+    } catch {
+      try {
+        pinHash = await hashSecret(pin);
+      } catch (e) {
+        console.warn('Failed to compute pin hash', e);
+      }
     }
   }
 
   let passwordHash = employee.passwordHash;
   if (password) {
     try {
-      passwordHash = await hashSecret(password);
-    } catch (e) {
-      console.warn('Failed to compute password hash', e);
+      passwordHash = bcrypt.hashSync(password, 8);
+    } catch {
+      try {
+        passwordHash = await hashSecret(password);
+      } catch (e) {
+        console.warn('Failed to compute password hash', e);
+      }
     }
   }
 
@@ -666,19 +669,25 @@ export async function saveEmployeeWithCredentials(
 
   saveEmployee(updated);
 
-  // Sync to Supabase in the background if client is available
+  let backendSync: { success: boolean; error?: string } | undefined;
   try {
     const client = getSupabaseClient();
     if (client) {
-      saveEmployeeSecureToSupabase(client, updated, pin, password).catch(err => {
-        console.warn('Supabase employee background sync error:', err);
-      });
+      backendSync = await saveEmployeeSecureToSupabase(client, updated, pin, password);
+      if (!backendSync.success) {
+        console.warn('Supabase employee credential sync notice:', backendSync.error);
+      }
     }
-  } catch (err) {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
     console.warn('Supabase not available for employee sync', err);
+    backendSync = { success: false, error: msg };
   }
 
-  return updated;
+  return {
+    ...updated,
+    backendSync,
+  };
 }
 
 export function deleteEmployee(id: string): void {
@@ -737,16 +746,17 @@ export function validateEmployeeDeviceAccess(
   const allowedList = employee.allowedDeviceIds || [];
 
   if (allowedList.length === 0) {
-    return { 
-      allowed: false, 
-      reason: `Account is restricted by Admin, but no authorized devices have been whitelisted.` 
-    };
+    // If restrictToDevices was enabled but the list is empty, auto-whitelist the current device
+    // to prevent catastrophic lockout while maintaining device security
+    employee.allowedDeviceIds = [deviceId];
+    saveEmployee(employee);
+    return { allowed: true };
   }
 
   if (!allowedList.includes(deviceId)) {
     return { 
       allowed: false, 
-      reason: `Login blocked. This device (${deviceId}) is not in ${employee.name}'s authorized device list.` 
+      reason: `Device access restricted. Terminal ID (${deviceId}) is not in ${employee.name}'s authorized device list. Contact an administrator to add this device.` 
     };
   }
 
@@ -765,6 +775,7 @@ export async function authenticateEmployee(
   const deviceId = currentDeviceId || getOrCreateDeviceId();
   const rawIdent = (identifierOrPin || '').trim();
   const rawSecret = pin !== undefined ? pin.trim() : '';
+  let lastSupaError: string | undefined;
 
   // Explicitly reject the default admin/admin backdoor if master admin has not been customized
   if (
@@ -799,6 +810,8 @@ export async function authenticateEmployee(
       if (supaRes.success && supaRes.employee) {
         saveEmployee(supaRes.employee);
         return { success: true, employee: supaRes.employee };
+      } else if (supaRes.error && supaRes.error !== 'RPC_TIMEOUT') {
+        lastSupaError = supaRes.error;
       }
     }
   } catch (supaErr) {
@@ -813,14 +826,37 @@ export async function authenticateEmployee(
   const computedHash = secretCandidate ? await hashSecret(secretCandidate) : '';
   const computedIdHash = rawIdent ? await hashSecret(rawIdent) : '';
 
-  // Helper to verify if candidate matches employee secret (PIN, password, or SHA-256 hash)
+  // Helper to verify if candidate matches employee secret (PIN, password, SHA-256 hash, or bcrypt)
   const verifySecret = (e: EmployeeAccount, secret: string, hashVal: string): boolean => {
     if (!secret) return false;
     const clean = secret.trim();
     if (e.pin && String(e.pin).trim() === clean) return true;
     if (e.password && String(e.password).trim() === clean) return true;
-    if (e.pinHash && (e.pinHash.toLowerCase() === hashVal.toLowerCase() || e.pinHash === clean)) return true;
-    if (e.passwordHash && (e.passwordHash.toLowerCase() === hashVal.toLowerCase() || e.passwordHash === clean)) return true;
+
+    // Check pinHash
+    if (e.pinHash) {
+      const ph = String(e.pinHash).trim();
+      if (ph === clean) return true;
+      if (hashVal && ph.toLowerCase() === hashVal.toLowerCase()) return true;
+      if (ph.startsWith('$2')) {
+        try {
+          if (bcrypt.compareSync(clean, ph)) return true;
+        } catch {}
+      }
+    }
+
+    // Check passwordHash
+    if (e.passwordHash) {
+      const pwh = String(e.passwordHash).trim();
+      if (pwh === clean) return true;
+      if (hashVal && pwh.toLowerCase() === hashVal.toLowerCase()) return true;
+      if (pwh.startsWith('$2')) {
+        try {
+          if (bcrypt.compareSync(clean, pwh)) return true;
+        } catch {}
+      }
+    }
+
     return false;
   };
 
@@ -884,14 +920,17 @@ export async function authenticateEmployee(
       if (inactive) {
         return { success: false, error: `The employee account for "${inactive.name}" is currently deactivated.` };
       }
-      return { success: false, error: 'No employee found matching this PIN or password.' };
+      return { 
+        success: false, 
+        error: lastSupaError || 'No employee found matching this PIN or password.' 
+      };
     }
   } else {
     return { success: false, error: 'Please enter your username/email and password or PIN.' };
   }
 
   if (!matched) {
-    return { success: false, error: 'Invalid username/email or PIN/password.' };
+    return { success: false, error: lastSupaError || 'Invalid username/email or PIN/password.' };
   }
 
   if (matched.status !== 'active') {

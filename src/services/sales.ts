@@ -1,4 +1,4 @@
-import { InvoiceNamingPreference, Sale, SaleFilterOptions, SaleItem } from '../types';
+import { InvoiceNamingPreference, Product, Sale, SaleFilterOptions, SaleItem } from '../types';
 import { roundCurrency, addFinancial, multiplyFinancial, subtractFinancial, safeFinancialNumber } from './financialMath';
 
 /**
@@ -135,9 +135,82 @@ export function filterAndSortSales(
 }
 
 /**
+ * Calculates the exact Cost of Goods Sold (COGS) for a single sale line item.
+ * Eradicates double-quantity multiplication glitches and correctly respects returns.
+ */
+export function calculateSaleItemCogs(
+  item: SaleItem,
+  productsMap?: Map<string, Product>,
+  respectReturns: boolean = true
+): { unitCost: number; lineCogs: number; quantity: number } {
+  const origQty = Math.max(0, safeFinancialNumber(item.quantity, 1));
+  const returnedQty = Math.max(0, safeFinancialNumber(item.returnedQuantity, 0));
+  const netQty = item.netQuantity !== undefined
+    ? Math.max(0, safeFinancialNumber(item.netQuantity, origQty))
+    : Math.max(0, origQty - returnedQty);
+
+  const effectiveQty = respectReturns ? netQty : origQty;
+
+  // 1. Resolve unit cost accurately without double-multiplying
+  let unitCost = 0;
+  if (item.fifoCost !== undefined && item.fifoCost > 0) {
+    unitCost = safeFinancialNumber(item.fifoCost, 0);
+  } else if (item.costPrice !== undefined && item.costPrice > 0) {
+    unitCost = safeFinancialNumber(item.costPrice, 0);
+  } else if (item.cogs !== undefined && item.cogs > 0 && origQty > 0) {
+    // item.cogs is the total FIFO COGS for the line item (origQty * unitFifoCost)
+    unitCost = item.cogs / origQty;
+  } else if (productsMap) {
+    const prod = productsMap.get(item.productId) || (item.internalId ? productsMap.get(item.internalId) : undefined);
+    if (prod?.costPrice && prod.costPrice > 0) {
+      unitCost = safeFinancialNumber(prod.costPrice, 0);
+    }
+  }
+
+  // 2. Compute exact line COGS
+  let lineCogs = 0;
+  if (unitCost > 0) {
+    lineCogs = roundCurrency(unitCost * effectiveQty);
+  } else if (item.cogs !== undefined && item.cogs > 0) {
+    const ratio = origQty > 0 ? (effectiveQty / origQty) : 1;
+    lineCogs = roundCurrency(item.cogs * ratio);
+  }
+
+  return { unitCost, lineCogs, quantity: effectiveQty };
+}
+
+/**
+ * Calculates the total Cost of Goods Sold (COGS) for an entire sale invoice.
+ * Accurately aggregates item-level COGS with FIFO / unit cost valuation.
+ */
+export function calculateSaleCogs(
+  sale: Sale,
+  productsMap?: Map<string, Product>,
+  respectReturns: boolean = true
+): number {
+  if (sale.items && sale.items.length > 0) {
+    let sumCogs = 0;
+    for (const item of sale.items) {
+      const { lineCogs } = calculateSaleItemCogs(item, productsMap, respectReturns);
+      sumCogs = addFinancial(sumCogs, lineCogs);
+    }
+    return roundCurrency(sumCogs);
+  }
+
+  // Fallback to sale.totalCost if line items array is not populated
+  const rawCost = safeFinancialNumber(sale.totalCost, 0);
+  if (respectReturns && sale.hasReturns && sale.totalAmount > 0) {
+    const netAmount = safeFinancialNumber(sale.netAmount, sale.totalAmount);
+    const ratio = Math.max(0, Math.min(1, netAmount / sale.totalAmount));
+    return roundCurrency(rawCost * ratio);
+  }
+  return roundCurrency(rawCost);
+}
+
+/**
  * Calculates aggregate stats for a list of sales
  */
-export function calculateSalesSummary(sales: Sale[]) {
+export function calculateSalesSummary(sales: Sale[], productsMap?: Map<string, Product>) {
   let totalRevenue = 0;
   let totalCashReceived = 0;
   let totalCreditOutstanding = 0;
@@ -150,22 +223,19 @@ export function calculateSalesSummary(sales: Sale[]) {
     totalRevenue = addFinancial(totalRevenue, s.totalAmount || 0);
     totalCashReceived = addFinancial(totalCashReceived, s.amountReceived || 0);
     totalCreditOutstanding = addFinancial(totalCreditOutstanding, s.balanceDue || 0);
-    totalDiscountGiven = addFinancial(totalDiscountGiven, s.discountAmount || 0);
-    
-    let saleCogs = safeFinancialNumber(s.totalCost, 0);
+    totalDiscountGiven = addFinancial(totalDiscountGiven, s.discountAmount || (s as any).discount || 0);
+
+    const saleCogs = calculateSaleCogs(s, productsMap, true);
     if (s.items) {
-      let calcItemsCogs = 0;
       for (const item of s.items) {
-        totalItemsSold += safeFinancialNumber(item.quantity, 1);
-        const itemCost = item.costPrice !== undefined ? item.costPrice : (item.fifoCost || 0);
-        calcItemsCogs = addFinancial(calcItemsCogs, multiplyFinancial(safeFinancialNumber(item.quantity, 1), safeFinancialNumber(itemCost, 0)));
+        const netQty = item.netQuantity !== undefined ? item.netQuantity : item.quantity;
+        totalItemsSold += safeFinancialNumber(netQty, 1);
       }
-      if (!saleCogs) {
-        saleCogs = calcItemsCogs;
-      }
+    } else {
+      totalItemsSold += 1;
     }
 
-    const saleProfit = s.totalProfit !== undefined ? safeFinancialNumber(s.totalProfit, 0) : subtractFinancial(s.totalAmount || 0, saleCogs);
+    const saleProfit = subtractFinancial(s.totalAmount || 0, saleCogs);
     totalCogs = addFinancial(totalCogs, saleCogs);
     totalGrossProfit = addFinancial(totalGrossProfit, saleProfit);
   }

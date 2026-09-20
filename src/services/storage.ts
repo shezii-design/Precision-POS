@@ -43,6 +43,17 @@ import {
 } from '../types';
 import { DEFAULT_PRICING_SETTINGS, generateProductSellingPrices } from './pricing';
 import { getEnvSupabaseConfig } from './supabase';
+import {
+  roundCurrency,
+  roundFinancial,
+  addFinancial,
+  subtractFinancial,
+  multiplyFinancial,
+  safeFinancialNumber,
+  updateRunningBalance,
+  calculatePaymentBreakdown,
+  calculateLineItemFinancials
+} from './financialMath';
 
 const PRODUCTS_KEY = 'kfh_inventory_products_v1';
 const BRANDS_KEY = 'kfh_inventory_brands_v1';
@@ -603,12 +614,12 @@ export function deductFifoStockBatches(
         date: batch.date,
       });
 
-      totalCogs += takeQty * batchCost;
-      remainingNeeded -= takeQty;
+      totalCogs = addFinancial(totalCogs, multiplyFinancial(takeQty, batchCost, 4));
+      remainingNeeded = subtractFinancial(remainingNeeded, takeQty);
 
       updatedBatches.push({
         ...batch,
-        remainingQuantity: currentRemaining - takeQty,
+        remainingQuantity: Math.max(0, subtractFinancial(currentRemaining, takeQty)),
       });
     } else {
       updatedBatches.push({ ...batch });
@@ -617,7 +628,7 @@ export function deductFifoStockBatches(
 
   // If there wasn't enough quantity in tracked batches, use fallbackCostPrice
   if (remainingNeeded > 0) {
-    const fallbackCost = Number(fallbackCostPrice) || 0;
+    const fallbackCost = safeFinancialNumber(fallbackCostPrice, 0);
     batchesUsed.push({
       batchId: `batch-untracked-${Date.now()}`,
       quantity: remainingNeeded,
@@ -626,15 +637,15 @@ export function deductFifoStockBatches(
       vendorName: productInfo?.vendorName || 'Inventory',
       date: new Date().toISOString(),
     });
-    totalCogs += remainingNeeded * fallbackCost;
+    totalCogs = addFinancial(totalCogs, multiplyFinancial(remainingNeeded, fallbackCost, 4));
   }
 
-  const unitAverageFifoCost = quantityToSell > 0 ? totalCogs / quantityToSell : fallbackCostPrice;
+  const unitAverageFifoCost = quantityToSell > 0 ? (totalCogs / quantityToSell) : safeFinancialNumber(fallbackCostPrice, 0);
 
   return {
     batchesUsed,
-    totalCogs: Math.round(totalCogs),
-    unitAverageFifoCost: Math.round(unitAverageFifoCost * 100) / 100,
+    totalCogs: roundCurrency(totalCogs),
+    unitAverageFifoCost: roundFinancial(unitAverageFifoCost, 2),
     updatedBatches,
   };
 }
@@ -743,8 +754,8 @@ export function recordSaleAndUpdateInventory(
       referenceId: sale.id,
       referenceNumber: sale.id,
       entityName: sale.customerName || 'Walk-in Customer',
-      unitRate: Number(saleItem.unitPrice) || 0,
-      totalMovementValue: Math.round(qtySold * (Number(saleItem.unitPrice) || 0)),
+      unitRate: safeFinancialNumber(saleItem.unitPrice, 0),
+      totalMovementValue: multiplyFinancial(qtySold, saleItem.unitPrice || 0),
       locationName: saleItem.locationName || prod.locationName,
       cabinNumber: saleItem.cabinNumber || prod.cabinNumber,
       timestamp: sale.date || new Date().toISOString(),
@@ -767,8 +778,8 @@ export function recordSaleAndUpdateInventory(
   const finalizedSale: Sale = {
     ...sale,
     items: processedItems.length > 0 ? processedItems : sale.items,
-    totalCost: saleTotalCogs,
-    totalProfit: Math.round((sale.totalAmount || 0) - saleTotalCogs),
+    totalCost: roundCurrency(saleTotalCogs),
+    totalProfit: roundCurrency(subtractFinancial(sale.totalAmount || 0, saleTotalCogs)),
   };
 
   // 3. Add or update customer in customer list
@@ -909,15 +920,19 @@ export function calculateCustomerNetBalance(
     (cNameLower && e.customerName && e.customerName.trim().toLowerCase() === cNameLower)
   );
 
-  const totalInvoicedSales = customerSales.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-  const totalSalesCashReceived = customerSales.reduce((sum, s) => {
-    // Deduct direct payments recorded in customer ledger for this invoice to prevent double counting
+  let totalInvoicedSales = 0;
+  for (const s of customerSales) {
+    totalInvoicedSales = addFinancial(totalInvoicedSales, s.totalAmount || 0);
+  }
+
+  let totalSalesCashReceived = 0;
+  for (const s of customerSales) {
     const directForThisSale = customerEntries
       .filter(e => (e.referenceId === s.id || e.billNumber === s.id) && e.type === 'payment_received')
-      .reduce((acc, e) => acc + (Number(e.amount ?? e.credit) || 0), 0);
-    const checkoutCash = Math.max(0, (Number(s.amountReceived) || 0) - directForThisSale);
-    return sum + checkoutCash;
-  }, 0);
+      .reduce((acc, e) => addFinancial(acc, e.amount ?? e.credit ?? 0), 0);
+    const checkoutCash = Math.max(0, subtractFinancial(s.amountReceived || 0, directForThisSale));
+    totalSalesCashReceived = addFinancial(totalSalesCashReceived, checkoutCash);
+  }
   
   let ledgerDebits = 0;
   let ledgerCredits = 0;
@@ -925,22 +940,28 @@ export function calculateCustomerNetBalance(
 
   for (const entry of customerEntries) {
     if (entry.type === 'opening_balance') {
-      const d = Number(entry.debit) || (entry.amount > 0 ? Number(entry.amount) : 0);
-      const c = Number(entry.credit) || (entry.amount < 0 ? Math.abs(Number(entry.amount)) : 0);
-      openBalFromLedger = d - c;
+      const d = safeFinancialNumber(entry.debit) || (entry.amount > 0 ? safeFinancialNumber(entry.amount) : 0);
+      const c = safeFinancialNumber(entry.credit) || (entry.amount < 0 ? Math.abs(safeFinancialNumber(entry.amount)) : 0);
+      openBalFromLedger = subtractFinancial(d, c);
     } else if (entry.type === 'payment_received') {
-      ledgerCredits += Number(entry.amount ?? entry.credit ?? 0);
+      ledgerCredits = addFinancial(ledgerCredits, entry.amount ?? entry.credit ?? 0);
     } else if (entry.type === 'cash_refund') {
-      ledgerDebits += Number(entry.amount ?? entry.debit ?? 0);
+      ledgerDebits = addFinancial(ledgerDebits, entry.amount ?? entry.debit ?? 0);
     } else if (entry.type === 'adjustment') {
-      ledgerDebits += Number(entry.debit ?? (entry.amount > 0 ? entry.amount : 0));
-      ledgerCredits += Number(entry.credit ?? (entry.amount < 0 ? Math.abs(entry.amount) : 0));
+      ledgerDebits = addFinancial(ledgerDebits, entry.debit ?? (entry.amount > 0 ? entry.amount : 0));
+      ledgerCredits = addFinancial(ledgerCredits, entry.credit ?? (entry.amount < 0 ? Math.abs(entry.amount) : 0));
     }
   }
 
-  const effectiveOpeningBalance = openBalFromLedger !== null ? openBalFromLedger : (Number(openingBalance) || 0);
-  const netBalance = effectiveOpeningBalance + totalInvoicedSales - totalSalesCashReceived + ledgerDebits - ledgerCredits;
-  return Math.round(netBalance);
+  const effectiveOpeningBalance = openBalFromLedger !== null ? openBalFromLedger : safeFinancialNumber(openingBalance, 0);
+  const netBalance = addFinancial(
+    effectiveOpeningBalance,
+    totalInvoicedSales,
+    -totalSalesCashReceived,
+    ledgerDebits,
+    -ledgerCredits
+  );
+  return roundCurrency(netBalance);
 }
 
 /**
@@ -1125,8 +1146,8 @@ export function computeCustomerLedgerRows(
   // 6. Calculate cumulative running balance (Receivable = Debit - Credit)
   let running = 0;
   for (const row of rows) {
-    running = running + (row.debit || 0) - (row.credit || 0);
-    row.runningBalance = Math.round(running);
+    running = updateRunningBalance(running, row.debit || 0, row.credit || 0);
+    row.runningBalance = running;
   }
 
   return rows;
@@ -1673,16 +1694,16 @@ export function calculateVendorBalance(
 
   for (const entry of vendorEntries) {
     if (entry.type === 'opening_balance') {
-      const c = Number(entry.credit) || (Number(entry.amount) > 0 ? Number(entry.amount) : 0);
-      const d = Number(entry.debit) || (Number(entry.amount) < 0 ? Math.abs(Number(entry.amount)) : 0);
-      openBalFromLedger = c - d;
+      const c = safeFinancialNumber(entry.credit) || (Number(entry.amount) > 0 ? safeFinancialNumber(entry.amount) : 0);
+      const d = safeFinancialNumber(entry.debit) || (Number(entry.amount) < 0 ? Math.abs(safeFinancialNumber(entry.amount)) : 0);
+      openBalFromLedger = subtractFinancial(c, d);
     } else if (entry.type === 'cash_sent') {
-      ledgerDebits += Number(entry.amount ?? entry.debit ?? 0);
+      ledgerDebits = addFinancial(ledgerDebits, entry.amount ?? entry.debit ?? 0);
     } else if (entry.type === 'cash_received') {
-      ledgerCredits += Number(entry.amount ?? entry.credit ?? 0);
+      ledgerCredits = addFinancial(ledgerCredits, entry.amount ?? entry.credit ?? 0);
     } else if (entry.type === 'adjustment') {
-      ledgerDebits += Number(entry.debit ?? (entry.amount < 0 ? Math.abs(entry.amount) : 0));
-      ledgerCredits += Number(entry.credit ?? (entry.amount > 0 ? entry.amount : 0));
+      ledgerDebits = addFinancial(ledgerDebits, entry.debit ?? (entry.amount < 0 ? Math.abs(entry.amount) : 0));
+      ledgerCredits = addFinancial(ledgerCredits, entry.credit ?? (entry.amount > 0 ? entry.amount : 0));
     } else if (entry.type === 'purchase') {
       // If purchase is already in purchases array, skip to avoid double counting
       const alreadyInPurchases = purchases.some(p => 
@@ -1692,13 +1713,13 @@ export function calculateVendorBalance(
         (entry.billNumber && p.billNumber && p.billNumber.trim().toLowerCase() === entry.billNumber.trim().toLowerCase())
       );
       if (!alreadyInPurchases) {
-        ledgerCredits += Number(entry.credit ?? entry.amount ?? 0);
-        ledgerDebits += Number(entry.debit ?? 0);
+        ledgerCredits = addFinancial(ledgerCredits, entry.credit ?? entry.amount ?? 0);
+        ledgerDebits = addFinancial(ledgerDebits, entry.debit ?? 0);
       }
     }
   }
 
-  const effectiveOpeningBalance = openBalFromLedger !== null ? openBalFromLedger : (Number(vendor?.openingBalance) || 0);
+  const effectiveOpeningBalance = openBalFromLedger !== null ? openBalFromLedger : safeFinancialNumber(vendor?.openingBalance, 0);
   let balance = effectiveOpeningBalance;
 
   // 1. Add purchases from vendor (Credit - increases what we owe)
@@ -1707,11 +1728,11 @@ export function calculateVendorBalance(
     (vNameLower && p.vendorName && p.vendorName.trim().toLowerCase() === vNameLower)
   );
   for (const pur of vendorPurchases) {
-    balance += (Number(pur.totalAmount) || 0);
+    balance = addFinancial(balance, pur.totalAmount || 0);
   }
 
   // 2. Add net ledger credits - debits
-  balance += (ledgerCredits - ledgerDebits);
+  balance = addFinancial(balance, ledgerCredits, -ledgerDebits);
 
   // 3. Subtract sales made to this vendor from us (sales offset what we owe)
   const vendorSales = sales.filter(s => 
@@ -1719,10 +1740,10 @@ export function calculateVendorBalance(
     (vNameLower && s.vendorName && s.vendorName.trim().toLowerCase() === vNameLower)
   );
   for (const sale of vendorSales) {
-    balance -= (Number(sale.totalAmount) || 0);
+    balance = subtractFinancial(balance, sale.totalAmount || 0);
   }
 
-  return Math.round(balance);
+  return roundCurrency(balance);
 }
 
 /**
@@ -1926,10 +1947,10 @@ export function getVendorFullLedger(
 
   let running = 0;
   const result: ComputedLedgerRow[] = rawRows.map(row => {
-    running = running + (row.credit || 0) - (row.debit || 0);
+    running = updateRunningBalance(running, row.credit || 0, row.debit || 0);
     return {
       ...row,
-      runningBalance: Math.round(running),
+      runningBalance: running,
     };
   });
 

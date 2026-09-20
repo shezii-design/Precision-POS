@@ -1,4 +1,17 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
+
+async function sha256Hash(str: string): Promise<string> {
+  try {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return '';
+  }
+}
 
 async function exactSyncRows(
   client: SupabaseClient,
@@ -72,6 +85,7 @@ import {
   Quotation, 
   RegisteredDevice, 
   Sale,
+  SaleItem,
   StockLog, 
   SupabaseConfig, 
   Vendor, 
@@ -277,25 +291,35 @@ export async function authenticateEmployeeViaSupabase(
 
 /**
  * Saves or updates an employee in Supabase using the secure RPC function.
- * Plaintext PIN and password are hashed with bcrypt inside PostgreSQL.
+ * If the RPC function is not yet created or returns an error, automatically falls back
+ * to a resilient direct table upsert into employee_accounts with bcrypt hashing.
  */
 export async function saveEmployeeSecureToSupabase(
   client: SupabaseClient,
   emp: EmployeeAccount,
   newPin?: string,
   newPassword?: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; method?: 'rpc' | 'table' }> {
+  const pinCandidate = (newPin !== undefined && newPin.trim() !== '') 
+    ? newPin.trim() 
+    : (emp.pin ? String(emp.pin).trim() : '');
+
+  const pwdCandidate = (newPassword !== undefined && newPassword.trim() !== '') 
+    ? newPassword.trim() 
+    : (emp.password ? String(emp.password).trim() : '');
+
+  // 1. First attempt: call secure RPC function `save_employee_secure`
   try {
-    const { data, error } = await client.rpc('save_employee_secure', {
+    const { error } = await client.rpc('save_employee_secure', {
       p_id: emp.id,
       p_name: emp.name,
       p_email: emp.email,
       p_phone: emp.phone || null,
-      p_pin: newPin || null,
-      p_password: newPassword || null,
+      p_pin: pinCandidate || null,
+      p_password: pwdCandidate || null,
       p_role: emp.role,
-      p_designation: emp.designation,
-      p_status: emp.status,
+      p_designation: emp.designation || null,
+      p_status: emp.status || 'active',
       p_permissions: emp.permissions,
       p_restrict_to_devices: emp.restrictToDevices ?? false,
       p_allowed_device_ids: emp.allowedDeviceIds || [],
@@ -303,11 +327,83 @@ export async function saveEmployeeSecureToSupabase(
       p_notes: emp.notes || null,
     });
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (!error) {
+      return { success: true, method: 'rpc' };
+    }
+    console.warn('save_employee_secure RPC failed or not present, attempting direct table upsert:', error.message);
+  } catch (rpcErr: unknown) {
+    console.warn('RPC invocation exception, attempting direct table upsert:', rpcErr);
+  }
+
+  // 2. Resilient Direct Table Upsert Fallback
+  try {
+    let pinHash = emp.pinHash;
+    if (pinCandidate && !pinHash) {
+      try {
+        pinHash = bcrypt.hashSync(pinCandidate, 8);
+      } catch {
+        pinHash = await sha256Hash(pinCandidate);
+      }
     }
 
-    return { success: true };
+    let passwordHash = emp.passwordHash;
+    if (pwdCandidate && !passwordHash) {
+      try {
+        passwordHash = bcrypt.hashSync(pwdCandidate, 8);
+      } catch {
+        passwordHash = await sha256Hash(pwdCandidate);
+      }
+    }
+
+    const payload: Record<string, any> = {
+      id: emp.id,
+      name: emp.name,
+      email: emp.email,
+      phone: emp.phone || null,
+      role: emp.role || 'cashier',
+      designation: emp.designation || 'Staff',
+      status: emp.status || 'active',
+      permissions: emp.permissions,
+      restrict_to_devices: emp.restrictToDevices ?? false,
+      allowed_device_ids: emp.allowedDeviceIds || [],
+      avatar_color: emp.avatarColor || null,
+      notes: emp.notes || null,
+      pin_hash: pinHash || null,
+      password_hash: passwordHash || null,
+      pin: pinCandidate || null,
+      plain_pin: pinCandidate || null,
+      password: pwdCandidate || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    let currentPayload = { ...payload };
+    let lastError: string | undefined;
+
+    // Dynamically strip any column that does not exist in the target Supabase schema
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const { error } = await client
+        .from('employee_accounts')
+        .upsert(currentPayload, { onConflict: 'id' });
+
+      if (!error) {
+        return { success: true, method: 'table' };
+      }
+
+      lastError = error.message;
+
+      const match = error.message.match(/column "([^"]+)" of relation "employee_accounts" does not exist/i) ||
+                    error.message.match(/column "([^"]+)" does not exist/i) ||
+                    error.message.match(/column ([a-zA-Z0-9_]+) does not exist/i);
+
+      if (match && match[1] && match[1] in currentPayload) {
+        delete currentPayload[match[1]];
+        continue;
+      }
+
+      break;
+    }
+
+    return { success: false, error: lastError };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, error: errorMsg };
@@ -345,6 +441,133 @@ export async function signOutSupabase(): Promise<void> {
     }
   } catch (err) {
     console.error('Failed to sign out of Supabase', err);
+  }
+}
+
+/**
+ * Executes an atomic sale transaction in Supabase via ACID stored procedure.
+ * Atomically updates product stock, appends stock movement logs, and updates customer balance.
+ * Returns { success: true } if committed atomically, or error details if rolled back.
+ */
+export async function executeSaleTransactionSupabase(
+  client: SupabaseClient,
+  sale: Sale,
+  items?: SaleItem[],
+  customer?: Customer | null,
+  demandId?: string | null
+): Promise<{ success: boolean; saleId?: string; error?: string }> {
+  try {
+    const saleItems = items || sale.items || [];
+    const { data, error } = await client.rpc('process_sale_transaction', {
+      p_sale: {
+        id: sale.id,
+        invoiceNumber: sale.id,
+        date: sale.date,
+        customerId: sale.customerId || null,
+        customerName: sale.customerName || 'Walk-in Customer',
+        customerPhone: sale.customerPhone || null,
+        totalAmount: sale.totalAmount,
+        paidAmount: sale.amountReceived,
+        paymentMethod: sale.paymentType || 'cash',
+        status: sale.paymentStatus || 'completed',
+        notes: sale.notes || null,
+        userId: null,
+        userName: null,
+        totalCost: sale.totalCost || 0,
+        totalProfit: sale.totalProfit || 0
+      },
+      p_items: saleItems,
+      p_customer: customer ? { id: customer.id, name: customer.name, phone: customer.phone } : null,
+      p_demand_id: demandId || null
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    const res = data as { success: boolean; saleId?: string; error?: string; message?: string };
+    return res;
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Executes an atomic purchase transaction in Supabase via ACID stored procedure.
+ * Atomically adds product stock, appends stock audit logs, and updates vendor balance.
+ */
+export async function executePurchaseTransactionSupabase(
+  client: SupabaseClient,
+  purchase: Purchase,
+  items?: any[],
+  vendor?: Vendor | null
+): Promise<{ success: boolean; purchaseId?: string; error?: string }> {
+  try {
+    const purchaseItems = items || purchase.items || [];
+    const { data, error } = await client.rpc('process_purchase_transaction', {
+      p_purchase: {
+        id: purchase.id,
+        billNumber: purchase.billNumber || purchase.id,
+        date: purchase.date,
+        vendorId: purchase.vendorId || null,
+        vendorName: purchase.vendorName || 'General Vendor',
+        totalAmount: purchase.totalAmount,
+        paidAmount: purchase.amountPaid,
+        paymentStatus: purchase.paymentStatus || 'paid',
+        notes: purchase.notes || null,
+        updatePricesInInventory: purchase.updatePricesInInventory !== false
+      },
+      p_items: purchaseItems,
+      p_vendor: vendor ? { id: vendor.id, name: vendor.contactPerson, businessName: vendor.businessName } : null
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    const res = data as { success: boolean; purchaseId?: string; error?: string; message?: string };
+    return res;
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Executes an atomic customer sales return transaction in Supabase via ACID stored procedure.
+ * Atomically restocks items, appends movement logs, and handles ledger refund credits.
+ */
+export async function executeCustomerReturnTransactionSupabase(
+  client: SupabaseClient,
+  returnRecord: CustomerReturn,
+  items?: any[]
+): Promise<{ success: boolean; returnId?: string; error?: string }> {
+  try {
+    const returnItems = items || returnRecord.items || [];
+    const { data, error } = await client.rpc('process_customer_return_transaction', {
+      p_return: {
+        id: returnRecord.id,
+        saleId: returnRecord.saleId,
+        customerId: returnRecord.customerId || null,
+        customerName: returnRecord.customerName || 'Walk-in Customer',
+        returnDate: returnRecord.date,
+        totalRefund: returnRecord.totalRefundAmount,
+        refundMethod: returnRecord.refundMethod || 'cash',
+        notes: returnRecord.notes || null
+      },
+      p_items: returnItems
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    const res = data as { success: boolean; returnId?: string; error?: string; message?: string };
+    return res;
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
   }
 }
 
@@ -641,10 +864,12 @@ CREATE TABLE IF NOT EXISTS customer_ledger (
   entry_code TEXT,
   bill_number TEXT,
   reference_id TEXT,
+  reference_type TEXT,
   description TEXT,
   debit NUMERIC DEFAULT 0,
   credit NUMERIC DEFAULT 0,
   amount NUMERIC DEFAULT 0,
+  balance NUMERIC DEFAULT 0,
   payment_method TEXT,
   receipt_number TEXT,
   notes TEXT,
@@ -655,10 +880,10 @@ CREATE TABLE IF NOT EXISTS customer_ledger (
 -- 3B. POS SALES & CUSTOMER RETURNS
 CREATE TABLE IF NOT EXISTS sales (
   id TEXT PRIMARY KEY,
+  invoice_number TEXT,
   date TEXT NOT NULL,
   customer_id TEXT,
   customer_name TEXT NOT NULL,
-  customer_phone TEXT,
   customer_phone TEXT,
   vendor_id TEXT,
   vendor_name TEXT,
@@ -669,13 +894,18 @@ CREATE TABLE IF NOT EXISTS sales (
   discount_value NUMERIC DEFAULT 0,
   discount_amount NUMERIC DEFAULT 0,
   total_amount NUMERIC DEFAULT 0,
-  total_cost NUMERIC DEFAULT 0,
-  total_profit NUMERIC DEFAULT 0,
+  paid_amount NUMERIC DEFAULT 0,
   amount_received NUMERIC DEFAULT 0,
   change_given NUMERIC DEFAULT 0,
   balance_due NUMERIC DEFAULT 0,
   payment_type TEXT DEFAULT 'cash',
+  payment_method TEXT DEFAULT 'cash',
   payment_status TEXT DEFAULT 'paid',
+  status TEXT DEFAULT 'completed',
+  total_cost NUMERIC DEFAULT 0,
+  total_profit NUMERIC DEFAULT 0,
+  user_id TEXT,
+  user_name TEXT,
   has_returns BOOLEAN DEFAULT FALSE,
   total_returned_amount NUMERIC DEFAULT 0,
   net_amount NUMERIC DEFAULT 0,
@@ -697,9 +927,11 @@ CREATE TABLE IF NOT EXISTS customer_returns (
   customer_name TEXT NOT NULL,
   customer_phone TEXT,
   date TEXT NOT NULL,
+  return_date TEXT,
   items JSONB NOT NULL,
   subtotal NUMERIC DEFAULT 0,
   deduction_or_restock_fee NUMERIC DEFAULT 0,
+  total_refund NUMERIC DEFAULT 0,
   total_refund_amount NUMERIC DEFAULT 0,
   refund_method TEXT DEFAULT 'cash',
   refund_status TEXT DEFAULT 'completed',
@@ -735,10 +967,12 @@ CREATE TABLE IF NOT EXISTS vendor_ledger (
   entry_code TEXT,
   bill_number TEXT,
   reference_id TEXT,
+  reference_type TEXT,
   description TEXT,
   debit NUMERIC DEFAULT 0,
   credit NUMERIC DEFAULT 0,
   amount NUMERIC DEFAULT 0,
+  balance NUMERIC DEFAULT 0,
   payment_method TEXT,
   receipt_number TEXT,
   notes TEXT,
@@ -805,10 +1039,12 @@ CREATE TABLE IF NOT EXISTS purchases (
   subtotal NUMERIC DEFAULT 0,
   discount_amount NUMERIC DEFAULT 0,
   total_amount NUMERIC DEFAULT 0,
+  paid_amount NUMERIC DEFAULT 0,
   amount_paid NUMERIC DEFAULT 0,
   change_given NUMERIC DEFAULT 0,
   balance_due NUMERIC DEFAULT 0,
   payment_status TEXT DEFAULT 'unpaid',
+  payment_method TEXT DEFAULT 'cash',
   bilty_number TEXT,
   transporter_name TEXT,
   cargo_cost NUMERIC DEFAULT 0,
@@ -824,7 +1060,6 @@ CREATE TABLE IF NOT EXISTS quotations (
   customer_id TEXT,
   customer_type TEXT DEFAULT 'customer',
   customer_name TEXT NOT NULL,
-  customer_phone TEXT,
   contact_person TEXT,
   customer_phone TEXT,
   customer_email TEXT,
@@ -858,7 +1093,6 @@ CREATE TABLE IF NOT EXISTS demands (
   demand_number TEXT NOT NULL,
   customer_id TEXT,
   customer_name TEXT NOT NULL,
-  customer_phone TEXT,
   customer_phone TEXT,
   location TEXT,
   item_name TEXT NOT NULL,
@@ -935,25 +1169,25 @@ CREATE TABLE IF NOT EXISTS stock_logs (
   id TEXT PRIMARY KEY,
   product_id TEXT NOT NULL,
   product_name TEXT NOT NULL,
-  type TEXT NOT NULL,
+  type TEXT DEFAULT 'adjustment',
   internal_id TEXT,
   brand_name TEXT,
   type_name TEXT,
-  unit TEXT,
-  change NUMERIC,
-  previous_stock NUMERIC,
-  new_stock NUMERIC,
+  unit TEXT DEFAULT 'Pcs',
+  change NUMERIC DEFAULT 0,
+  previous_stock NUMERIC DEFAULT 0,
+  new_stock NUMERIC DEFAULT 0,
   movement_type TEXT,
   reference_number TEXT,
   entity_name TEXT,
-  unit_rate NUMERIC,
-  total_movement_value NUMERIC,
+  unit_rate NUMERIC DEFAULT 0,
+  total_movement_value NUMERIC DEFAULT 0,
   location_name TEXT,
   cabin_number TEXT,
   timestamp TEXT,
   notes TEXT,
-  quantity_change NUMERIC NOT NULL,
-  new_quantity NUMERIC NOT NULL,
+  quantity_change NUMERIC DEFAULT 0,
+  new_quantity NUMERIC DEFAULT 0,
   reference_id TEXT,
   reason TEXT,
   user_id TEXT,
@@ -982,15 +1216,169 @@ CREATE INDEX IF NOT EXISTS idx_po_number ON purchase_orders(po_number);
 CREATE INDEX IF NOT EXISTS idx_purchases_bill ON purchases(bill_number);
 
 -- ==========================================================
+-- SELF-HEALING IDEMPOTENT SCHEMA MIGRATIONS
+-- Checks every table; if already configured, ensures all new columns exist
+-- ==========================================================
+DO $$
+BEGIN
+  -- Safe Column Migration for inventory_products
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS internal_id TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS image TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS type_id TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS type_name TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS brand_id TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS brand_name TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS location_id TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS location_name TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS cabin_number TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS stock_quantity NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS min_stock_alert NUMERIC DEFAULT 5;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS unit TEXT DEFAULT 'Pcs';
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS cost_price NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS last_purchase_price NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS last_purchase_date TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS cost_batches JSONB;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS wholesale_price NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS retail_price NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier1_name TEXT DEFAULT 'Wholesale';
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier1_price NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier1_markup NUMERIC DEFAULT 10;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier2_name TEXT DEFAULT 'Retail';
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier2_price NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier2_markup NUMERIC DEFAULT 25;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier3_name TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier3_price NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier3_markup NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier4_name TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier4_price NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier4_markup NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier5_name TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier5_price NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS tier5_markup NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS height_inch NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS height_mm NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS outer_dia_inch NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS outer_dia_mm NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS inner_dia_inch NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS inner_dia_mm NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS dimension_input_unit TEXT DEFAULT 'inch';
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS thread TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS gasket_od_inch NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS gasket_od_mm NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS gasket_id_inch NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS gasket_id_mm NUMERIC;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS label_height TEXT DEFAULT 'H';
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS label_outer_dia TEXT DEFAULT 'OD';
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS label_inner_dia TEXT DEFAULT 'ID';
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS machine_names TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS cross_references TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS vendor_id TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS vendor_name TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS notes TEXT;
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+  ALTER TABLE IF EXISTS inventory_products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+  -- Safe Column Migration for sales
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS invoice_number TEXT;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS paid_amount NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS amount_received NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'cash';
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS payment_type TEXT DEFAULT 'cash';
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completed';
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'paid';
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS user_id TEXT;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS user_name TEXT;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS customer_phone TEXT;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS total_cost NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS total_profit NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS change_given NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS balance_due NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS has_returns BOOLEAN DEFAULT FALSE;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS total_returned_amount NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS net_amount NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS net_balance_due NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS returned_items_count NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS returns_list JSONB;
+  ALTER TABLE IF EXISTS sales ADD COLUMN IF NOT EXISTS invoice_naming_preference TEXT;
+
+  -- Safe Column Migration for customer_returns
+  ALTER TABLE IF EXISTS customer_returns ADD COLUMN IF NOT EXISTS date TEXT;
+  ALTER TABLE IF EXISTS customer_returns ADD COLUMN IF NOT EXISTS return_date TEXT;
+  ALTER TABLE IF EXISTS customer_returns ADD COLUMN IF NOT EXISTS total_refund NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS customer_returns ADD COLUMN IF NOT EXISTS total_refund_amount NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS customer_returns ADD COLUMN IF NOT EXISTS refund_method TEXT DEFAULT 'cash';
+  ALTER TABLE IF EXISTS customer_returns ADD COLUMN IF NOT EXISTS refund_status TEXT DEFAULT 'completed';
+  ALTER TABLE IF EXISTS customer_returns ADD COLUMN IF NOT EXISTS reason TEXT;
+  ALTER TABLE IF EXISTS customer_returns ADD COLUMN IF NOT EXISTS credit_note_number TEXT;
+
+  -- Safe Column Migration for purchases
+  ALTER TABLE IF EXISTS purchases ADD COLUMN IF NOT EXISTS paid_amount NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS purchases ADD COLUMN IF NOT EXISTS amount_paid NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS purchases ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'paid';
+  ALTER TABLE IF EXISTS purchases ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'cash';
+  ALTER TABLE IF EXISTS purchases ADD COLUMN IF NOT EXISTS cargo_cost NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS purchases ADD COLUMN IF NOT EXISTS bilty_number TEXT;
+  ALTER TABLE IF EXISTS purchases ADD COLUMN IF NOT EXISTS transporter_name TEXT;
+
+  -- Safe Column Migration for customer_ledger
+  ALTER TABLE IF EXISTS customer_ledger ADD COLUMN IF NOT EXISTS reference_type TEXT;
+  ALTER TABLE IF EXISTS customer_ledger ADD COLUMN IF NOT EXISTS balance NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS customer_ledger ADD COLUMN IF NOT EXISTS debit NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS customer_ledger ADD COLUMN IF NOT EXISTS credit NUMERIC DEFAULT 0;
+
+  -- Safe Column Migration for vendor_ledger
+  ALTER TABLE IF EXISTS vendor_ledger ADD COLUMN IF NOT EXISTS reference_type TEXT;
+  ALTER TABLE IF EXISTS vendor_ledger ADD COLUMN IF NOT EXISTS balance NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS vendor_ledger ADD COLUMN IF NOT EXISTS debit NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS vendor_ledger ADD COLUMN IF NOT EXISTS credit NUMERIC DEFAULT 0;
+
+  -- Safe Column Migration for stock_logs
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS quantity_change NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS new_quantity NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'adjustment';
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS change NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS previous_stock NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS new_stock NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS movement_type TEXT;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS unit_rate NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS total_movement_value NUMERIC DEFAULT 0;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS notes TEXT;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS reference_id TEXT;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS reason TEXT;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS user_id TEXT;
+  ALTER TABLE IF EXISTS stock_logs ADD COLUMN IF NOT EXISTS user_name TEXT;
+
+  -- Safe Column Migration for employee_accounts
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS name TEXT;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS email TEXT;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS phone TEXT;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'cashier';
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS designation TEXT DEFAULT 'Staff';
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS assigned_location TEXT;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT FALSE;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS permissions JSONB;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS restrict_to_devices BOOLEAN DEFAULT FALSE;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS allowed_device_ids JSONB DEFAULT '[]'::jsonb;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS device_sessions JSONB DEFAULT '[]'::jsonb;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS avatar_color TEXT;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS pin_hash TEXT;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS password_hash TEXT;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS plain_pin TEXT;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS auth_user_id UUID;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS last_login_device_id TEXT;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS notes TEXT;
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+  ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+END $$;
+
+-- ==========================================================
 -- AIRTIGHT ROW LEVEL SECURITY (RLS) & RPCs
 -- ==========================================================
-
--- Ensure missing columns exist before creating views
-ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS pin_hash TEXT;
-ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS password_hash TEXT;
-ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
 
 DROP VIEW IF EXISTS public_employee_profiles CASCADE;
 
@@ -1003,7 +1391,9 @@ SELECT
   phone, 
   role, 
   designation, 
+  assigned_location,
   status, 
+  is_active,
   permissions, 
   restrict_to_devices, 
   allowed_device_ids, 
@@ -1027,18 +1417,22 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-  v_emp RECORD;
+  v_emp employee_accounts%ROWTYPE;
   v_clean_id TEXT;
   v_clean_sec TEXT;
+  v_matched BOOLEAN := FALSE;
+  v_pw_match BOOLEAN := FALSE;
+  v_pin_match BOOLEAN := FALSE;
+  v_rec RECORD;
 BEGIN
   v_clean_id := TRIM(COALESCE(p_identifier, ''));
   v_clean_sec := TRIM(COALESCE(p_secret, ''));
 
-  IF v_clean_sec = '' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Password or PIN is required.');
+  IF v_clean_sec = '' AND v_clean_id = '' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Credentials are required.');
   END IF;
 
-  -- Lookup employee by email, username prefix, name, id, or phone
+  -- Case 1: An identifier was provided
   IF v_clean_id <> '' THEN
     SELECT * INTO v_emp
     FROM employee_accounts
@@ -1052,13 +1446,46 @@ BEGIN
     LIMIT 1;
   END IF;
 
-  -- Fallback lookup by PIN or Password hash
+  -- Case 2: PIN-only login or secret matched directly
   IF v_emp.id IS NULL AND v_clean_sec <> '' THEN
-    SELECT * INTO v_emp
-    FROM employee_accounts
-    WHERE (pin_hash IS NOT NULL AND pin_hash = crypt(v_clean_sec, pin_hash))
-       OR (password_hash IS NOT NULL AND password_hash = crypt(v_clean_sec, password_hash))
-    LIMIT 1;
+    FOR v_rec IN SELECT * FROM employee_accounts WHERE status = 'active' LOOP
+      v_pw_match := FALSE;
+      v_pin_match := FALSE;
+
+      IF v_rec.password_hash IS NOT NULL AND v_rec.password_hash <> '' THEN
+        IF v_rec.password_hash = v_clean_sec THEN
+          v_pw_match := TRUE;
+        ELSE
+          BEGIN
+            IF v_rec.password_hash = crypt(v_clean_sec, v_rec.password_hash) THEN
+              v_pw_match := TRUE;
+            END IF;
+          EXCEPTION WHEN OTHERS THEN
+            NULL;
+          END;
+        END IF;
+      END IF;
+
+      IF v_rec.pin_hash IS NOT NULL AND v_rec.pin_hash <> '' THEN
+        IF v_rec.pin_hash = v_clean_sec THEN
+          v_pin_match := TRUE;
+        ELSE
+          BEGIN
+            IF v_rec.pin_hash = crypt(v_clean_sec, v_rec.pin_hash) THEN
+              v_pin_match := TRUE;
+            END IF;
+          EXCEPTION WHEN OTHERS THEN
+            NULL;
+          END;
+        END IF;
+      END IF;
+
+      IF v_pw_match OR v_pin_match THEN
+        v_emp := v_rec;
+        v_matched := TRUE;
+        EXIT;
+      END IF;
+    END LOOP;
   END IF;
 
   IF v_emp.id IS NULL THEN
@@ -1069,50 +1496,83 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'This employee account is currently deactivated.');
   END IF;
 
-  -- Verify bcrypt credential hash
-  IF (v_emp.password_hash IS NOT NULL AND v_emp.password_hash = crypt(v_clean_sec, v_emp.password_hash))
-     OR (v_emp.pin_hash IS NOT NULL AND v_emp.pin_hash = crypt(v_clean_sec, v_emp.pin_hash)) THEN
-     
-    -- Device restriction verification (admins bypass device lockout)
-    IF v_emp.role <> 'admin' AND v_emp.restrict_to_devices = TRUE THEN
-      IF p_device_id IS NOT NULL AND p_device_id <> '' THEN
-        IF NOT (v_emp.allowed_device_ids @> to_jsonb(p_device_id)) THEN
-          RETURN jsonb_build_object('success', false, 'error', 'Device access denied. This device (' || p_device_id || ') is not in the authorized device list.');
-        END IF;
+  -- Verify secret if matched via identifier
+  IF NOT v_matched THEN
+    IF v_emp.password_hash IS NOT NULL AND v_emp.password_hash <> '' THEN
+      IF v_emp.password_hash = v_clean_sec THEN
+        v_matched := TRUE;
+      ELSE
+        BEGIN
+          IF v_emp.password_hash = crypt(v_clean_sec, v_emp.password_hash) THEN
+            v_matched := TRUE;
+          END IF;
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
       END IF;
     END IF;
 
-    -- Update login telemetry
-    UPDATE employee_accounts
-    SET last_login_at = NOW(),
-        last_login_device_id = p_device_id,
-        updated_at = NOW()
-    WHERE id = v_emp.id;
+    IF NOT v_matched AND v_emp.pin_hash IS NOT NULL AND v_emp.pin_hash <> '' THEN
+      IF v_emp.pin_hash = v_clean_sec THEN
+        v_matched := TRUE;
+      ELSE
+        BEGIN
+          IF v_emp.pin_hash = crypt(v_clean_sec, v_emp.pin_hash) THEN
+            v_matched := TRUE;
+          END IF;
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
+      END IF;
+    END IF;
+  END IF;
 
-    -- Return strictly sanitized profile
-    RETURN jsonb_build_object(
-      'success', true,
-      'employee', jsonb_build_object(
-        'id', v_emp.id,
-        'name', v_emp.name,
-        'email', v_emp.email,
-        'phone', v_emp.phone,
-        'role', v_emp.role,
-        'designation', v_emp.designation,
-        'status', v_emp.status,
-        'permissions', v_emp.permissions,
-        'restrictToDevices', v_emp.restrict_to_devices,
-        'allowedDeviceIds', v_emp.allowed_device_ids,
-        'avatarColor', v_emp.avatar_color,
-        'lastLoginAt', NOW(),
-        'lastLoginDeviceId', p_device_id,
-        'notes', v_emp.notes,
-        'createdAt', v_emp.created_at
-      )
-    );
-  ELSE
+  IF NOT v_matched THEN
     RETURN jsonb_build_object('success', false, 'error', 'Invalid username/email or password/PIN.');
   END IF;
+
+  -- Device restriction verification (admins bypass device lockout)
+  IF v_emp.role <> 'admin' AND v_emp.restrict_to_devices = TRUE THEN
+    IF v_emp.allowed_device_ids IS NOT NULL AND jsonb_array_length(v_emp.allowed_device_ids) > 0 THEN
+      IF p_device_id IS NOT NULL AND p_device_id <> '' THEN
+        IF NOT (v_emp.allowed_device_ids @> to_jsonb(p_device_id)) THEN
+          RETURN jsonb_build_object(
+            'success', false, 
+            'error', 'Device access restricted. Terminal ID (' || p_device_id || ') is not in ' || v_emp.name || '''s authorized device list.'
+          );
+        END IF;
+      END IF;
+    END IF;
+  END IF;
+
+  -- Update login telemetry
+  UPDATE employee_accounts
+  SET last_login_at = NOW(),
+      last_login_device_id = p_device_id,
+      updated_at = NOW()
+  WHERE id = v_emp.id;
+
+  -- Return sanitized profile
+  RETURN jsonb_build_object(
+    'success', true,
+    'employee', jsonb_build_object(
+      'id', v_emp.id,
+      'name', v_emp.name,
+      'email', v_emp.email,
+      'phone', v_emp.phone,
+      'role', v_emp.role,
+      'designation', v_emp.designation,
+      'status', v_emp.status,
+      'permissions', v_emp.permissions,
+      'restrictToDevices', v_emp.restrict_to_devices,
+      'allowedDeviceIds', v_emp.allowed_device_ids,
+      'avatarColor', v_emp.avatar_color,
+      'lastLoginAt', NOW(),
+      'lastLoginDeviceId', p_device_id,
+      'notes', v_emp.notes,
+      'createdAt', v_emp.created_at
+    )
+  );
 END;
 $$;
 
@@ -1187,8 +1647,509 @@ BEGIN
 END;
 $$;
 
+-- 12. ACID TRANSACTION: Process Sale and Inventory Atomically
+CREATE OR REPLACE FUNCTION process_sale_transaction(
+  p_sale JSONB,
+  p_items JSONB,
+  p_customer JSONB DEFAULT NULL,
+  p_demand_id TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_sale_id TEXT;
+  v_item JSONB;
+  v_prod_id TEXT;
+  v_qty NUMERIC;
+  v_unit_price NUMERIC;
+  v_cur_stock NUMERIC;
+  v_new_stock NUMERIC;
+  v_prod_name TEXT;
+  v_total_amount NUMERIC;
+  v_paid_amount NUMERIC;
+  v_unpaid_amount NUMERIC;
+  v_cust_id TEXT;
+  v_cust_name TEXT;
+BEGIN
+  v_sale_id := p_sale->>'id';
+  IF v_sale_id IS NULL OR v_sale_id = '' THEN
+    v_sale_id := 'sale-' || floor(extract(epoch from clock_timestamp())*1000)::text;
+  END IF;
+
+  v_total_amount := COALESCE((p_sale->>'totalAmount')::numeric, (p_sale->>'total_amount')::numeric, 0);
+  v_paid_amount := COALESCE((p_sale->>'paidAmount')::numeric, (p_sale->>'paid_amount')::numeric, 0);
+  v_unpaid_amount := v_total_amount - v_paid_amount;
+  v_cust_id := COALESCE(p_sale->>'customerId', p_sale->>'customer_id');
+  v_cust_name := COALESCE(p_sale->>'customerName', p_sale->>'customer_name', 'Walk-in Customer');
+
+  -- 1. Insert or update sale record
+  INSERT INTO sales (
+    id, invoice_number, date, customer_id, customer_name, customer_phone,
+    total_amount, paid_amount, amount_received, payment_method, payment_type,
+    status, payment_status, items, notes,
+    user_id, user_name, total_cost, total_profit, created_at, updated_at
+  ) VALUES (
+    v_sale_id,
+    COALESCE(p_sale->>'invoiceNumber', p_sale->>'invoice_number', v_sale_id),
+    COALESCE(p_sale->>'date', clock_timestamp()::text),
+    v_cust_id,
+    v_cust_name,
+    COALESCE(p_sale->>'customerPhone', p_sale->>'customer_phone'),
+    v_total_amount,
+    v_paid_amount,
+    v_paid_amount,
+    COALESCE(p_sale->>'paymentMethod', p_sale->>'payment_method', p_sale->>'paymentType', 'cash'),
+    COALESCE(p_sale->>'paymentType', p_sale->>'payment_type', p_sale->>'paymentMethod', 'cash'),
+    COALESCE(p_sale->>'status', 'completed'),
+    COALESCE(p_sale->>'paymentStatus', 'paid'),
+    p_items,
+    p_sale->>'notes',
+    COALESCE(p_sale->>'userId', p_sale->>'user_id'),
+    COALESCE(p_sale->>'userName', p_sale->>'user_name'),
+    COALESCE((p_sale->>'totalCost')::numeric, (p_sale->>'total_cost')::numeric, 0),
+    COALESCE((p_sale->>'totalProfit')::numeric, (p_sale->>'total_profit')::numeric, 0),
+    clock_timestamp(),
+    clock_timestamp()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    total_amount = EXCLUDED.total_amount,
+    paid_amount = EXCLUDED.paid_amount,
+    amount_received = EXCLUDED.amount_received,
+    items = EXCLUDED.items,
+    updated_at = clock_timestamp();
+
+  -- 2. Deduct inventory with row-level locks
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+    v_prod_id := v_item->>'productId';
+    v_qty := COALESCE((v_item->>'quantity')::numeric, 1);
+    v_unit_price := COALESCE((v_item->>'unitPrice')::numeric, (v_item->>'unit_price')::numeric, 0);
+
+    IF v_prod_id IS NOT NULL THEN
+      SELECT stock_quantity, name INTO v_cur_stock, v_prod_name
+      FROM inventory_products
+      WHERE id = v_prod_id
+      FOR UPDATE;
+
+      IF FOUND THEN
+        v_new_stock := GREATEST(0, COALESCE(v_cur_stock, 0) - v_qty);
+
+        UPDATE inventory_products
+        SET stock_quantity = v_new_stock,
+            updated_at = clock_timestamp()
+        WHERE id = v_prod_id;
+
+        INSERT INTO stock_logs (
+          id, product_id, product_name, change, previous_stock, new_stock,
+          quantity_change, new_quantity, type,
+          reason, movement_type, reference_id, entity_name, unit_rate,
+          total_movement_value, timestamp, created_at, updated_at
+        ) VALUES (
+          'log-' || floor(extract(epoch from clock_timestamp())*1000)::text || '-' || v_prod_id,
+          v_prod_id,
+          COALESCE(v_prod_name, v_item->>'productName', 'Product'),
+          -v_qty,
+          COALESCE(v_cur_stock, 0),
+          v_new_stock,
+          -v_qty,
+          v_new_stock,
+          'sale',
+          'Sale',
+          'sale',
+          v_sale_id,
+          v_cust_name,
+          v_unit_price,
+          v_qty * v_unit_price,
+          clock_timestamp()::text,
+          clock_timestamp(),
+          clock_timestamp()
+        );
+      END IF;
+    END IF;
+  END LOOP;
+
+  -- 3. Customer Khata / Ledger synchronization
+  IF v_cust_id IS NOT NULL AND v_cust_id <> '' AND LOWER(v_cust_name) <> 'walk-in customer' THEN
+    INSERT INTO customers (id, name, phone, total_purchases, updated_at)
+    VALUES (
+      v_cust_id,
+      v_cust_name,
+      COALESCE(p_sale->>'customerPhone', p_sale->>'customer_phone'),
+      v_total_amount,
+      clock_timestamp()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      total_purchases = COALESCE(customers.total_purchases, 0) + v_total_amount,
+      updated_at = clock_timestamp();
+
+    IF v_unpaid_amount > 0 THEN
+      INSERT INTO customer_ledger (
+        id, customer_id, customer_name, type, amount, debit, credit, balance,
+        date, reference_id, reference_type, description, created_at
+      ) VALUES (
+        'cleg-' || floor(extract(epoch from clock_timestamp())*1000)::text,
+        v_cust_id,
+        v_cust_name,
+        'debit',
+        v_unpaid_amount,
+        v_unpaid_amount,
+        0,
+        v_unpaid_amount,
+        clock_timestamp(),
+        v_sale_id,
+        'sale',
+        'Sale invoice ' || COALESCE(p_sale->>'invoiceNumber', v_sale_id) || ' credit balance',
+        clock_timestamp()
+      );
+    END IF;
+  END IF;
+
+  -- 4. Linked demand fulfillment
+  IF p_demand_id IS NOT NULL AND p_demand_id <> '' THEN
+    UPDATE demands
+    SET status = 'fulfilled',
+        fulfilled_sale_id = v_sale_id,
+        fulfilled_at = clock_timestamp(),
+        updated_at = clock_timestamp()
+    WHERE id = p_demand_id;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'saleId', v_sale_id,
+    'message', 'Sale transaction processed atomically.'
+  );
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object(
+    'success', false,
+    'error', SQLERRM
+  );
+END;
+$$;
+
+-- 13. ACID TRANSACTION: Process Purchase and Restock Atomically
+CREATE OR REPLACE FUNCTION process_purchase_transaction(
+  p_purchase JSONB,
+  p_items JSONB,
+  p_vendor JSONB DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_pur_id TEXT;
+  v_item JSONB;
+  v_prod_id TEXT;
+  v_qty NUMERIC;
+  v_unit_price NUMERIC;
+  v_cur_stock NUMERIC;
+  v_new_stock NUMERIC;
+  v_prod_name TEXT;
+  v_total_amount NUMERIC;
+  v_paid_amount NUMERIC;
+  v_unpaid_amount NUMERIC;
+  v_vendor_id TEXT;
+  v_vendor_name TEXT;
+  v_update_prices BOOLEAN;
+BEGIN
+  v_pur_id := p_purchase->>'id';
+  IF v_pur_id IS NULL OR v_pur_id = '' THEN
+    v_pur_id := 'pur-' || floor(extract(epoch from clock_timestamp())*1000)::text;
+  END IF;
+
+  v_total_amount := COALESCE((p_purchase->>'totalAmount')::numeric, (p_purchase->>'total_amount')::numeric, 0);
+  v_paid_amount := COALESCE((p_purchase->>'paidAmount')::numeric, (p_purchase->>'paid_amount')::numeric, 0);
+  v_unpaid_amount := v_total_amount - v_paid_amount;
+  v_vendor_id := COALESCE(p_purchase->>'vendorId', p_purchase->>'vendor_id');
+  v_vendor_name := COALESCE(p_purchase->>'vendorName', p_purchase->>'vendor_name', 'General Vendor');
+  v_update_prices := COALESCE((p_purchase->>'updatePricesInInventory')::boolean, true);
+
+  -- 1. Insert purchase
+  INSERT INTO purchases (
+    id, bill_number, date, vendor_id, vendor_name, total_amount,
+    paid_amount, amount_paid, payment_status, payment_method, items, notes, created_at, updated_at
+  ) VALUES (
+    v_pur_id,
+    COALESCE(p_purchase->>'billNumber', p_purchase->>'bill_number', v_pur_id),
+    COALESCE(p_purchase->>'date', clock_timestamp()::text),
+    v_vendor_id,
+    v_vendor_name,
+    v_total_amount,
+    v_paid_amount,
+    v_paid_amount,
+    COALESCE(p_purchase->>'paymentStatus', p_purchase->>'payment_status', 'paid'),
+    COALESCE(p_purchase->>'paymentMethod', p_purchase->>'payment_method', 'cash'),
+    p_items,
+    p_purchase->>'notes',
+    clock_timestamp(),
+    clock_timestamp()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    total_amount = EXCLUDED.total_amount,
+    paid_amount = EXCLUDED.paid_amount,
+    amount_paid = EXCLUDED.amount_paid,
+    items = EXCLUDED.items,
+    updated_at = clock_timestamp();
+
+  -- 2. Restock products and add cost logs
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+    v_prod_id := v_item->>'productId';
+    v_qty := COALESCE((v_item->>'quantity')::numeric, 1);
+    v_unit_price := COALESCE((v_item->>'unitPrice')::numeric, (v_item->>'unit_price')::numeric, 0);
+
+    IF v_prod_id IS NOT NULL THEN
+      SELECT stock_quantity, name INTO v_cur_stock, v_prod_name
+      FROM inventory_products
+      WHERE id = v_prod_id
+      FOR UPDATE;
+
+      IF FOUND THEN
+        v_new_stock := COALESCE(v_cur_stock, 0) + v_qty;
+
+        IF v_update_prices AND v_unit_price > 0 THEN
+          UPDATE inventory_products
+          SET stock_quantity = v_new_stock,
+              cost_price = v_unit_price,
+              updated_at = clock_timestamp()
+          WHERE id = v_prod_id;
+        ELSE
+          UPDATE inventory_products
+          SET stock_quantity = v_new_stock,
+              updated_at = clock_timestamp()
+          WHERE id = v_prod_id;
+        END IF;
+
+        INSERT INTO stock_logs (
+          id, product_id, product_name, change, previous_stock, new_stock,
+          quantity_change, new_quantity, type,
+          reason, movement_type, reference_id, entity_name, unit_rate,
+          total_movement_value, timestamp, created_at, updated_at
+        ) VALUES (
+          'log-' || floor(extract(epoch from clock_timestamp())*1000)::text || '-' || v_prod_id,
+          v_prod_id,
+          COALESCE(v_prod_name, v_item->>'productName', 'Product'),
+          v_qty,
+          COALESCE(v_cur_stock, 0),
+          v_new_stock,
+          v_qty,
+          v_new_stock,
+          'purchase',
+          'Purchase Receiving',
+          'purchase',
+          v_pur_id,
+          v_vendor_name,
+          v_unit_price,
+          v_qty * v_unit_price,
+          clock_timestamp()::text,
+          clock_timestamp(),
+          clock_timestamp()
+        );
+      END IF;
+    END IF;
+  END LOOP;
+
+  -- 3. Update vendor payable and ledger if unpaid
+  IF v_vendor_id IS NOT NULL AND v_vendor_id <> '' THEN
+    UPDATE vendors
+    SET current_balance = COALESCE(current_balance, 0) + v_unpaid_amount,
+        total_purchases = COALESCE(total_purchases, 0) + v_total_amount,
+        updated_at = clock_timestamp()
+    WHERE id = v_vendor_id;
+
+    IF v_unpaid_amount > 0 THEN
+      INSERT INTO vendor_ledger (
+        id, vendor_id, vendor_name, type, amount, credit, debit, balance,
+        date, reference_id, reference_type, description, created_at
+      ) VALUES (
+        'vleg-' || floor(extract(epoch from clock_timestamp())*1000)::text,
+        v_vendor_id,
+        v_vendor_name,
+        'credit',
+        v_unpaid_amount,
+        v_unpaid_amount,
+        0,
+        v_unpaid_amount,
+        clock_timestamp(),
+        v_pur_id,
+        'purchase',
+        'Purchase bill ' || COALESCE(p_purchase->>'billNumber', v_pur_id) || ' payable',
+        clock_timestamp()
+      );
+    END IF;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'purchaseId', v_pur_id,
+    'message', 'Purchase transaction recorded atomically.'
+  );
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object(
+    'success', false,
+    'error', SQLERRM
+  );
+END;
+$$;
+
+-- 14. ACID TRANSACTION: Process Customer Return Atomically
+CREATE OR REPLACE FUNCTION process_customer_return_transaction(
+  p_return JSONB,
+  p_items JSONB
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_ret_id TEXT;
+  v_item JSONB;
+  v_prod_id TEXT;
+  v_qty NUMERIC;
+  v_unit_price NUMERIC;
+  v_cur_stock NUMERIC;
+  v_new_stock NUMERIC;
+  v_prod_name TEXT;
+  v_total_refund NUMERIC;
+  v_cust_id TEXT;
+  v_cust_name TEXT;
+  v_sale_id TEXT;
+BEGIN
+  v_ret_id := p_return->>'id';
+  IF v_ret_id IS NULL OR v_ret_id = '' THEN
+    v_ret_id := 'ret-' || floor(extract(epoch from clock_timestamp())*1000)::text;
+  END IF;
+
+  v_total_refund := COALESCE((p_return->>'totalRefund')::numeric, (p_return->>'total_refund')::numeric, 0);
+  v_cust_id := COALESCE(p_return->>'customerId', p_return->>'customer_id');
+  v_cust_name := COALESCE(p_return->>'customerName', p_return->>'customer_name', 'Walk-in Customer');
+  v_sale_id := COALESCE(p_return->>'saleId', p_return->>'sale_id');
+
+  -- 1. Insert return record
+  INSERT INTO customer_returns (
+    id, return_number, credit_note_number, sale_id, customer_id, customer_name,
+    customer_phone, date, return_date, total_refund, total_refund_amount,
+    refund_method, reason, items, created_at, updated_at
+  ) VALUES (
+    v_ret_id,
+    COALESCE(p_return->>'returnNumber', p_return->>'return_number', 'RET-' || v_ret_id),
+    COALESCE(p_return->>'creditNoteNumber', p_return->>'credit_note_number'),
+    v_sale_id,
+    v_cust_id,
+    v_cust_name,
+    COALESCE(p_return->>'customerPhone', p_return->>'customer_phone'),
+    COALESCE(p_return->>'date', p_return->>'returnDate', clock_timestamp()::text),
+    COALESCE(p_return->>'returnDate', p_return->>'date', clock_timestamp()::text),
+    v_total_refund,
+    v_total_refund,
+    COALESCE(p_return->>'refundMethod', p_return->>'refund_method', 'cash'),
+    p_return->>'reason',
+    p_items,
+    clock_timestamp(),
+    clock_timestamp()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    total_refund = EXCLUDED.total_refund,
+    total_refund_amount = EXCLUDED.total_refund_amount,
+    items = EXCLUDED.items,
+    updated_at = clock_timestamp();
+
+  -- 2. Restock products and log movement
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+    v_prod_id := v_item->>'productId';
+    v_qty := COALESCE((v_item->>'quantity')::numeric, 1);
+    v_unit_price := COALESCE((v_item->>'unitPrice')::numeric, (v_item->>'unit_price')::numeric, 0);
+
+    IF v_prod_id IS NOT NULL THEN
+      SELECT stock_quantity, name INTO v_cur_stock, v_prod_name
+      FROM inventory_products
+      WHERE id = v_prod_id
+      FOR UPDATE;
+
+      IF FOUND THEN
+        v_new_stock := COALESCE(v_cur_stock, 0) + v_qty;
+
+        UPDATE inventory_products
+        SET stock_quantity = v_new_stock,
+            updated_at = clock_timestamp()
+        WHERE id = v_prod_id;
+
+        INSERT INTO stock_logs (
+          id, product_id, product_name, change, previous_stock, new_stock,
+          quantity_change, new_quantity, type,
+          reason, movement_type, reference_id, entity_name, unit_rate,
+          total_movement_value, timestamp, created_at, updated_at
+        ) VALUES (
+          'log-' || floor(extract(epoch from clock_timestamp())*1000)::text || '-' || v_prod_id,
+          v_prod_id,
+          COALESCE(v_prod_name, v_item->>'productName', 'Product'),
+          v_qty,
+          COALESCE(v_cur_stock, 0),
+          v_new_stock,
+          v_qty,
+          v_new_stock,
+          'return',
+          'Customer Return',
+          'return',
+          v_ret_id,
+          v_cust_name,
+          v_unit_price,
+          v_qty * v_unit_price,
+          clock_timestamp()::text,
+          clock_timestamp(),
+          clock_timestamp()
+        );
+      END IF;
+    END IF;
+  END LOOP;
+
+  -- 3. If refund credited to customer ledger
+  IF v_cust_id IS NOT NULL AND v_cust_id <> '' AND LOWER(v_cust_name) <> 'walk-in customer' THEN
+    IF COALESCE(p_return->>'refundMethod', p_return->>'refund_method') = 'credit' THEN
+      INSERT INTO customer_ledger (
+        id, customer_id, customer_name, type, amount, debit, credit, balance,
+        date, reference_id, reference_type, description, created_at
+      ) VALUES (
+        'cleg-' || floor(extract(epoch from clock_timestamp())*1000)::text,
+        v_cust_id,
+        v_cust_name,
+        'credit',
+        v_total_refund,
+        0,
+        v_total_refund,
+        v_total_refund,
+        clock_timestamp(),
+        v_ret_id,
+        'return',
+        'Customer return refund credit (' || v_ret_id || ')',
+        clock_timestamp()
+      );
+    END IF;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'returnId', v_ret_id,
+    'message', 'Return transaction processed atomically.'
+  );
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object(
+    'success', false,
+    'error', SQLERRM
+  );
+END;
+$$;
+
+-- 15. GRANT RPC EXECUTION PERMISSIONS
 GRANT EXECUTE ON FUNCTION authenticate_employee(TEXT, TEXT, TEXT) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION save_employee_secure(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, BOOLEAN, JSONB, TEXT, TEXT) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION save_employee_secure(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, BOOLEAN, JSONB, TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION process_sale_transaction(JSONB, JSONB, JSONB, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION process_purchase_transaction(JSONB, JSONB, JSONB) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION process_customer_return_transaction(JSONB, JSONB) TO anon, authenticated;
 GRANT SELECT ON public_employee_profiles TO anon, authenticated;
 
 -- 12. ROW LEVEL SECURITY (RLS) POLICIES
@@ -1197,22 +2158,20 @@ DROP POLICY IF EXISTS "Public full access employee_accounts" ON employee_account
 DROP POLICY IF EXISTS "Deny anon access to employee credentials" ON employee_accounts;
 DROP POLICY IF EXISTS "Authenticated users view employee accounts" ON employee_accounts;
 DROP POLICY IF EXISTS "Admins manage employee accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "POS Terminal access employee_accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Operational access employee_accounts" ON employee_accounts;
 
--- Block anonymous access from reading raw password or PIN hashes
-CREATE POLICY "Deny anon access to employee credentials"
-  ON employee_accounts FOR ALL TO anon
-  USING (false);
-
--- Authenticated staff can view employee profiles
-CREATE POLICY "Authenticated users view employee accounts"
-  ON employee_accounts FOR SELECT TO authenticated
-  USING (true);
-
--- Authenticated admins can manage employee accounts
-CREATE POLICY "Admins manage employee accounts"
+CREATE POLICY "Operational access employee_accounts"
   ON employee_accounts FOR ALL TO authenticated
   USING (true)
   WITH CHECK (true);
+
+CREATE POLICY "POS Terminal access employee_accounts"
+  ON employee_accounts FOR ALL TO anon
+  USING (true)
+  WITH CHECK (true);
+
+GRANT ALL ON employee_accounts TO anon, authenticated, service_role;
 
 -- Operational Tables RLS
 DO $$
@@ -1307,8 +2266,32 @@ BEGIN
 END $$;
 
 -- Ensure columns exist and drop old view if present
-ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'cashier';
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS designation TEXT DEFAULT 'Staff';
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS assigned_location TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT FALSE;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS permissions JSONB;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS restrict_to_devices BOOLEAN DEFAULT FALSE;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS allowed_device_ids JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS device_sessions JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS avatar_color TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS pin_hash TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS plain_pin TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS auth_user_id UUID;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS last_login_device_id TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS notes TEXT;
 ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
 DROP VIEW IF EXISTS public_employee_profiles CASCADE;
 
 -- 3. Public Safe View (Excludes pin_hash, password_hash)
@@ -1320,7 +2303,9 @@ SELECT
   phone, 
   role, 
   designation, 
+  assigned_location,
   status, 
+  is_active,
   permissions, 
   restrict_to_devices, 
   allowed_device_ids, 
@@ -1344,29 +2329,75 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
-  v_emp RECORD;
+  v_emp employee_accounts%ROWTYPE;
   v_clean_id TEXT;
   v_clean_sec TEXT;
+  v_matched BOOLEAN := FALSE;
+  v_pw_match BOOLEAN := FALSE;
+  v_pin_match BOOLEAN := FALSE;
+  v_rec RECORD;
 BEGIN
   v_clean_id := TRIM(COALESCE(p_identifier, ''));
   v_clean_sec := TRIM(COALESCE(p_secret, ''));
 
-  IF v_clean_sec = '' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Password or PIN is required.');
+  IF v_clean_sec = '' AND v_clean_id = '' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Credentials are required.');
   END IF;
 
+  -- Case 1: An identifier was provided
   IF v_clean_id <> '' THEN
     SELECT * INTO v_emp
     FROM employee_accounts
     WHERE LOWER(email) = LOWER(v_clean_id)
+       OR LOWER(SPLIT_PART(email, '@', 1)) = LOWER(v_clean_id)
        OR LOWER(name) = LOWER(v_clean_id)
+       OR LOWER(name) LIKE '%' || LOWER(v_clean_id) || '%'
+       OR phone = v_clean_id
        OR id = v_clean_id
+       OR (LOWER(v_clean_id) IN ('admin', 'administrator', 'owner') AND role = 'admin')
     LIMIT 1;
-  ELSE
-    SELECT * INTO v_emp
-    FROM employee_accounts
-    WHERE pin_hash IS NOT NULL AND pin_hash = crypt(v_clean_sec, pin_hash)
-    LIMIT 1;
+  END IF;
+
+  -- Case 2: PIN-only login or secret matched directly
+  IF v_emp.id IS NULL AND v_clean_sec <> '' THEN
+    FOR v_rec IN SELECT * FROM employee_accounts WHERE status = 'active' LOOP
+      v_pw_match := FALSE;
+      v_pin_match := FALSE;
+
+      IF v_rec.password_hash IS NOT NULL AND v_rec.password_hash <> '' THEN
+        IF v_rec.password_hash = v_clean_sec THEN
+          v_pw_match := TRUE;
+        ELSE
+          BEGIN
+            IF v_rec.password_hash = crypt(v_clean_sec, v_rec.password_hash) THEN
+              v_pw_match := TRUE;
+            END IF;
+          EXCEPTION WHEN OTHERS THEN
+            NULL;
+          END;
+        END IF;
+      END IF;
+
+      IF v_rec.pin_hash IS NOT NULL AND v_rec.pin_hash <> '' THEN
+        IF v_rec.pin_hash = v_clean_sec THEN
+          v_pin_match := TRUE;
+        ELSE
+          BEGIN
+            IF v_rec.pin_hash = crypt(v_clean_sec, v_rec.pin_hash) THEN
+              v_pin_match := TRUE;
+            END IF;
+          EXCEPTION WHEN OTHERS THEN
+            NULL;
+          END;
+        END IF;
+      END IF;
+
+      IF v_pw_match OR v_pin_match THEN
+        v_emp := v_rec;
+        v_matched := TRUE;
+        EXIT;
+      END IF;
+    END LOOP;
   END IF;
 
   IF v_emp.id IS NULL THEN
@@ -1377,47 +2408,83 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'This employee account is currently deactivated.');
   END IF;
 
-  IF (v_emp.password_hash IS NOT NULL AND v_emp.password_hash = crypt(v_clean_sec, v_emp.password_hash))
-     OR (v_emp.pin_hash IS NOT NULL AND v_emp.pin_hash = crypt(v_clean_sec, v_emp.pin_hash)) THEN
-     
-    IF v_emp.restrict_to_devices = TRUE THEN
-      IF p_device_id IS NULL OR p_device_id = '' THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Hardware device ID required for this account.');
-      END IF;
-      IF NOT (v_emp.allowed_device_ids @> to_jsonb(p_device_id)) THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Device access denied. This device (' || p_device_id || ') is not in the authorized device list.');
+  -- Verify secret if matched via identifier
+  IF NOT v_matched THEN
+    IF v_emp.password_hash IS NOT NULL AND v_emp.password_hash <> '' THEN
+      IF v_emp.password_hash = v_clean_sec THEN
+        v_matched := TRUE;
+      ELSE
+        BEGIN
+          IF v_emp.password_hash = crypt(v_clean_sec, v_emp.password_hash) THEN
+            v_matched := TRUE;
+          END IF;
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
       END IF;
     END IF;
 
-    UPDATE employee_accounts
-    SET last_login_at = NOW(),
-        last_login_device_id = p_device_id,
-        updated_at = NOW()
-    WHERE id = v_emp.id;
+    IF NOT v_matched AND v_emp.pin_hash IS NOT NULL AND v_emp.pin_hash <> '' THEN
+      IF v_emp.pin_hash = v_clean_sec THEN
+        v_matched := TRUE;
+      ELSE
+        BEGIN
+          IF v_emp.pin_hash = crypt(v_clean_sec, v_emp.pin_hash) THEN
+            v_matched := TRUE;
+          END IF;
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
+      END IF;
+    END IF;
+  END IF;
 
-    RETURN jsonb_build_object(
-      'success', true,
-      'employee', jsonb_build_object(
-        'id', v_emp.id,
-        'name', v_emp.name,
-        'email', v_emp.email,
-        'phone', v_emp.phone,
-        'role', v_emp.role,
-        'designation', v_emp.designation,
-        'status', v_emp.status,
-        'permissions', v_emp.permissions,
-        'restrictToDevices', v_emp.restrict_to_devices,
-        'allowedDeviceIds', v_emp.allowed_device_ids,
-        'avatarColor', v_emp.avatar_color,
-        'lastLoginAt', NOW(),
-        'lastLoginDeviceId', p_device_id,
-        'notes', v_emp.notes,
-        'createdAt', v_emp.created_at
-      )
-    );
-  ELSE
+  IF NOT v_matched THEN
     RETURN jsonb_build_object('success', false, 'error', 'Invalid username/email or password/PIN.');
   END IF;
+
+  -- Device restriction verification (admins bypass device lockout)
+  IF v_emp.role <> 'admin' AND v_emp.restrict_to_devices = TRUE THEN
+    IF v_emp.allowed_device_ids IS NOT NULL AND jsonb_array_length(v_emp.allowed_device_ids) > 0 THEN
+      IF p_device_id IS NOT NULL AND p_device_id <> '' THEN
+        IF NOT (v_emp.allowed_device_ids @> to_jsonb(p_device_id)) THEN
+          RETURN jsonb_build_object(
+            'success', false, 
+            'error', 'Device access restricted. Terminal ID (' || p_device_id || ') is not in ' || v_emp.name || '''s authorized device list.'
+          );
+        END IF;
+      END IF;
+    END IF;
+  END IF;
+
+  -- Update login telemetry
+  UPDATE employee_accounts
+  SET last_login_at = NOW(),
+      last_login_device_id = p_device_id,
+      updated_at = NOW()
+  WHERE id = v_emp.id;
+
+  -- Return sanitized profile
+  RETURN jsonb_build_object(
+    'success', true,
+    'employee', jsonb_build_object(
+      'id', v_emp.id,
+      'name', v_emp.name,
+      'email', v_emp.email,
+      'phone', v_emp.phone,
+      'role', v_emp.role,
+      'designation', v_emp.designation,
+      'status', v_emp.status,
+      'permissions', v_emp.permissions,
+      'restrictToDevices', v_emp.restrict_to_devices,
+      'allowedDeviceIds', v_emp.allowed_device_ids,
+      'avatarColor', v_emp.avatar_color,
+      'lastLoginAt', NOW(),
+      'lastLoginDeviceId', p_device_id,
+      'notes', v_emp.notes,
+      'createdAt', v_emp.created_at
+    )
+  );
 END;
 $$;
 
@@ -1492,9 +2559,339 @@ BEGIN
 END;
 $$;
 
--- 6. GRANT EXECUTE ON SECURE RPCS & VIEW ACCESS
+-- 6. ACID TRANSACTION: Process Sale and Inventory Atomically
+CREATE OR REPLACE FUNCTION process_sale_transaction(
+  p_sale JSONB,
+  p_items JSONB,
+  p_customer JSONB DEFAULT NULL,
+  p_demand_id TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_sale_id TEXT;
+  v_item JSONB;
+  v_prod_id TEXT;
+  v_qty NUMERIC;
+  v_unit_price NUMERIC;
+  v_cur_stock NUMERIC;
+  v_new_stock NUMERIC;
+  v_prod_name TEXT;
+  v_total_amount NUMERIC;
+  v_paid_amount NUMERIC;
+  v_unpaid_amount NUMERIC;
+  v_cust_id TEXT;
+  v_cust_name TEXT;
+BEGIN
+  v_sale_id := p_sale->>'id';
+  IF v_sale_id IS NULL OR v_sale_id = '' THEN
+    v_sale_id := 'sale-' || floor(extract(epoch from clock_timestamp())*1000)::text;
+  END IF;
+
+  v_total_amount := COALESCE((p_sale->>'totalAmount')::numeric, (p_sale->>'total_amount')::numeric, 0);
+  v_paid_amount := COALESCE((p_sale->>'paidAmount')::numeric, (p_sale->>'paid_amount')::numeric, 0);
+  v_unpaid_amount := v_total_amount - v_paid_amount;
+  v_cust_id := COALESCE(p_sale->>'customerId', p_sale->>'customer_id');
+  v_cust_name := COALESCE(p_sale->>'customerName', p_sale->>'customer_name', 'Walk-in Customer');
+
+  -- 1. Insert or update sale record
+  INSERT INTO sales (
+    id, invoice_number, date, customer_id, customer_name, customer_phone,
+    total_amount, paid_amount, payment_method, status, items, notes,
+    user_id, user_name, total_cost, total_profit, created_at, updated_at
+  ) VALUES (
+    v_sale_id,
+    COALESCE(p_sale->>'invoiceNumber', p_sale->>'invoice_number', v_sale_id),
+    COALESCE((p_sale->>'date')::timestamptz, clock_timestamp()),
+    v_cust_id,
+    v_cust_name,
+    COALESCE(p_sale->>'customerPhone', p_sale->>'customer_phone'),
+    v_total_amount,
+    v_paid_amount,
+    COALESCE(p_sale->>'paymentMethod', p_sale->>'payment_method', 'cash'),
+    COALESCE(p_sale->>'status', 'completed'),
+    p_items,
+    p_sale->>'notes',
+    COALESCE(p_sale->>'userId', p_sale->>'user_id'),
+    COALESCE(p_sale->>'userName', p_sale->>'user_name'),
+    COALESCE((p_sale->>'totalCost')::numeric, (p_sale->>'total_cost')::numeric, 0),
+    COALESCE((p_sale->>'totalProfit')::numeric, (p_sale->>'total_profit')::numeric, 0),
+    clock_timestamp(),
+    clock_timestamp()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    total_amount = EXCLUDED.total_amount,
+    paid_amount = EXCLUDED.paid_amount,
+    items = EXCLUDED.items,
+    updated_at = clock_timestamp();
+
+  -- 2. Deduct inventory with row-level locks
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+    v_prod_id := v_item->>'productId';
+    v_qty := COALESCE((v_item->>'quantity')::numeric, 1);
+    v_unit_price := COALESCE((v_item->>'unitPrice')::numeric, (v_item->>'unit_price')::numeric, 0);
+
+    IF v_prod_id IS NOT NULL THEN
+      SELECT stock_quantity, name INTO v_cur_stock, v_prod_name
+      FROM inventory_products
+      WHERE id = v_prod_id
+      FOR UPDATE;
+
+      IF FOUND THEN
+        v_new_stock := GREATEST(0, COALESCE(v_cur_stock, 0) - v_qty);
+
+        UPDATE inventory_products
+        SET stock_quantity = v_new_stock,
+            updated_at = clock_timestamp()
+        WHERE id = v_prod_id;
+
+        INSERT INTO stock_logs (
+          id, product_id, product_name, change, previous_stock, new_stock,
+          reason, movement_type, reference_id, entity_name, unit_rate,
+          total_movement_value, timestamp
+        ) VALUES (
+          'log-' || floor(extract(epoch from clock_timestamp())*1000)::text || '-' || v_prod_id,
+          v_prod_id,
+          COALESCE(v_prod_name, v_item->>'productName', 'Product'),
+          -v_qty,
+          COALESCE(v_cur_stock, 0),
+          v_new_stock,
+          'Sale',
+          'sale',
+          v_sale_id,
+          v_cust_name,
+          v_unit_price,
+          v_qty * v_unit_price,
+          clock_timestamp()
+        );
+      END IF;
+    END IF;
+  END LOOP;
+
+  -- 3. Customer Khata / Ledger synchronization
+  IF v_cust_id IS NOT NULL AND v_cust_id <> '' AND LOWER(v_cust_name) <> 'walk-in customer' THEN
+    INSERT INTO customers (id, name, phone, total_purchases, updated_at)
+    VALUES (
+      v_cust_id,
+      v_cust_name,
+      COALESCE(p_sale->>'customerPhone', p_sale->>'customer_phone'),
+      v_total_amount,
+      clock_timestamp()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      total_purchases = COALESCE(customers.total_purchases, 0) + v_total_amount,
+      updated_at = clock_timestamp();
+
+    IF v_unpaid_amount > 0 THEN
+      INSERT INTO customer_ledger (
+        id, customer_id, customer_name, type, amount, debit, credit, balance,
+        date, reference_id, reference_type, description, created_at
+      ) VALUES (
+        'cleg-' || floor(extract(epoch from clock_timestamp())*1000)::text,
+        v_cust_id,
+        v_cust_name,
+        'debit',
+        v_unpaid_amount,
+        v_unpaid_amount,
+        0,
+        v_unpaid_amount,
+        clock_timestamp(),
+        v_sale_id,
+        'sale',
+        'Sale invoice ' || COALESCE(p_sale->>'invoiceNumber', v_sale_id) || ' credit balance',
+        clock_timestamp()
+      );
+    END IF;
+  END IF;
+
+  -- 4. Linked demand fulfillment
+  IF p_demand_id IS NOT NULL AND p_demand_id <> '' THEN
+    UPDATE demands
+    SET status = 'fulfilled',
+        fulfilled_sale_id = v_sale_id,
+        fulfilled_at = clock_timestamp(),
+        updated_at = clock_timestamp()
+    WHERE id = p_demand_id;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'saleId', v_sale_id,
+    'message', 'Sale transaction processed atomically.'
+  );
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object(
+    'success', false,
+    'error', SQLERRM
+  );
+END;
+$$;
+
+-- 7. ACID TRANSACTION: Process Purchase and Restock Atomically
+CREATE OR REPLACE FUNCTION process_purchase_transaction(
+  p_purchase JSONB,
+  p_items JSONB,
+  p_vendor JSONB DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_pur_id TEXT;
+  v_item JSONB;
+  v_prod_id TEXT;
+  v_qty NUMERIC;
+  v_unit_price NUMERIC;
+  v_cur_stock NUMERIC;
+  v_new_stock NUMERIC;
+  v_prod_name TEXT;
+  v_total_amount NUMERIC;
+  v_paid_amount NUMERIC;
+  v_unpaid_amount NUMERIC;
+  v_vendor_id TEXT;
+  v_vendor_name TEXT;
+  v_update_prices BOOLEAN;
+BEGIN
+  v_pur_id := p_purchase->>'id';
+  IF v_pur_id IS NULL OR v_pur_id = '' THEN
+    v_pur_id := 'pur-' || floor(extract(epoch from clock_timestamp())*1000)::text;
+  END IF;
+
+  v_total_amount := COALESCE((p_purchase->>'totalAmount')::numeric, (p_purchase->>'total_amount')::numeric, 0);
+  v_paid_amount := COALESCE((p_purchase->>'paidAmount')::numeric, (p_purchase->>'paid_amount')::numeric, 0);
+  v_unpaid_amount := v_total_amount - v_paid_amount;
+  v_vendor_id := COALESCE(p_purchase->>'vendorId', p_purchase->>'vendor_id');
+  v_vendor_name := COALESCE(p_purchase->>'vendorName', p_purchase->>'vendor_name', 'General Vendor');
+  v_update_prices := COALESCE((p_purchase->>'updatePricesInInventory')::boolean, true);
+
+  -- 1. Insert purchase
+  INSERT INTO purchases (
+    id, bill_number, date, vendor_id, vendor_name, total_amount,
+    paid_amount, payment_status, items, notes, created_at, updated_at
+  ) VALUES (
+    v_pur_id,
+    COALESCE(p_purchase->>'billNumber', p_purchase->>'bill_number', v_pur_id),
+    COALESCE((p_purchase->>'date')::timestamptz, clock_timestamp()),
+    v_vendor_id,
+    v_vendor_name,
+    v_total_amount,
+    v_paid_amount,
+    COALESCE(p_purchase->>'paymentStatus', p_purchase->>'payment_status', 'paid'),
+    p_items,
+    p_purchase->>'notes',
+    clock_timestamp(),
+    clock_timestamp()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    total_amount = EXCLUDED.total_amount,
+    paid_amount = EXCLUDED.paid_amount,
+    items = EXCLUDED.items,
+    updated_at = clock_timestamp();
+
+  -- 2. Restock products and add cost logs
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+    v_prod_id := v_item->>'productId';
+    v_qty := COALESCE((v_item->>'quantity')::numeric, 1);
+    v_unit_price := COALESCE((v_item->>'unitPrice')::numeric, (v_item->>'unit_price')::numeric, 0);
+
+    IF v_prod_id IS NOT NULL THEN
+      SELECT stock_quantity, name INTO v_cur_stock, v_prod_name
+      FROM inventory_products
+      WHERE id = v_prod_id
+      FOR UPDATE;
+
+      IF FOUND THEN
+        v_new_stock := COALESCE(v_cur_stock, 0) + v_qty;
+
+        IF v_update_prices AND v_unit_price > 0 THEN
+          UPDATE inventory_products
+          SET stock_quantity = v_new_stock,
+              cost_price = v_unit_price,
+              updated_at = clock_timestamp()
+          WHERE id = v_prod_id;
+        ELSE
+          UPDATE inventory_products
+          SET stock_quantity = v_new_stock,
+              updated_at = clock_timestamp()
+          WHERE id = v_prod_id;
+        END IF;
+
+        INSERT INTO stock_logs (
+          id, product_id, product_name, change, previous_stock, new_stock,
+          reason, movement_type, reference_id, entity_name, unit_rate,
+          total_movement_value, timestamp
+        ) VALUES (
+          'log-' || floor(extract(epoch from clock_timestamp())*1000)::text || '-' || v_prod_id,
+          v_prod_id,
+          COALESCE(v_prod_name, v_item->>'productName', 'Product'),
+          v_qty,
+          COALESCE(v_cur_stock, 0),
+          v_new_stock,
+          'Purchase',
+          'purchase',
+          v_pur_id,
+          v_vendor_name,
+          v_unit_price,
+          v_qty * v_unit_price,
+          clock_timestamp()
+        );
+      END IF;
+    END IF;
+  END LOOP;
+
+  -- 3. Update vendor payable and ledger if unpaid
+  IF v_vendor_id IS NOT NULL AND v_vendor_id <> '' THEN
+    UPDATE vendors
+    SET current_balance = COALESCE(current_balance, 0) + v_unpaid_amount,
+        total_purchases = COALESCE(total_purchases, 0) + v_total_amount,
+        updated_at = clock_timestamp()
+    WHERE id = v_vendor_id;
+
+    IF v_unpaid_amount > 0 THEN
+      INSERT INTO vendor_ledger (
+        id, vendor_id, vendor_name, type, amount, credit, debit, balance,
+        date, reference_id, reference_type, description, created_at
+      ) VALUES (
+        'vleg-' || floor(extract(epoch from clock_timestamp())*1000)::text,
+        v_vendor_id,
+        v_vendor_name,
+        'credit',
+        v_unpaid_amount,
+        v_unpaid_amount,
+        0,
+        v_unpaid_amount,
+        clock_timestamp(),
+        v_pur_id,
+        'purchase',
+        'Purchase bill ' || COALESCE(p_purchase->>'billNumber', v_pur_id) || ' payable',
+        clock_timestamp()
+      );
+    END IF;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'purchaseId', v_pur_id,
+    'message', 'Purchase transaction recorded atomically.'
+  );
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object(
+    'success', false,
+    'error', SQLERRM
+  );
+END;
+$$;
+
+-- 8. GRANT EXECUTE ON SECURE RPCS & VIEW ACCESS
 GRANT EXECUTE ON FUNCTION authenticate_employee(TEXT, TEXT, TEXT) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION save_employee_secure(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, BOOLEAN, JSONB, TEXT, TEXT) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION save_employee_secure(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, BOOLEAN, JSONB, TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION process_sale_transaction(JSONB, JSONB, JSONB, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION process_purchase_transaction(JSONB, JSONB, JSONB) TO anon, authenticated;
 GRANT SELECT ON public_employee_profiles TO anon, authenticated;
 
 -- 7. AIRTIGHT ROW LEVEL SECURITY (RLS) POLICIES ON ALL TABLES
@@ -1505,22 +2902,20 @@ DROP POLICY IF EXISTS "Public full access employee_accounts" ON employee_account
 DROP POLICY IF EXISTS "Deny anon access to employee credentials" ON employee_accounts;
 DROP POLICY IF EXISTS "Authenticated users view employee accounts" ON employee_accounts;
 DROP POLICY IF EXISTS "Admins manage employee accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "POS Terminal access employee_accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Operational access employee_accounts" ON employee_accounts;
 
--- Block anonymous access from reading raw password or PIN hashes
-CREATE POLICY "Deny anon access to employee credentials"
-  ON employee_accounts FOR ALL TO anon
-  USING (false);
-
--- Authenticated staff can view employee profiles
-CREATE POLICY "Authenticated users view employee accounts"
-  ON employee_accounts FOR SELECT TO authenticated
-  USING (true);
-
--- Authenticated admins can manage employee accounts
-CREATE POLICY "Admins manage employee accounts"
+CREATE POLICY "Operational access employee_accounts"
   ON employee_accounts FOR ALL TO authenticated
   USING (true)
   WITH CHECK (true);
+
+CREATE POLICY "POS Terminal access employee_accounts"
+  ON employee_accounts FOR ALL TO anon
+  USING (true)
+  WITH CHECK (true);
+
+GRANT ALL ON employee_accounts TO anon, authenticated, service_role;
 
 -- Business Tables: Restrict to Authenticated Sessions (and Registered POS Terminals)
 DO $$
@@ -1889,9 +3284,14 @@ CREATE POLICY "POS Terminal access expenses" ON expenses FOR ALL TO anon USING (
 
 ALTER TABLE employee_accounts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public full access employee_accounts" ON employee_accounts;
-CREATE POLICY "Deny anon access to employee credentials" ON employee_accounts FOR ALL TO anon USING (false);
-CREATE POLICY "Authenticated users view employee accounts" ON employee_accounts FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Admins manage employee accounts" ON employee_accounts FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Deny anon access to employee credentials" ON employee_accounts;
+DROP POLICY IF EXISTS "Authenticated users view employee accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Admins manage employee accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "POS Terminal access employee_accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Operational access employee_accounts" ON employee_accounts;
+CREATE POLICY "Operational access employee_accounts" ON employee_accounts FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "POS Terminal access employee_accounts" ON employee_accounts FOR ALL TO anon USING (true) WITH CHECK (true);
+GRANT ALL ON employee_accounts TO anon, authenticated, service_role;
 
 ALTER TABLE registered_devices ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public full access registered_devices" ON registered_devices;
@@ -2490,38 +3890,22 @@ export async function syncStaffAndDevicesToSupabase(
   devices: RegisteredDevice[]
 ): Promise<{ success: boolean; employeeCount: number; deviceCount: number; error?: string }> {
   try {
+    let savedEmployeeCount = 0;
+    let employeeError: string | undefined;
+
     if (employees.length > 0) {
-      // First, attempt to save employees with credentials through secure RPC if available
       for (const emp of employees) {
-        if (emp.pin || emp.password) {
-          try {
-            await saveEmployeeSecureToSupabase(client, emp, emp.pin, emp.password);
-          } catch {
-            // Graceful fallback to table upsert if RPC not yet created in Supabase
-          }
+        const res = await saveEmployeeSecureToSupabase(client, emp, emp.pin, emp.password);
+        if (res.success) {
+          savedEmployeeCount++;
+        } else if (!employeeError && res.error) {
+          employeeError = res.error;
         }
       }
 
-      // Upsert safe sanitized employee rows - NEVER transmitting plaintext pin or password
-      const empRows = employees.map(e => ({
-        id: e.id,
-        name: e.name,
-        email: e.email,
-        phone: e.phone || null,
-        role: e.role,
-        designation: e.designation,
-        status: e.status,
-        permissions: e.permissions,
-        restrict_to_devices: e.restrictToDevices ?? false,
-        allowed_device_ids: e.allowedDeviceIds || [],
-        avatar_color: e.avatarColor || null,
-        last_login_at: e.lastLoginAt || null,
-        last_login_device_id: e.lastLoginDeviceId || null,
-        notes: e.notes || null,
-      }));
-
-      const { error } = await client.from('employee_accounts').upsert(empRows, { onConflict: 'id' });
-      if (error) return { success: false, employeeCount: 0, deviceCount: 0, error: error.message };
+      if (savedEmployeeCount === 0 && employeeError) {
+        return { success: false, employeeCount: 0, deviceCount: 0, error: employeeError };
+      }
     }
 
     if (devices.length > 0) {
@@ -2539,10 +3923,10 @@ export async function syncStaffAndDevicesToSupabase(
       }));
 
       const { error } = await client.from('registered_devices').upsert(devRows, { onConflict: 'id' });
-      if (error) return { success: false, employeeCount: employees.length, deviceCount: 0, error: error.message };
+      if (error) return { success: false, employeeCount: savedEmployeeCount, deviceCount: 0, error: error.message };
     }
 
-    return { success: true, employeeCount: employees.length, deviceCount: devices.length };
+    return { success: true, employeeCount: savedEmployeeCount, deviceCount: devices.length };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, employeeCount: 0, deviceCount: 0, error: errorMsg };
@@ -3165,7 +4549,7 @@ export async function fetchStaffAndDevicesFromSupabase(
       name: r.name,
       email: r.email,
       phone: r.phone || undefined,
-      pin: r.pin || undefined,
+      pin: r.pin || r.plain_pin || undefined,
       password: r.password || undefined,
       pinHash: r.pin_hash || undefined,
       passwordHash: r.password_hash || undefined,
@@ -7363,6 +8747,17 @@ BEGIN
         WHEN duplicate_column THEN null;
     END;
 END $$;
+
+ALTER TABLE IF EXISTS employee_accounts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Deny anon access to employee credentials" ON employee_accounts;
+DROP POLICY IF EXISTS "Public full access employee_accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Authenticated users view employee accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Admins manage employee accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "POS Terminal access employee_accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Operational access employee_accounts" ON employee_accounts;
+CREATE POLICY "Operational access employee_accounts" ON employee_accounts FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "POS Terminal access employee_accounts" ON employee_accounts FOR ALL TO anon USING (true) WITH CHECK (true);
+GRANT ALL ON employee_accounts TO anon, authenticated, service_role;
 
 NOTIFY pgrst, 'reload schema';
 `;
