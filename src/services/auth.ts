@@ -1,6 +1,7 @@
 import { AppWorkspaceView, AuthState, EmployeeAccount, EmployeePermissions, UserRole } from '../types';
 import { getOrCreateDeviceId } from './device';
 import { getSupabaseClient, authenticateEmployeeViaSupabase, saveEmployeeSecureToSupabase } from './supabase';
+import { getStoredSupabaseConfig } from './storage';
 import bcrypt from 'bcryptjs';
 
 const AUTH_STORAGE_KEY = 'kfh_inventory_auth_v1';
@@ -451,12 +452,30 @@ export function getStoredEmployees(): EmployeeAccount[] {
 
     // Sanitize every employee to guarantee valid permissions object and strip insecure default credentials
     list = list.map(emp => {
+      if (!emp || typeof emp !== 'object') return null;
       const role = emp.role || 'cashier';
-      const hasValidPerms = emp.permissions && typeof emp.permissions === 'object' && Array.isArray(emp.permissions.allowedTabs);
+      const roleDefault = getRoleDefaultPermissions(role);
+      const existingPerms = (emp.permissions && typeof emp.permissions === 'object') ? emp.permissions : roleDefault;
+      const allowedTabs = Array.isArray(existingPerms?.allowedTabs) 
+        ? existingPerms.allowedTabs 
+        : (role === 'admin' ? [...ALL_WORKSPACE_TABS] : roleDefault.allowedTabs);
+
       const sanitized: EmployeeAccount = {
         ...emp,
+        name: emp.name || 'Staff Member',
+        email: emp.email || '',
+        phone: emp.phone || '',
+        pin: emp.pin !== undefined && emp.pin !== null ? String(emp.pin) : undefined,
         role,
-        permissions: hasValidPerms ? emp.permissions : getRoleDefaultPermissions(role)
+        designation: emp.designation || (role.charAt(0).toUpperCase() + role.slice(1)),
+        status: emp.status || 'active',
+        permissions: {
+          ...roleDefault,
+          ...existingPerms,
+          allowedTabs
+        },
+        restrictToDevices: Boolean(emp.restrictToDevices),
+        allowedDeviceIds: Array.isArray(emp.allowedDeviceIds) ? emp.allowedDeviceIds : []
       };
 
       // Ensure master admin has valid credentials fallback if unconfigured
@@ -469,7 +488,7 @@ export function getStoredEmployees(): EmployeeAccount[] {
       }
 
       return sanitized;
-    });
+    }).filter(Boolean) as EmployeeAccount[];
 
     // Ensure Master Admin account exists
     const hasAdmin = list.some(e => e.role === 'admin' && e.status === 'active');
@@ -671,7 +690,8 @@ export async function saveEmployeeWithCredentials(
 
   let backendSync: { success: boolean; error?: string } | undefined;
   try {
-    const client = getSupabaseClient();
+    const config = getStoredSupabaseConfig();
+    const client = getSupabaseClient(config);
     if (client) {
       backendSync = await saveEmployeeSecureToSupabase(client, updated, pin, password);
       if (!backendSync.success) {
@@ -703,7 +723,8 @@ export function deleteEmployee(id: string): void {
 
   // Delete from Supabase as well
   try {
-    const client = getSupabaseClient();
+    const config = getStoredSupabaseConfig();
+    const client = getSupabaseClient(config);
     if (client) {
       Promise.resolve(client.from('employee_accounts').delete().eq('id', id)).catch(err => console.warn('Supabase delete error', err));
     }

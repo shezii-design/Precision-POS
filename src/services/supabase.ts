@@ -382,38 +382,81 @@ export async function saveEmployeeSecureToSupabase(
       status: emp.status || 'active',
       permissions: emp.permissions,
       restrict_to_devices: emp.restrictToDevices ?? false,
-      allowed_device_ids: emp.allowedDeviceIds || [],
+      allowed_device_ids: Array.isArray(emp.allowedDeviceIds) ? emp.allowedDeviceIds : [],
       avatar_color: emp.avatarColor || null,
       notes: emp.notes || null,
       pin_hash: pinHash || null,
       password_hash: passwordHash || null,
-      pin: pinCandidate || null,
-      plain_pin: pinCandidate || null,
-      password: pwdCandidate || null,
       updated_at: new Date().toISOString(),
     };
 
     let currentPayload = { ...payload };
     let lastError: string | undefined;
 
+    const extractMissingColumn = (msg: string): string | null => {
+      if (!msg) return null;
+      // PostgREST: Could not find the 'xxx' column of 'employee_accounts' in the schema cache
+      const m1 = msg.match(/Could not find the ['"]([^'"]+)['"] column/i);
+      if (m1 && m1[1]) return m1[1];
+      // PostgREST: Could not find column 'xxx'
+      const m2 = msg.match(/Could not find column ['"]([^'"]+)['"]/i);
+      if (m2 && m2[1]) return m2[1];
+      // PostgreSQL: column "xxx" of relation "employee_accounts" does not exist
+      const m3 = msg.match(/column ['"]([^'"]+)['"] of relation/i);
+      if (m3 && m3[1]) return m3[1];
+      // PostgreSQL: column "xxx" does not exist
+      const m4 = msg.match(/column ['"]([^'"]+)['"] does not exist/i);
+      if (m4 && m4[1]) return m4[1];
+      const m5 = msg.match(/column ([a-zA-Z0-9_]+) does not exist/i);
+      if (m5 && m5[1]) return m5[1];
+      return null;
+    };
+
     // Dynamically strip any column that does not exist in the target Supabase schema
-    for (let attempt = 0; attempt < 8; attempt++) {
+    for (let attempt = 0; attempt < 10; attempt++) {
       const { error } = await client
         .from('employee_accounts')
         .upsert(currentPayload, { onConflict: 'id' });
 
       if (!error) {
+        // If the database has plain columns (legacy/custom), attempt update non-blockingly
+        if (pinCandidate || pwdCandidate) {
+          try {
+            const extra: Record<string, any> = {};
+            if (pinCandidate) {
+              extra.pin = pinCandidate;
+              extra.plain_pin = pinCandidate;
+            }
+            if (pwdCandidate) {
+              extra.password = pwdCandidate;
+            }
+            await client.from('employee_accounts').update(extra).eq('id', emp.id);
+          } catch {
+            // Ignore if plain columns don't exist
+          }
+        }
         return { success: true, method: 'table' };
       }
 
       lastError = error.message;
 
-      const match = error.message.match(/column "([^"]+)" of relation "employee_accounts" does not exist/i) ||
-                    error.message.match(/column "([^"]+)" does not exist/i) ||
-                    error.message.match(/column ([a-zA-Z0-9_]+) does not exist/i);
+      if (
+        error.code === '42P01' || 
+        error.code === 'PGRST205' || 
+        (error.message.includes('does not exist') && error.message.includes('employee_accounts'))
+      ) {
+        lastError = 'Table "employee_accounts" not found in Supabase. Please run the SQL schema script in Supabase Dashboard > SQL Editor.';
+        break;
+      }
 
-      if (match && match[1] && match[1] in currentPayload) {
-        delete currentPayload[match[1]];
+      if (error.message.toLowerCase().includes('row-level security') || error.code === '42501') {
+        lastError = 'Supabase RLS policy blocked saving employee. Please ensure RLS policy allows upsert on employee_accounts.';
+        break;
+      }
+
+      const missingCol = extractMissingColumn(error.message);
+      if (missingCol && missingCol in currentPayload) {
+        delete currentPayload[missingCol];
         continue;
       }
 

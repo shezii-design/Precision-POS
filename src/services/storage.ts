@@ -367,20 +367,25 @@ export function getStoredSupabaseConfig(): SupabaseConfig {
     const raw = localStorage.getItem(SUPABASE_CONFIG_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
     
+    const url = (env.url || parsed?.url || '').trim();
+    const anonKey = (env.anonKey || parsed?.anonKey || '').trim();
+    const hasConfig = Boolean(url && anonKey);
+
     return {
-      url: env.url || parsed?.url || '',
-      anonKey: env.anonKey || parsed?.anonKey || '',
-      enabled: env.isConfigured ? (parsed?.enabled !== false) : false,
-      syncStatus: env.isConfigured ? (parsed?.syncStatus || 'connected') : 'disconnected',
+      url,
+      anonKey,
+      enabled: hasConfig ? (parsed?.enabled !== undefined ? Boolean(parsed.enabled) : true) : false,
+      syncStatus: hasConfig ? (parsed?.syncStatus || 'connected') : 'disconnected',
       lastSyncedAt: parsed?.lastSyncedAt,
       errorMessage: parsed?.errorMessage,
     };
   } catch (err) {
+    const hasConfig = Boolean(env.url && env.anonKey);
     return {
       url: env.url || '',
       anonKey: env.anonKey || '',
-      enabled: env.isConfigured,
-      syncStatus: env.isConfigured ? 'connected' : 'disconnected',
+      enabled: hasConfig,
+      syncStatus: hasConfig ? 'connected' : 'disconnected',
     };
   }
 }

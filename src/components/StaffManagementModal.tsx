@@ -205,19 +205,20 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
   };
 
   const handleStartEdit = (emp: EmployeeAccount) => {
-    const roleDefault = getRoleDefaultPermissions(emp.role);
-    const existingPerms = emp.permissions || roleDefault;
+    if (!emp) return;
+    const roleDefault = getRoleDefaultPermissions(emp.role || 'cashier');
+    const existingPerms = (emp.permissions && typeof emp.permissions === 'object') ? emp.permissions : roleDefault;
     const allowedTabs = Array.isArray(existingPerms?.allowedTabs) 
       ? existingPerms.allowedTabs 
       : (emp.role === 'admin' ? [...ALL_WORKSPACE_TABS] : roleDefault.allowedTabs);
 
     setFormData({
-      id: emp.id,
+      id: emp.id || '',
       name: emp.name || '',
       email: emp.email || '',
       phone: emp.phone || '',
-      pin: emp.pin || '',
-      password: emp.password || '',
+      pin: emp.pin !== undefined && emp.pin !== null ? String(emp.pin) : '',
+      password: emp.password ? String(emp.password) : '',
       role: emp.role || 'cashier',
       designation: emp.designation || '',
       status: emp.status || 'active',
@@ -241,13 +242,13 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
       ...prev,
       role: newRole,
       permissions: defaultPerms,
-      designation: ROLE_INFO[newRole].label
+      designation: ROLE_INFO[newRole]?.label || 'Staff'
     }));
   };
 
   const toggleTabVisibility = (tab: AppWorkspaceView) => {
     setFormData(prev => {
-      const allowed = prev.permissions?.allowedTabs || [];
+      const allowed = Array.isArray(prev.permissions?.allowedTabs) ? prev.permissions.allowedTabs : [];
       const isPresent = allowed.includes(tab);
       const updatedTabs = isPresent 
         ? allowed.filter(t => t !== tab) 
@@ -255,7 +256,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
       return {
         ...prev,
         permissions: {
-          ...prev.permissions,
+          ...(prev.permissions || getRoleDefaultPermissions(prev.role || 'cashier')),
           allowedTabs: updatedTabs
         }
       };
@@ -266,7 +267,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
     setFormData(prev => ({
       ...prev,
       permissions: {
-        ...prev.permissions,
+        ...(prev.permissions || getRoleDefaultPermissions(prev.role || 'cashier')),
         allowedTabs: selectAll ? [...ALL_WORKSPACE_TABS] : []
       }
     }));
@@ -274,13 +275,16 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
 
   const togglePermissionAction = (actionKey: keyof EmployeePermissions) => {
     if (actionKey === 'allowedTabs') return;
-    setFormData(prev => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        [actionKey]: !prev.permissions[actionKey]
-      }
-    }));
+    setFormData(prev => {
+      const currentPerms = prev.permissions || getRoleDefaultPermissions(prev.role || 'cashier');
+      return {
+        ...prev,
+        permissions: {
+          ...currentPerms,
+          [actionKey]: !currentPerms[actionKey]
+        }
+      };
+    });
   };
 
   const toggleDeviceWhitelist = (deviceId: string) => {
@@ -319,8 +323,16 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
     const isMaster = formData.id === 'admin-master';
 
     const pinStr = String(formData.pin || '').trim();
-    if (!pinStr || pinStr.length < 4) {
+    if (!pinStr) {
+      if (!editingEmployee || (!editingEmployee.pin && !editingEmployee.pinHash)) {
+        showNotification('PIN must be at least 4 digits.');
+        return;
+      }
+    } else if (pinStr.length < 4) {
       showNotification('PIN must be at least 4 digits.');
+      return;
+    } else if (['1234', '0000', '1111', 'admin'].includes(pinStr)) {
+      showNotification('Insecure default PINs like "1234" or "0000" are forbidden. Please choose a unique PIN.');
       return;
     }
 
@@ -330,24 +342,24 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
       return;
     }
 
-    if (['1234', '0000', '1111', 'admin'].includes(pinStr)) {
-      showNotification('Insecure default PINs like "1234" or "0000" are forbidden. Please choose a unique PIN.');
-      return;
-    }
-
     // Ensure the current device is included if device restriction is active to avoid accidental lockout
     let allowedDevices = Array.isArray(formData.allowedDeviceIds) ? [...formData.allowedDeviceIds] : [];
     if (formData.restrictToDevices && allowedDevices.length === 0) {
       allowedDevices = [currentDeviceId];
     }
 
+    const finalPin = pinStr || editingEmployee?.pin || '';
+    const finalPassword = passStr || editingEmployee?.password || undefined;
+
     const employeeRecord: EmployeeAccount = {
       id: formData.id,
       name: formData.name.trim(),
       email: formData.email.trim(),
       phone: formData.phone.trim(),
-      pin: formData.pin.trim(),
-      password: formData.password?.trim() || undefined,
+      pin: finalPin,
+      pinHash: editingEmployee?.pinHash,
+      password: finalPassword,
+      passwordHash: editingEmployee?.passwordHash,
       role: isMaster ? 'admin' : formData.role,
       designation: isMaster ? 'Shop Owner & Super Admin' : (formData.designation.trim() || ROLE_INFO[formData.role].label),
       status: isMaster ? 'active' : formData.status,
@@ -362,8 +374,8 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
     try {
       const saved = await saveEmployeeWithCredentials(
         employeeRecord, 
-        formData.pin.trim(), 
-        formData.password?.trim()
+        pinStr || undefined, 
+        passStr || undefined
       );
 
       const updatedList = employees.map(e => e.id === saved.id ? saved : e);
@@ -377,7 +389,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
         if (saved.backendSync?.success) {
           showNotification('Master Administrator credentials updated securely and synced to backend database.');
         } else if (saved.backendSync?.error) {
-          showNotification(`Master Admin credentials saved locally. Backend notice: ${saved.backendSync.error}`);
+          showNotification(`Master Admin credentials saved locally. Backend note: ${saved.backendSync.error}`);
         } else {
           showNotification('Master Administrator credentials updated securely in-app.');
         }
@@ -385,7 +397,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
         if (saved.backendSync?.success) {
           showNotification(`Employee ${saved.name} saved and synced to backend database.`);
         } else if (saved.backendSync?.error) {
-          showNotification(`Employee ${saved.name} saved locally. Backend notice: ${saved.backendSync.error}`);
+          showNotification(`Employee ${saved.name} saved locally. Backend note: ${saved.backendSync.error}`);
         } else {
           showNotification(`Employee ${saved.name} saved successfully with active login access.`);
         }
@@ -462,13 +474,14 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
   };
 
   const filteredEmployees = useMemo(() => {
-    if (!searchQuery.trim()) return employees;
+    const list = Array.isArray(employees) ? employees : [];
+    if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase();
-    return employees.filter(e => 
-      e.name.toLowerCase().includes(q) || 
-      e.email.toLowerCase().includes(q) || 
-      e.designation.toLowerCase().includes(q) ||
-      e.role.toLowerCase().includes(q)
+    return list.filter(e => 
+      (e.name || '').toLowerCase().includes(q) || 
+      (e.email || '').toLowerCase().includes(q) || 
+      (e.designation || '').toLowerCase().includes(q) || 
+      (e.role || '').toLowerCase().includes(q)
     );
   }, [employees, searchQuery]);
 
@@ -530,7 +543,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                 }`}
               >
                 <Users className="w-4 h-4 text-blue-600" />
-                <span>Employees ({employees.length})</span>
+                <span>Employees ({employees?.length || 0})</span>
               </button>
 
               <button
@@ -544,7 +557,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                 }`}
               >
                 <Monitor className="w-4 h-4 text-emerald-600" />
-                <span>Registered Devices ({registeredDevices.length})</span>
+                <span>Registered Devices ({registeredDevices?.length || 0})</span>
               </button>
             </div>
 
@@ -691,10 +704,10 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                     <div className="relative">
                       <input
                         type={showPinInForm ? 'text' : 'password'}
-                        required
+                        required={!editingEmployee && !editingEmployee?.pinHash}
                         maxLength={6}
                         pattern="[0-9]*"
-                        placeholder="1234"
+                        placeholder={editingEmployee && (editingEmployee.pin || editingEmployee.pinHash) ? '•••• (Leave blank to keep existing PIN)' : 'e.g. 5821'}
                         value={formData.pin}
                         onChange={e => setFormData({ ...formData, pin: e.target.value })}
                         className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-xl text-xs font-mono font-bold tracking-widest focus:ring-2 focus:ring-blue-500 focus:bg-white"
@@ -1156,10 +1169,11 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (!formData.allowedDeviceIds.includes(currentDeviceId)) {
+                          const list = Array.isArray(formData.allowedDeviceIds) ? formData.allowedDeviceIds : [];
+                          if (!list.includes(currentDeviceId)) {
                             setFormData({
                               ...formData,
-                              allowedDeviceIds: [...formData.allowedDeviceIds, currentDeviceId]
+                              allowedDeviceIds: [...list, currentDeviceId]
                             });
                           }
                         }}
@@ -1171,8 +1185,10 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {registeredDevices.map(dev => {
-                        const isWhitelisted = formData.allowedDeviceIds.includes(dev.id);
+                      {(registeredDevices || []).map(dev => {
+                        if (!dev) return null;
+                        const list = Array.isArray(formData.allowedDeviceIds) ? formData.allowedDeviceIds : [];
+                        const isWhitelisted = list.includes(dev.id);
                         return (
                           <div
                             key={dev.id}
@@ -1186,8 +1202,8 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                             <div className="flex items-center gap-2">
                               <Monitor className="w-4 h-4 text-emerald-600 shrink-0" />
                               <div>
-                                <div className="text-xs font-bold text-slate-800">{dev.name}</div>
-                                <div className="text-[10px] text-slate-500 font-mono">{dev.id} • {dev.os}</div>
+                                <div className="text-xs font-bold text-slate-800">{dev.name || 'Terminal'}</div>
+                                <div className="text-[10px] text-slate-500 font-mono">{dev.id} • {dev.os || 'Windows'}</div>
                               </div>
                             </div>
                             <input
@@ -1247,7 +1263,8 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
             <div className="space-y-4">
               {/* In-App Master Administrator Security Card */}
               {(() => {
-                const masterAdmin = employees.find(e => e.id === 'admin-master') || employees.find(e => e.role === 'admin');
+                const list = Array.isArray(employees) ? employees : [];
+                const masterAdmin = list.find(e => e?.id === 'admin-master') || list.find(e => e?.role === 'admin');
                 if (!masterAdmin) return null;
                 const isUsingDefault = masterAdmin.pin === '1234' || masterAdmin.password === 'admin';
                 return (
@@ -1269,7 +1286,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                           )}
                         </div>
                         <p className="text-xs text-slate-300 mt-1">
-                          Login ID: <span className="font-mono text-red-200 font-bold">{masterAdmin.email}</span> • Kept securely inside the app • Never exposed on login screen
+                          Login ID: <span className="font-mono text-red-200 font-bold">{masterAdmin.email || 'admin'}</span> • Kept securely inside the app • Never exposed on login screen
                         </p>
                       </div>
                     </div>
@@ -1288,9 +1305,21 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {filteredEmployees.map(emp => {
+                  if (!emp) return null;
                   const isCurrent = emp.id === currentUserId;
                   const isMaster = emp.id === 'admin-master';
-                  const roleDef = ROLE_INFO[emp.role] || ROLE_INFO.custom;
+                  const roleDef = (emp.role && ROLE_INFO[emp.role]) || ROLE_INFO.cashier;
+                  const safeName = emp.name || 'Staff Member';
+                  const safeInitial = safeName.charAt(0).toUpperCase();
+                  const pinDisplay = emp.pin 
+                    ? `•••• (${String(emp.pin).length} digits)` 
+                    : (emp.pinHash ? '•••• (Configured)' : 'Not configured');
+                  const allowedTabsCount = Array.isArray(emp.permissions?.allowedTabs)
+                    ? emp.permissions.allowedTabs.length
+                    : 0;
+                  const allowedDevicesCount = Array.isArray(emp.allowedDeviceIds)
+                    ? emp.allowedDeviceIds.length
+                    : 0;
 
                   return (
                     <div 
@@ -1310,18 +1339,18 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                               emp.role === 'stockkeeper' ? 'bg-gradient-to-br from-emerald-500 to-emerald-700' :
                               'bg-gradient-to-br from-purple-500 to-purple-700'
                             }`}>
-                              {emp.name.charAt(0).toUpperCase()}
+                              {safeInitial}
                             </div>
                             <div>
                               <div className="flex items-center gap-1.5">
-                                <h3 className="text-xs font-bold text-slate-900 leading-tight">{emp.name}</h3>
+                                <h3 className="text-xs font-bold text-slate-900 leading-tight">{safeName}</h3>
                                 {isCurrent && (
                                   <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-blue-100 text-blue-800">
                                     Current Session
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[11px] text-slate-500">{emp.designation}</span>
+                              <span className="text-[11px] text-slate-500">{emp.designation || 'Staff'}</span>
                             </div>
                           </div>
 
@@ -1340,21 +1369,21 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                           <div className="flex items-center justify-between text-slate-600">
                             <span className="text-slate-400">Quick PIN:</span>
                             <span className="font-mono font-bold text-slate-800">
-                              {emp.pin ? `•••• (${emp.pin.length} digits)` : (emp.pinHash ? '•••• (Configured)' : 'Not configured')}
+                              {pinDisplay}
                             </span>
                           </div>
 
                           <div className="flex items-center justify-between text-slate-600">
                             <span className="text-slate-400">Allowed Tabs:</span>
                             <span className="font-bold text-slate-800">
-                              {emp.role === 'admin' ? 'All (12)' : `${emp.permissions?.allowedTabs?.length || 0} of ${ALL_WORKSPACE_TABS.length}`}
+                              {emp.role === 'admin' ? 'All (12)' : `${allowedTabsCount} of ${ALL_WORKSPACE_TABS.length}`}
                             </span>
                           </div>
 
                           <div className="flex items-center justify-between text-slate-600">
                             <span className="text-slate-400">Device Lock:</span>
                             <span className={`font-bold ${emp.restrictToDevices ? 'text-emerald-700' : 'text-slate-500'}`}>
-                              {emp.restrictToDevices ? `Locked (${emp.allowedDeviceIds?.length || 0} PCs)` : 'Any Device'}
+                              {emp.restrictToDevices ? `Locked (${allowedDevicesCount} PCs)` : 'Any Device'}
                             </span>
                           </div>
 
