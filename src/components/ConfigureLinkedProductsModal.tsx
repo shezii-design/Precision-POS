@@ -25,17 +25,17 @@ export const ConfigureLinkedProductsModal: React.FC<ConfigureLinkedProductsModal
   isOpen,
   onClose,
   vendor,
-  allProducts,
+  allProducts = [],
   onSaveLinks,
 }) => {
-  const [selectedIds, setSelectedIds] = useState<string[]>(vendor.linkedProductIds || []);
+  const [selectedIds, setSelectedIds] = useState<string[]>(vendor?.linkedProductIds || []);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
 
   // Reset when vendor changes
   React.useEffect(() => {
-    if (isOpen) {
+    if (isOpen && vendor) {
       setSelectedIds(vendor.linkedProductIds || []);
       setSearchTerm('');
     }
@@ -95,9 +95,12 @@ export const ConfigureLinkedProductsModal: React.FC<ConfigureLinkedProductsModal
   };
 
   const handleSave = () => {
+    if (!vendor) return;
     onSaveLinks(vendor.id, selectedIds);
     onClose();
   };
+
+  if (!isOpen || !vendor) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">

@@ -310,7 +310,7 @@ export async function saveEmployeeSecureToSupabase(
 
   // 1. First attempt: call secure RPC function `save_employee_secure`
   try {
-    const { error } = await client.rpc('save_employee_secure', {
+    const { data, error } = await client.rpc('save_employee_secure', {
       p_id: emp.id,
       p_name: emp.name,
       p_email: emp.email,
@@ -328,9 +328,14 @@ export async function saveEmployeeSecureToSupabase(
     });
 
     if (!error) {
-      return { success: true, method: 'rpc' };
+      if (data && typeof data === 'object' && (data as any).success === false) {
+        console.warn('save_employee_secure RPC reported failure, falling back to table upsert:', data);
+      } else {
+        return { success: true, method: 'rpc' };
+      }
+    } else {
+      console.warn('save_employee_secure RPC failed or not present, attempting direct table upsert:', error.message);
     }
-    console.warn('save_employee_secure RPC failed or not present, attempting direct table upsert:', error.message);
   } catch (rpcErr: unknown) {
     console.warn('RPC invocation exception, attempting direct table upsert:', rpcErr);
   }
@@ -338,7 +343,13 @@ export async function saveEmployeeSecureToSupabase(
   // 2. Resilient Direct Table Upsert Fallback
   try {
     let pinHash = emp.pinHash;
-    if (pinCandidate && !pinHash) {
+    if (newPin && newPin.trim() !== '') {
+      try {
+        pinHash = bcrypt.hashSync(newPin.trim(), 8);
+      } catch {
+        pinHash = await sha256Hash(newPin.trim());
+      }
+    } else if (pinCandidate && !pinHash) {
       try {
         pinHash = bcrypt.hashSync(pinCandidate, 8);
       } catch {
@@ -347,7 +358,13 @@ export async function saveEmployeeSecureToSupabase(
     }
 
     let passwordHash = emp.passwordHash;
-    if (pwdCandidate && !passwordHash) {
+    if (newPassword && newPassword.trim() !== '') {
+      try {
+        passwordHash = bcrypt.hashSync(newPassword.trim(), 8);
+      } catch {
+        passwordHash = await sha256Hash(newPassword.trim());
+      }
+    } else if (pwdCandidate && !passwordHash) {
       try {
         passwordHash = bcrypt.hashSync(pwdCandidate, 8);
       } catch {

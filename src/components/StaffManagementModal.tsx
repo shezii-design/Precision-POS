@@ -205,20 +205,30 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
   };
 
   const handleStartEdit = (emp: EmployeeAccount) => {
+    const roleDefault = getRoleDefaultPermissions(emp.role);
+    const existingPerms = emp.permissions || roleDefault;
+    const allowedTabs = Array.isArray(existingPerms?.allowedTabs) 
+      ? existingPerms.allowedTabs 
+      : (emp.role === 'admin' ? [...ALL_WORKSPACE_TABS] : roleDefault.allowedTabs);
+
     setFormData({
       id: emp.id,
-      name: emp.name,
-      email: emp.email,
+      name: emp.name || '',
+      email: emp.email || '',
       phone: emp.phone || '',
       pin: emp.pin || '',
       password: emp.password || '',
-      role: emp.role,
-      designation: emp.designation,
-      status: emp.status,
+      role: emp.role || 'cashier',
+      designation: emp.designation || '',
+      status: emp.status || 'active',
       avatarColor: emp.avatarColor || 'blue',
-      restrictToDevices: emp.restrictToDevices,
-      allowedDeviceIds: emp.allowedDeviceIds || [],
-      permissions: { ...emp.permissions },
+      restrictToDevices: Boolean(emp.restrictToDevices),
+      allowedDeviceIds: Array.isArray(emp.allowedDeviceIds) ? emp.allowedDeviceIds : [],
+      permissions: {
+        ...roleDefault,
+        ...existingPerms,
+        allowedTabs
+      },
       notes: emp.notes || ''
     });
     setEditingEmployee(emp);
@@ -237,7 +247,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
 
   const toggleTabVisibility = (tab: AppWorkspaceView) => {
     setFormData(prev => {
-      const allowed = prev.permissions.allowedTabs;
+      const allowed = prev.permissions?.allowedTabs || [];
       const isPresent = allowed.includes(tab);
       const updatedTabs = isPresent 
         ? allowed.filter(t => t !== tab) 
@@ -275,7 +285,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
 
   const toggleDeviceWhitelist = (deviceId: string) => {
     setFormData(prev => {
-      const currentList = prev.allowedDeviceIds;
+      const currentList = Array.isArray(prev.allowedDeviceIds) ? prev.allowedDeviceIds : [];
       const exists = currentList.includes(deviceId);
       return {
         ...prev,
@@ -308,23 +318,25 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
 
     const isMaster = formData.id === 'admin-master';
 
-    if (!formData.pin || formData.pin.length < 4) {
+    const pinStr = String(formData.pin || '').trim();
+    if (!pinStr || pinStr.length < 4) {
       showNotification('PIN must be at least 4 digits.');
       return;
     }
 
-    if (formData.password && formData.password.trim().length > 0 && formData.password.trim().length < 6) {
+    const passStr = String(formData.password || '').trim();
+    if (passStr.length > 0 && passStr.length < 6) {
       showNotification('Password must be at least 6 characters long.');
       return;
     }
 
-    if (['1234', '0000', '1111', 'admin'].includes(formData.pin.trim())) {
+    if (['1234', '0000', '1111', 'admin'].includes(pinStr)) {
       showNotification('Insecure default PINs like "1234" or "0000" are forbidden. Please choose a unique PIN.');
       return;
     }
 
     // Ensure the current device is included if device restriction is active to avoid accidental lockout
-    let allowedDevices = [...formData.allowedDeviceIds];
+    let allowedDevices = Array.isArray(formData.allowedDeviceIds) ? [...formData.allowedDeviceIds] : [];
     if (formData.restrictToDevices && allowedDevices.length === 0) {
       allowedDevices = [currentDeviceId];
     }
@@ -823,7 +835,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                   {ALL_WORKSPACE_TABS.map(tab => {
                     const meta = TAB_METADATA[tab];
                     const Icon = meta.icon;
-                    const isAllowed = formData.permissions.allowedTabs.includes(tab);
+                    const isAllowed = formData.permissions?.allowedTabs?.includes(tab) || false;
 
                     return (
                       <div
@@ -1322,18 +1334,20 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                         <div className="space-y-1.5 py-2 border-y border-slate-100 text-[11px]">
                           <div className="flex items-center justify-between text-slate-600">
                             <span className="text-slate-400">Login ID:</span>
-                            <span className="font-mono font-bold text-slate-800">{emp.email}</span>
+                            <span className="font-mono font-bold text-slate-800">{emp.email || '—'}</span>
                           </div>
 
                           <div className="flex items-center justify-between text-slate-600">
                             <span className="text-slate-400">Quick PIN:</span>
-                            <span className="font-mono font-bold text-slate-800">•••• ({emp.pin.length} digits)</span>
+                            <span className="font-mono font-bold text-slate-800">
+                              {emp.pin ? `•••• (${emp.pin.length} digits)` : (emp.pinHash ? '•••• (Configured)' : 'Not configured')}
+                            </span>
                           </div>
 
                           <div className="flex items-center justify-between text-slate-600">
                             <span className="text-slate-400">Allowed Tabs:</span>
                             <span className="font-bold text-slate-800">
-                              {emp.role === 'admin' ? 'All (12)' : `${emp.permissions.allowedTabs.length} of ${ALL_WORKSPACE_TABS.length}`}
+                              {emp.role === 'admin' ? 'All (12)' : `${emp.permissions?.allowedTabs?.length || 0} of ${ALL_WORKSPACE_TABS.length}`}
                             </span>
                           </div>
 
@@ -1346,8 +1360,8 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
 
                           <div className="flex items-center justify-between text-slate-600">
                             <span className="text-slate-400">Cost Rates:</span>
-                            <span className={`font-bold ${emp.permissions.canViewCostPrices ? 'text-blue-700' : 'text-slate-400'}`}>
-                              {emp.permissions.canViewCostPrices ? 'Visible' : 'Hidden (•••)'}
+                            <span className={`font-bold ${emp.permissions?.canViewCostPrices ? 'text-blue-700' : 'text-slate-400'}`}>
+                              {emp.permissions?.canViewCostPrices ? 'Visible' : 'Hidden (•••)'}
                             </span>
                           </div>
                         </div>
