@@ -2068,7 +2068,7 @@ export default function App() {
         onOpenSecuritySettings={() => setShowStaffModal(true)}
         onOpenWipeData={() => setShowWipeDataModal(true)}
         onOpenStaffManagement={() => setShowStaffModal(true)}
-        onOpenSwitchUser={() => { setAuthState(prev => ({ ...prev, isLocked: true, currentUserId: undefined })); }}
+        onOpenSwitchUser={() => { setAuthState(prev => ({ ...prev, isLocked: true })); }}
         currentEmployee={currentEmployee}
         onGoToInventory={handleGoToInventory}
         currentView={currentView}
@@ -2924,7 +2924,11 @@ export default function App() {
       <AuthModal
         isOpen={authState.isLocked || showSecurityModal}
         isLockScreenMode={authState.isLocked}
-        onClose={() => setShowSecurityModal(false)}
+        onClose={() => {
+          if (!authState.isLocked) {
+            setShowSecurityModal(false);
+          }
+        }}
         authState={authState}
         onAuthSuccess={(authenticatedEmp) => {
           const empId = authenticatedEmp?.id || authState.currentUserId || 'admin-master';

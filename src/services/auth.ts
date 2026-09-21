@@ -788,7 +788,7 @@ export async function authenticateEmployee(
     if (!hasConfiguredCredentials) {
       return { 
         success: false, 
-        error: 'Default "admin" / "admin" credentials are disabled for security. Please set master administrator credentials or sign in with your staff account.' 
+        error: 'Invalid credentials. Access denied.' 
       };
     }
   }
