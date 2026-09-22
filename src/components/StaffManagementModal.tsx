@@ -63,8 +63,12 @@ import {
   DollarSign,
   Percent,
   CheckSquare,
-  Square
+  Square,
+  Copy,
+  Terminal,
+  Database
 } from 'lucide-react';
+import { SCHEMA_STAFF_AUTH_QUICK_FIX } from '../services/supabase';
 
 interface StaffManagementModalProps {
   isOpen: boolean;
@@ -138,6 +142,8 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
   const [showPinInForm, setShowPinInForm] = useState<boolean>(false);
   const [showPasswordInForm, setShowPasswordInForm] = useState<boolean>(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string>('');
+  const [showSqlFix, setShowSqlFix] = useState<boolean>(false);
+  const [copiedSql, setCopiedSql] = useState<boolean>(false);
   const [editingDeviceNameId, setEditingDeviceNameId] = useState<string | null>(null);
   const [customDeviceNameInput, setCustomDeviceNameInput] = useState<string>('');
   const [employeeToDelete, setEmployeeToDelete] = useState<EmployeeAccount | null>(null);
@@ -182,7 +188,9 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
   };
 
   const handleStartCreate = () => {
-    const newId = `emp-${Date.now()}`;
+    const newId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `emp-${Date.now()}`;
     const initialPerms = getRoleDefaultPermissions('cashier');
     setFormData({
       id: newId,
@@ -357,9 +365,9 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
       email: formData.email.trim(),
       phone: formData.phone.trim(),
       pin: finalPin,
-      pinHash: editingEmployee?.pinHash,
+      pinHash: pinStr ? undefined : editingEmployee?.pinHash,
       password: finalPassword,
-      passwordHash: editingEmployee?.passwordHash,
+      passwordHash: passStr ? undefined : editingEmployee?.passwordHash,
       role: isMaster ? 'admin' : formData.role,
       designation: isMaster ? 'Shop Owner & Super Admin' : (formData.designation.trim() || ROLE_INFO[formData.role].label),
       status: isMaster ? 'active' : formData.status,
@@ -389,7 +397,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
         if (saved.backendSync?.success) {
           showNotification('Master Administrator credentials updated securely and synced to backend database.');
         } else if (saved.backendSync?.error) {
-          showNotification(`Master Admin credentials saved locally. Backend note: ${saved.backendSync.error}`);
+          showNotification(`Master Admin saved locally. Backend: ${saved.backendSync.error}`);
         } else {
           showNotification('Master Administrator credentials updated securely in-app.');
         }
@@ -397,7 +405,7 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
         if (saved.backendSync?.success) {
           showNotification(`Employee ${saved.name} saved and synced to backend database.`);
         } else if (saved.backendSync?.error) {
-          showNotification(`Employee ${saved.name} saved locally. Backend note: ${saved.backendSync.error}`);
+          showNotification(`Employee ${saved.name} saved locally. Backend: ${saved.backendSync.error}`);
         } else {
           showNotification(`Employee ${saved.name} saved successfully with active login access.`);
         }
@@ -517,6 +525,16 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                 <span>{feedbackMessage}</span>
               </div>
             )}
+            <button
+              type="button"
+              id="btn-staff-sql-fix"
+              onClick={() => setShowSqlFix(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+              title="View Supabase Employee & PIN SQL Setup Script"
+            >
+              <Database className="w-3.5 h-3.5 text-blue-400" />
+              <span className="hidden sm:inline">Supabase SQL Fix</span>
+            </button>
             <button
               type="button"
               id="btn-close-staff-modal"
@@ -1678,6 +1696,86 @@ export const StaffManagementModal: React.FC<StaffManagementModalProps> = ({
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Revoke Authorization</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Supabase Employee SQL Fix Modal */}
+        {showSqlFix && (
+          <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+            <div 
+              className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                    <Database className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Supabase Backend SQL Fix</h3>
+                    <p className="text-xs text-slate-500">
+                      Copy and run this in your Supabase Dashboard SQL Editor to ensure PIN, Password & accounts save smoothly
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSqlFix(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Why might Supabase not save PIN or Password?</span>
+                </div>
+                <ul className="list-disc pl-5 space-y-0.5 text-amber-800">
+                  <li>Your <code className="bg-amber-100 px-1 rounded font-mono">employee_accounts</code> table is missing <code className="bg-amber-100 px-1 rounded font-mono">pin</code>, <code className="bg-amber-100 px-1 rounded font-mono">password</code>, or bcrypt hash columns.</li>
+                  <li>Row-Level Security (RLS) is enabled without operational write policies for POS clients.</li>
+                  <li>The <code className="bg-amber-100 px-1 rounded font-mono">pgcrypto</code> extension is placed in <code className="bg-amber-100 px-1 rounded font-mono">extensions</code> schema rather than <code className="bg-amber-100 px-1 rounded font-mono">public</code>.</li>
+                </ul>
+              </div>
+
+              <div className="flex-1 min-h-0 flex flex-col space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span className="font-semibold text-slate-700">Idempotent SQL Script (Safe to run multiple times):</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(SCHEMA_STAFF_AUTH_QUICK_FIX);
+                      setCopiedSql(true);
+                      setTimeout(() => setCopiedSql(false), 2500);
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedSql ? 'Copied to Clipboard!' : 'Copy SQL Script'}</span>
+                  </button>
+                </div>
+
+                <div className="relative flex-1 min-h-[200px] max-h-[320px] overflow-hidden rounded-xl border border-slate-800">
+                  <pre className="p-3 bg-slate-950 text-emerald-400 text-[11px] font-mono overflow-auto h-full leading-relaxed select-all">
+                    {SCHEMA_STAFF_AUTH_QUICK_FIX}
+                  </pre>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                <span className="text-slate-500">
+                  Go to <strong>Supabase Dashboard &gt; SQL Editor &gt; New Query &gt; Paste &gt; Run</strong>.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowSqlFix(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors cursor-pointer"
+                >
+                  Close
                 </button>
               </div>
             </div>

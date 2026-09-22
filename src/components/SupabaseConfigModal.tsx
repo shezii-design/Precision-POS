@@ -45,6 +45,7 @@ import {
   syncAllModulesToSupabase,
   fetchAllFromSupabase,
   SCHEMA_FULL_DATABASE,
+  SCHEMA_STAFF_AUTH_QUICK_FIX,
   resetSupabaseClient
 } from '../services/supabase';
 import { 
@@ -158,7 +159,9 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
   // UI Navigation
   const [activeTab, setActiveTab] = useState<'connection' | 'sync' | 'guide' | 'columns'>('connection');
   const [copiedSql, setCopiedSql] = useState<boolean>(false);
+  const [copiedStaffSql, setCopiedStaffSql] = useState<boolean>(false);
   const [showSqlViewer, setShowSqlViewer] = useState<boolean>(false);
+  const [selectedSqlTab, setSelectedSqlTab] = useState<'master' | 'staff'>('master');
 
   // On initial open, run a quiet connection test if credentials exist
   useEffect(() => {
@@ -460,6 +463,12 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     navigator.clipboard.writeText(SCHEMA_FULL_DATABASE);
     setCopiedSql(true);
     setTimeout(() => setCopiedSql(false), 2500);
+  };
+
+  const handleCopyStaffSql = () => {
+    navigator.clipboard.writeText(SCHEMA_STAFF_AUTH_QUICK_FIX);
+    setCopiedStaffSql(true);
+    setTimeout(() => setCopiedStaffSql(false), 2500);
   };
 
   const handleExportFullJson = () => {
@@ -800,14 +809,14 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     <div className="flex items-center gap-2">
                       <FileCode2 className="w-4 h-4 text-emerald-400" />
                       <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/30">
-                        Single Master Script
+                        PostgreSQL DDL & RPC
                       </span>
                       <h4 className="text-xs font-black uppercase tracking-wider text-white">
-                        Database Master SQL Script
+                        Database SQL Scripts
                       </h4>
                     </div>
                     <p className="text-xs text-slate-300">
-                      The single complete PostgreSQL schema with all ERP tables, relational columns, performance indexes, RLS security policies, and atomic transaction RPCs.
+                      Copy the full database schema or run the specialized employee & PIN credentials quick fix.
                     </p>
                   </div>
 
@@ -820,6 +829,17 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
                     >
                       {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedSql ? 'Master SQL Copied!' : 'Copy Master SQL'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      id="btn-copy-staff-sql"
+                      onClick={handleCopyStaffSql}
+                      className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      title="Quick fix specifically for employee credentials, PIN and password columns"
+                    >
+                      {copiedStaffSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedStaffSql ? 'Staff SQL Copied!' : 'Copy Staff PIN/Password SQL'}</span>
                     </button>
 
                     <button
@@ -845,21 +865,37 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
 
                 {/* Collapsible/Expandable SQL Code Viewer */}
                 {showSqlViewer && (
-                  <div className="space-y-2 pt-3 border-t border-slate-700/80">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <div className="flex items-center gap-2">
-                        <span className="text-emerald-400 font-mono text-[11px]">
-                          {SCHEMA_FULL_DATABASE.split('\n').length} lines • Idempotent & Safe
-                        </span>
+                  <div className="space-y-3 pt-3 border-t border-slate-700/80">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 p-1 bg-slate-800 rounded-lg">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSqlTab('master')}
+                          className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                            selectedSqlTab === 'master' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Full Database Schema ({SCHEMA_FULL_DATABASE.split('\n').length} lines)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSqlTab('staff')}
+                          className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                            selectedSqlTab === 'staff' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Staff PIN & Password Quick Fix ({SCHEMA_STAFF_AUTH_QUICK_FIX.split('\n').length} lines)
+                        </button>
                       </div>
+
                       <span className="text-[11px] text-slate-400">
                         Paste into <strong>Supabase Dashboard &gt; SQL Editor</strong> and click <strong>Run</strong>
                       </span>
                     </div>
 
                     <div className="relative">
-                      <pre className="p-4 bg-slate-950 text-emerald-400 rounded-xl text-[11px] font-mono overflow-x-auto max-h-96 leading-relaxed border border-slate-800 shadow-inner">
-                        {SCHEMA_FULL_DATABASE}
+                      <pre className="p-4 bg-slate-950 text-emerald-400 rounded-xl text-[11px] font-mono overflow-x-auto max-h-96 leading-relaxed border border-slate-800 shadow-inner select-all">
+                        {selectedSqlTab === 'master' ? SCHEMA_FULL_DATABASE : SCHEMA_STAFF_AUTH_QUICK_FIX}
                       </pre>
                     </div>
                   </div>

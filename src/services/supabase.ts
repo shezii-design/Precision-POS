@@ -331,6 +331,14 @@ export async function saveEmployeeSecureToSupabase(
       if (data && typeof data === 'object' && (data as any).success === false) {
         console.warn('save_employee_secure RPC reported failure, falling back to table upsert:', data);
       } else {
+        // Also synchronize plaintext columns if the user's Supabase database has them
+        if (pinCandidate) {
+          try { await client.from('employee_accounts').update({ pin: pinCandidate }).eq('id', emp.id); } catch {}
+          try { await client.from('employee_accounts').update({ plain_pin: pinCandidate }).eq('id', emp.id); } catch {}
+        }
+        if (pwdCandidate) {
+          try { await client.from('employee_accounts').update({ password: pwdCandidate }).eq('id', emp.id); } catch {}
+        }
         return { success: true, method: 'rpc' };
       }
     } else {
@@ -385,10 +393,25 @@ export async function saveEmployeeSecureToSupabase(
       allowed_device_ids: Array.isArray(emp.allowedDeviceIds) ? emp.allowedDeviceIds : [],
       avatar_color: emp.avatarColor || null,
       notes: emp.notes || null,
-      pin_hash: pinHash || null,
-      password_hash: passwordHash || null,
       updated_at: new Date().toISOString(),
     };
+
+    // Safely attach hashes only if computed/present so we don't wipe existing DB hashes with null
+    if (pinHash) {
+      payload.pin_hash = pinHash;
+    }
+    if (passwordHash) {
+      payload.password_hash = passwordHash;
+    }
+
+    // Also attach candidate plain PIN and password for databases that have plain columns
+    if (pinCandidate) {
+      payload.pin = pinCandidate;
+      payload.plain_pin = pinCandidate;
+    }
+    if (pwdCandidate) {
+      payload.password = pwdCandidate;
+    }
 
     let currentPayload = { ...payload };
     let lastError: string | undefined;
@@ -413,32 +436,34 @@ export async function saveEmployeeSecureToSupabase(
     };
 
     // Dynamically strip any column that does not exist in the target Supabase schema
-    for (let attempt = 0; attempt < 10; attempt++) {
+    for (let attempt = 0; attempt < 12; attempt++) {
       const { error } = await client
         .from('employee_accounts')
         .upsert(currentPayload, { onConflict: 'id' });
 
       if (!error) {
-        // If the database has plain columns (legacy/custom), attempt update non-blockingly
-        if (pinCandidate || pwdCandidate) {
-          try {
-            const extra: Record<string, any> = {};
-            if (pinCandidate) {
-              extra.pin = pinCandidate;
-              extra.plain_pin = pinCandidate;
-            }
-            if (pwdCandidate) {
-              extra.password = pwdCandidate;
-            }
-            await client.from('employee_accounts').update(extra).eq('id', emp.id);
-          } catch {
-            // Ignore if plain columns don't exist
-          }
+        // Run discrete column updates for legacy/direct columns in case they were stripped from currentPayload
+        if (pinCandidate) {
+          try { await client.from('employee_accounts').update({ pin: pinCandidate }).eq('id', emp.id); } catch {}
+          try { await client.from('employee_accounts').update({ plain_pin: pinCandidate }).eq('id', emp.id); } catch {}
+        }
+        if (pwdCandidate) {
+          try { await client.from('employee_accounts').update({ password: pwdCandidate }).eq('id', emp.id); } catch {}
         }
         return { success: true, method: 'table' };
       }
 
       lastError = error.message;
+
+      // Check for unique email constraint violation
+      if (
+        error.code === '23505' || 
+        error.message.includes('employee_accounts_email_key') || 
+        error.message.includes('unique constraint')
+      ) {
+        lastError = `An account with email/username "${emp.email}" already exists in the backend. Please provide a unique email address.`;
+        break;
+      }
 
       if (
         error.code === '42P01' || 
@@ -450,7 +475,7 @@ export async function saveEmployeeSecureToSupabase(
       }
 
       if (error.message.toLowerCase().includes('row-level security') || error.code === '42501') {
-        lastError = 'Supabase RLS policy blocked saving employee. Please ensure RLS policy allows upsert on employee_accounts.';
+        lastError = 'Supabase Row-Level Security (RLS) blocked saving employee. Please run the RLS SQL script in Supabase Dashboard > SQL Editor.';
         break;
       }
 
@@ -1474,7 +1499,7 @@ CREATE OR REPLACE FUNCTION authenticate_employee(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_emp employee_accounts%ROWTYPE;
@@ -1656,7 +1681,7 @@ CREATE OR REPLACE FUNCTION save_employee_secure(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_pin_hash TEXT := NULL;
@@ -1702,6 +1727,21 @@ BEGIN
     avatar_color = EXCLUDED.avatar_color,
     notes = EXCLUDED.notes,
     updated_at = NOW();
+
+  -- Synchronize plaintext pin/password columns if they exist in this database
+  BEGIN
+    IF p_pin IS NOT NULL AND TRIM(p_pin) <> '' THEN
+      EXECUTE 'UPDATE employee_accounts SET pin = $1, plain_pin = $1 WHERE id = $2' USING TRIM(p_pin), p_id;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  BEGIN
+    IF p_password IS NOT NULL AND TRIM(p_password) <> '' THEN
+      EXECUTE 'UPDATE employee_accounts SET password = $1 WHERE id = $2' USING TRIM(p_password), p_id;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
 
   RETURN jsonb_build_object('success', true, 'id', p_id);
 END;
@@ -2386,7 +2426,7 @@ CREATE OR REPLACE FUNCTION authenticate_employee(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_emp employee_accounts%ROWTYPE;
@@ -2568,7 +2608,7 @@ CREATE OR REPLACE FUNCTION save_employee_secure(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
   v_pin_hash TEXT := NULL;
@@ -2614,6 +2654,21 @@ BEGIN
     avatar_color = EXCLUDED.avatar_color,
     notes = EXCLUDED.notes,
     updated_at = NOW();
+
+  -- Synchronize plaintext pin/password columns if they exist in this database
+  BEGIN
+    IF p_pin IS NOT NULL AND TRIM(p_pin) <> '' THEN
+      EXECUTE 'UPDATE employee_accounts SET pin = $1, plain_pin = $1 WHERE id = $2' USING TRIM(p_pin), p_id;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  BEGIN
+    IF p_password IS NOT NULL AND TRIM(p_password) <> '' THEN
+      EXECUTE 'UPDATE employee_accounts SET password = $1 WHERE id = $2' USING TRIM(p_password), p_id;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
 
   RETURN jsonb_build_object('success', true, 'id', p_id);
 END;
@@ -8821,4 +8876,167 @@ GRANT ALL ON employee_accounts TO anon, authenticated, service_role;
 
 NOTIFY pgrst, 'reload schema';
 `;
+
+export const SCHEMA_STAFF_AUTH_QUICK_FIX = `-- ==========================================================
+-- QUICK FIX: EMPLOYEE CREDENTIALS, PIN/PASSWORD & BACKEND SYNC
+-- Run this in Supabase Dashboard > SQL Editor (https://supabase.com/dashboard)
+-- ==========================================================
+
+-- 1. Enable Cryptographic Functions for secure bcrypt hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
+
+-- 2. Create table if not exists
+CREATE TABLE IF NOT EXISTS employee_accounts (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL DEFAULT 'Staff',
+  email TEXT NOT NULL UNIQUE,
+  phone TEXT,
+  pin TEXT,
+  plain_pin TEXT,
+  password TEXT,
+  pin_hash TEXT,
+  password_hash TEXT,
+  role TEXT NOT NULL DEFAULT 'cashier',
+  designation TEXT DEFAULT 'Staff',
+  status TEXT DEFAULT 'active',
+  permissions JSONB,
+  restrict_to_devices BOOLEAN DEFAULT FALSE,
+  allowed_device_ids JSONB DEFAULT '[]'::jsonb,
+  avatar_color TEXT,
+  last_login_at TIMESTAMPTZ,
+  last_login_device_id TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Ensure all credential and metadata columns exist in employee_accounts
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS pin TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS password TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS plain_pin TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS pin_hash TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS auth_user_id UUID;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS designation TEXT DEFAULT 'Staff';
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS permissions JSONB;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS restrict_to_devices BOOLEAN DEFAULT FALSE;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS allowed_device_ids JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS avatar_color TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS last_login_device_id TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE IF EXISTS employee_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- 4. Grant Full Access to avoid Row-Level Security (RLS) blockage
+ALTER TABLE IF EXISTS employee_accounts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access employee_accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Deny anon access to employee credentials" ON employee_accounts;
+DROP POLICY IF EXISTS "Authenticated users view employee accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Admins manage employee accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "POS Terminal access employee_accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Operational access employee_accounts" ON employee_accounts;
+DROP POLICY IF EXISTS "Public access employee_accounts" ON employee_accounts;
+
+CREATE POLICY "Operational access employee_accounts"
+  ON employee_accounts FOR ALL TO public
+  USING (true)
+  WITH CHECK (true);
+
+GRANT ALL ON employee_accounts TO anon, authenticated, service_role;
+
+-- 5. Create or Replace save_employee_secure RPC Function
+CREATE OR REPLACE FUNCTION save_employee_secure(
+  p_id TEXT,
+  p_name TEXT,
+  p_email TEXT,
+  p_phone TEXT DEFAULT NULL,
+  p_pin TEXT DEFAULT NULL,
+  p_password TEXT DEFAULT NULL,
+  p_role TEXT DEFAULT 'cashier',
+  p_designation TEXT DEFAULT 'Staff',
+  p_status TEXT DEFAULT 'active',
+  p_permissions JSONB DEFAULT NULL,
+  p_restrict_to_devices BOOLEAN DEFAULT FALSE,
+  p_allowed_device_ids JSONB DEFAULT '[]'::jsonb,
+  p_avatar_color TEXT DEFAULT NULL,
+  p_notes TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
+AS $$
+DECLARE
+  v_pin_hash TEXT := NULL;
+  v_pwd_hash TEXT := NULL;
+  v_existing RECORD;
+BEGIN
+  SELECT * INTO v_existing FROM employee_accounts WHERE id = p_id;
+
+  IF p_pin IS NOT NULL AND TRIM(p_pin) <> '' THEN
+    v_pin_hash := crypt(TRIM(p_pin), gen_salt('bf', 8));
+  ELSIF v_existing.id IS NOT NULL THEN
+    v_pin_hash := v_existing.pin_hash;
+  END IF;
+
+  IF p_password IS NOT NULL AND TRIM(p_password) <> '' THEN
+    v_pwd_hash := crypt(TRIM(p_password), gen_salt('bf', 8));
+  ELSIF v_existing.id IS NOT NULL THEN
+    v_pwd_hash := v_existing.password_hash;
+  END IF;
+
+  INSERT INTO employee_accounts (
+    id, name, email, phone, pin_hash, password_hash, role, designation,
+    status, permissions, restrict_to_devices, allowed_device_ids,
+    avatar_color, notes, updated_at
+  )
+  VALUES (
+    p_id, p_name, p_email, p_phone, v_pin_hash, v_pwd_hash, p_role, p_designation,
+    p_status, p_permissions, p_restrict_to_devices, p_allowed_device_ids,
+    p_avatar_color, p_notes, NOW()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email,
+    phone = EXCLUDED.phone,
+    pin_hash = COALESCE(v_pin_hash, employee_accounts.pin_hash),
+    password_hash = COALESCE(v_pwd_hash, employee_accounts.password_hash),
+    role = EXCLUDED.role,
+    designation = EXCLUDED.designation,
+    status = EXCLUDED.status,
+    permissions = EXCLUDED.permissions,
+    restrict_to_devices = EXCLUDED.restrict_to_devices,
+    allowed_device_ids = EXCLUDED.allowed_device_ids,
+    avatar_color = EXCLUDED.avatar_color,
+    notes = EXCLUDED.notes,
+    updated_at = NOW();
+
+  -- Synchronize plaintext columns if present
+  BEGIN
+    IF p_pin IS NOT NULL AND TRIM(p_pin) <> '' THEN
+      EXECUTE 'UPDATE employee_accounts SET pin = $1, plain_pin = $1 WHERE id = $2' USING TRIM(p_pin), p_id;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  BEGIN
+    IF p_password IS NOT NULL AND TRIM(p_password) <> '' THEN
+      EXECUTE 'UPDATE employee_accounts SET password = $1 WHERE id = $2' USING TRIM(p_password), p_id;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  RETURN jsonb_build_object('success', true, 'id', p_id);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION save_employee_secure TO anon, authenticated, service_role;
+
+-- 6. Reload PostgREST Schema Cache
+NOTIFY pgrst, 'reload schema';
+`;
+
 
