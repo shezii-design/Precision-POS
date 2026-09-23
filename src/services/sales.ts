@@ -1,5 +1,6 @@
-import { InvoiceNamingPreference, Product, Sale, SaleFilterOptions, SaleItem } from '../types';
+import { CustomerReturn, InvoiceNamingPreference, Product, Sale, SaleFilterOptions, SaleItem } from '../types';
 import { roundCurrency, addFinancial, multiplyFinancial, subtractFinancial, safeFinancialNumber } from './financialMath';
+import { calculateUnifiedMetrics } from './unifiedFinancialMetrics';
 
 /**
  * Formats line item title according to invoice naming preference
@@ -208,46 +209,49 @@ export function calculateSaleCogs(
 }
 
 /**
- * Calculates aggregate stats for a list of sales
+ * Calculates aggregate stats for a list of sales using the unified financial metrics engine.
  */
-export function calculateSalesSummary(sales: Sale[], productsMap?: Map<string, Product>) {
-  let totalRevenue = 0;
-  let totalCashReceived = 0;
-  let totalCreditOutstanding = 0;
-  let totalDiscountGiven = 0;
-  let totalItemsSold = 0;
-  let totalCogs = 0;
-  let totalGrossProfit = 0;
+export function calculateSalesSummary(
+  sales: Sale[], 
+  productsMap?: Map<string, Product>,
+  customerReturns?: CustomerReturn[]
+) {
+  // Aggregate return metrics if returns were already baked into individual sales
+  let salesLevelReturnsAmount = 0;
+  let totalUnitsReturned = 0;
 
   for (const s of sales) {
-    totalRevenue = addFinancial(totalRevenue, s.totalAmount || 0);
-    totalCashReceived = addFinancial(totalCashReceived, s.amountReceived || 0);
-    totalCreditOutstanding = addFinancial(totalCreditOutstanding, s.balanceDue || 0);
-    totalDiscountGiven = addFinancial(totalDiscountGiven, s.discountAmount || (s as any).discount || 0);
-
-    const saleCogs = calculateSaleCogs(s, productsMap, true);
-    if (s.items) {
-      for (const item of s.items) {
-        const netQty = item.netQuantity !== undefined ? item.netQuantity : item.quantity;
-        totalItemsSold += safeFinancialNumber(netQty, 1);
-      }
-    } else {
-      totalItemsSold += 1;
+    if (s.totalReturnedAmount && s.totalReturnedAmount > 0) {
+      salesLevelReturnsAmount = addFinancial(salesLevelReturnsAmount, s.totalReturnedAmount);
     }
-
-    const saleProfit = subtractFinancial(s.totalAmount || 0, saleCogs);
-    totalCogs = addFinancial(totalCogs, saleCogs);
-    totalGrossProfit = addFinancial(totalGrossProfit, saleProfit);
+    if (s.returnedItemsCount && s.returnedItemsCount > 0) {
+      totalUnitsReturned += s.returnedItemsCount;
+    }
   }
 
+  // If separate customerReturns array passed and sales didn't already have return amounts aggregated
+  const effectiveReturns: CustomerReturn[] = (customerReturns && customerReturns.length > 0)
+    ? customerReturns
+    : (salesLevelReturnsAmount > 0 ? [{ id: 'synthetic-sales-returns', totalRefundAmount: salesLevelReturnsAmount } as any] : []);
+
+  const metrics = calculateUnifiedMetrics({
+    sales,
+    customerReturns: effectiveReturns,
+    products: productsMap || new Map<string, Product>(),
+  });
+
   return {
-    totalInvoices: sales.length,
-    totalRevenue: roundCurrency(totalRevenue),
-    totalCashReceived: roundCurrency(totalCashReceived),
-    totalCreditOutstanding: roundCurrency(totalCreditOutstanding),
-    totalDiscountGiven: roundCurrency(totalDiscountGiven),
-    totalItemsSold: Math.round(totalItemsSold),
-    totalCogs: roundCurrency(totalCogs),
-    totalGrossProfit: roundCurrency(totalGrossProfit),
+    totalInvoices: metrics.salesCount,
+    grossRevenue: metrics.grossRevenue,
+    totalRevenue: metrics.netRevenue, // Primary Net Sales Revenue aligned with Dashboard
+    netRevenue: metrics.netRevenue,
+    totalReturnedAmount: metrics.salesReturnsAmount,
+    totalUnitsReturned,
+    totalCashReceived: metrics.totalCashReceived,
+    totalCreditOutstanding: metrics.totalCreditOutstanding,
+    totalDiscountGiven: metrics.salesDiscounts,
+    totalItemsSold: metrics.totalItemsSold,
+    totalCogs: metrics.totalCOGS,
+    totalGrossProfit: metrics.grossProfit,
   };
 }

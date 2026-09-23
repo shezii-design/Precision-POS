@@ -80,19 +80,21 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
       {/* Table control sub-bar */}
-      <div className="p-3 bg-slate-200 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 text-xs font-semibold text-slate-700">
-        <div>
-          Showing <span className="font-bold text-slate-900">{products.length}</span> items in table view
+      <div className="p-3.5 bg-slate-200 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm font-bold text-slate-700">
+        <div className="flex items-center gap-2">
+          <span>
+            Showing <span className="font-black text-slate-900">{products.length}</span> items in table view
+          </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] sm:text-xs">Dimensions Unit:</span>
-          <div className="flex bg-slate-200/80 p-0.5 rounded-lg">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs sm:text-sm font-bold text-slate-600">Dimensions Unit:</span>
+          <div className="flex bg-slate-300/80 p-0.5 rounded-lg border border-slate-300">
             <button
               type="button"
               onClick={() => setTableUnit('inch')}
-              className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
-                tableUnit === 'inch' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                tableUnit === 'inch' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-700 hover:text-slate-900'
               }`}
             >
               Inches (in)
@@ -100,8 +102,8 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
             <button
               type="button"
               onClick={() => setTableUnit('mm')}
-              className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
-                tableUnit === 'mm' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              className={`px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                tableUnit === 'mm' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-700 hover:text-slate-900'
               }`}
             >
               mm (Metric)
@@ -115,22 +117,22 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
           style={{ height: '70vh' }}
           data={products}
           components={{
-            Table: (props) => <table className="w-full min-w-[920px] text-left text-xs" {...props} />,
-            TableHead: React.forwardRef((props, ref) => <thead className="bg-slate-200/90 text-slate-600 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200" {...props} ref={ref} />),
+            Table: (props) => <table className="w-full min-w-[1040px] text-left text-sm" {...props} />,
+            TableHead: React.forwardRef((props, ref) => <thead className="bg-slate-200/90 text-slate-700 font-extrabold uppercase tracking-wide text-xs border-b border-slate-300" {...props} ref={ref} />),
             TableBody: React.forwardRef((props, ref) => <tbody className="divide-y divide-slate-100" {...props} ref={ref} />)
           }}
           fixedHeaderContent={() => (
             <tr>
-              <th className="py-3 px-3.5 bg-slate-200/90">ID / Name</th>
-              <th className="py-3 px-3 bg-slate-200/90">Brand / Type</th>
-              <th className="py-3 px-3 bg-slate-200/90">Location & Cabin</th>
-              <th className="py-3 px-3 bg-slate-200/90">Stock</th>
-              <th className="py-3 px-3 text-red-600 font-black bg-slate-200/90">Cost (PKR)</th>
-              <th className="py-3 px-3 text-amber-600 font-black bg-slate-200/90">Wholesale (PKR)</th>
-              <th className="py-3 px-3 text-emerald-700 font-black bg-slate-200/90">Retail (PKR)</th>
-              <th className="py-3 px-3 bg-slate-200/90">Dimensions ({tableUnit})</th>
-              <th className="py-3 px-3 bg-slate-200/90">Thread</th>
-              <th className="py-3 px-3 text-right bg-slate-200/90">Actions</th>
+              <th className="py-3.5 px-4 bg-slate-200/95">ID / Name</th>
+              <th className="py-3.5 px-3 bg-slate-200/95">Brand / Type</th>
+              <th className="py-3.5 px-3 bg-slate-200/95">Location & Cabin</th>
+              <th className="py-3.5 px-3 bg-slate-200/95">Stock</th>
+              <th className="py-3.5 px-3 text-red-700 font-black bg-slate-200/95">Cost (PKR)</th>
+              <th className="py-3.5 px-3 text-amber-700 font-black bg-slate-200/95">Wholesale (PKR)</th>
+              <th className="py-3.5 px-3 text-emerald-800 font-black bg-slate-200/95">Retail (PKR)</th>
+              <th className="py-3.5 px-3 bg-slate-200/95">Dimensions ({tableUnit})</th>
+              <th className="py-3.5 px-3 bg-slate-200/95">Thread</th>
+              <th className="py-3.5 px-4 text-right bg-slate-200/95">Actions</th>
             </tr>
           )}
           itemContent={(index, p) => {
@@ -150,55 +152,55 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
             return (
               <>
                   {/* ID & Name */}
-                  <td className="py-3 px-3.5">
+                  <td className="py-3.5 px-4">
                     <div className="flex flex-col">
-                      <span className="font-mono text-xs font-bold text-slate-800">
+                      <span className="font-mono text-xs sm:text-sm font-extrabold text-slate-800 tracking-wide">
                         {p.internalId}
                       </span>
-                      <span className="font-semibold text-sm text-slate-900 mt-0.5 max-w-[200px] truncate" title={p.name}>
+                      <span className="font-bold text-sm sm:text-base text-slate-900 mt-0.5 max-w-[220px] truncate" title={p.name}>
                         {p.name}
                       </span>
                     </div>
                   </td>
 
                   {/* Brand & Type */}
-                  <td className="py-3 px-3">
+                  <td className="py-3.5 px-3">
                     <div className="flex flex-col gap-1 items-start">
-                      <span className="bg-slate-200 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-bold">
+                      <span className="bg-slate-200 text-slate-800 border border-slate-300 px-2 py-0.5 rounded-md text-xs font-extrabold">
                         {p.brandName}
                       </span>
-                      <span className="text-[11px] text-slate-500 font-semibold truncate max-w-[120px]" title={p.typeName}>
+                      <span className="text-xs font-semibold text-slate-600 truncate max-w-[130px]" title={p.typeName}>
                         {p.typeName}
                       </span>
                     </div>
                   </td>
 
                   {/* Location & Cabin */}
-                  <td className="py-3 px-3 text-slate-600 text-xs">
+                  <td className="py-3.5 px-3 text-slate-700 text-xs sm:text-sm">
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1 font-semibold truncate max-w-[120px]" title={p.locationName}>
-                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                      <div className="flex items-center gap-1 font-bold truncate max-w-[130px]" title={p.locationName}>
+                        <MapPin className="w-3.5 h-3.5 text-red-600 shrink-0" />
                         <span>{p.locationName}</span>
                       </div>
                       {p.cabinNumber && (
-                        <div className="flex items-center gap-1 text-[10px] font-mono text-slate-500">
-                          <Box className="w-3 h-3 text-slate-400 shrink-0" />
-                          <span>{p.cabinNumber}</span>
+                        <div className="flex items-center gap-1 text-xs font-mono font-bold text-slate-600">
+                          <Box className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>Cabin: {p.cabinNumber}</span>
                         </div>
                       )}
                     </div>
                   </td>
 
                   {/* Stock */}
-                  <td className="py-3 px-3">
+                  <td className="py-3.5 px-3">
                     <div
                       onClick={onAdjustStock ? () => onAdjustStock(p) : undefined}
-                      className={`inline-flex font-mono text-xs font-black px-2 py-1 rounded cursor-pointer hover:opacity-80 transition-opacity ${
+                      className={`inline-flex font-mono text-xs sm:text-sm font-black px-2.5 py-1 rounded-lg cursor-pointer hover:opacity-85 transition-opacity ${
                         isOutOfStock
-                          ? 'bg-red-100 text-red-700'
+                          ? 'bg-red-100 text-red-700 border border-red-200'
                           : isLowStock
-                          ? 'bg-amber-100 text-amber-900'
-                          : 'bg-emerald-100 text-emerald-800'
+                          ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                          : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                       }`}
                       title="Click to adjust stock"
                     >
@@ -207,14 +209,14 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                   </td>
 
                   {/* Cost Price - RED */}
-                  <td className="py-3 px-3">
+                  <td className="py-3.5 px-3">
                     {editingCostId === p.id ? (
                       <div className="flex items-center gap-1">
                         <input
                           type="number"
                           value={tempCostValue}
                           onChange={(e) => setTempCostValue(e.target.value)}
-                          className="w-16 px-1.5 py-0.5 border border-red-500 rounded text-xs font-black text-red-600"
+                          className="w-20 px-2 py-1 border-2 border-red-500 rounded text-sm font-black text-red-600"
                           autoFocus
                         />
                         <button
@@ -222,26 +224,26 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                           onClick={() => handleSaveCost(p.id)}
                           className="p-1 bg-red-600 text-white rounded cursor-pointer"
                         >
-                          <Check className="w-3 h-3" />
+                          <Check className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ) : (
                       <div
                         onClick={() => handleStartCostEdit(p)}
-                        className="font-mono font-black text-red-600 cursor-pointer hover:text-red-700 group"
+                        className="font-mono font-black text-sm sm:text-base text-red-600 cursor-pointer hover:text-red-700 group"
                         title="Click to edit cost (Red)"
                       >
                         <div className="flex items-center gap-1">
                           <span>{formatPKR(p.costPrice)}</span>
-                          <Edit3 className="w-3 h-3 opacity-0 group-hover:opacity-100 text-red-400" />
+                          <Edit3 className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-red-400" />
                         </div>
                         {getOldCostTiers(p).map(t => (
-                          <div key={t.cost} className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1 py-0.5 rounded border border-amber-200/60 w-fit mt-0.5 whitespace-nowrap">
+                          <div key={t.cost} className="text-[10px] sm:text-xs font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 w-fit mt-0.5 whitespace-nowrap">
                             {t.qty} @ {formatPKR(t.cost)}
                           </div>
                         ))}
                         {p.costBatches && p.costBatches.length > 1 && getOldCostTiers(p).length === 0 && (
-                          <div className="text-[9px] font-semibold text-slate-400 font-sans mt-0.5">
+                          <div className="text-[10px] sm:text-xs font-semibold text-slate-500 font-sans mt-0.5">
                             {p.costBatches.length} FIFO batches
                           </div>
                         )}
@@ -250,12 +252,12 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                   </td>
 
                   {/* Wholesale - YELLOW / AMBER */}
-                  <td className="py-3 px-3 font-mono font-black text-amber-600">
+                  <td className="py-3.5 px-3 font-mono font-black text-sm sm:text-base text-amber-600">
                     {formatPKR(wholesale)}
                   </td>
 
                   {/* Retail Tiers - GREEN */}
-                  <td className="py-3 px-3 min-w-[140px]">
+                  <td className="py-3.5 px-3 min-w-[150px]">
                     {retailTiers.length > 0 ? (
                       <div className="flex flex-col gap-1">
                         {retailTiers.map((rt, rtIdx) => {
@@ -263,14 +265,14 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                           return (
                             <div key={rt.tierId || rtIdx} className="flex items-center gap-1.5">
                               {retailTiers.length > 1 && (
-                                <span className="text-[9px] font-bold text-slate-400 truncate max-w-[65px]">
+                                <span className="text-[10px] sm:text-xs font-bold text-slate-500 truncate max-w-[70px]">
                                   {rt.tierName}:
                                 </span>
                               )}
-                              <span className={`font-mono font-black text-xs ${theme.textColor}`}>
+                              <span className={`font-mono font-black text-sm ${theme.textColor}`}>
                                 {formatPKR(rt.price)}
                               </span>
-                              <span className={`text-[9px] px-1 rounded ${theme.markupBadge}`}>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${theme.markupBadge}`}>
                                 {rt.tierId === 'tier-general' || rt.tierName.toLowerCase().includes('general') ? 'Fix' : `${rt.markupPercent}%`}
                               </span>
                             </div>
@@ -281,7 +283,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                       (() => {
                         const theme = getTierTheme(defaultRetailSp, 1, activeTiers.length);
                         return (
-                          <div className={`font-mono font-black text-xs ${theme.textColor}`}>
+                          <div className={`font-mono font-black text-sm sm:text-base ${theme.textColor}`}>
                             {formatPKR(defaultRetailSp.price)}
                           </div>
                         );
@@ -292,17 +294,17 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                   </td>
 
                   {/* Dimensions */}
-                  <td className="py-3 px-3 text-[11px] text-slate-700">
+                  <td className="py-3.5 px-3 text-xs sm:text-sm text-slate-800">
                     {dims && (dims.height !== undefined || dims.outerDia !== undefined || dims.innerDia !== undefined) ? (
                       <div className="space-y-0.5">
                         {dims.height !== undefined && (
-                          <div>H: <strong>{formatDimension(dims.height, tableUnit)}</strong></div>
+                          <div>H: <strong className="font-bold text-slate-900">{formatDimension(dims.height, tableUnit)}</strong></div>
                         )}
                         {dims.outerDia !== undefined && (
-                          <div>OD: <strong>{formatDimension(dims.outerDia, tableUnit)}</strong></div>
+                          <div>OD: <strong className="font-bold text-slate-900">{formatDimension(dims.outerDia, tableUnit)}</strong></div>
                         )}
                         {dims.innerDia !== undefined && (
-                          <div>ID: <strong>{formatDimension(dims.innerDia, tableUnit)}</strong></div>
+                          <div>ID: <strong className="font-bold text-slate-900">{formatDimension(dims.innerDia, tableUnit)}</strong></div>
                         )}
                       </div>
                     ) : (
@@ -311,18 +313,18 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                   </td>
 
                   {/* Thread (Never converted) */}
-                  <td className="py-3 px-3 font-mono text-xs font-semibold text-slate-800">
+                  <td className="py-3.5 px-3 font-mono text-xs sm:text-sm font-bold text-slate-900">
                     {dims?.thread || <span className="text-slate-400">—</span>}
                   </td>
 
                   {/* Actions */}
-                  <td className="py-3 px-3 text-right">
+                  <td className="py-3.5 px-4 text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       {onViewHistory && (
                         <button
                           type="button"
                           onClick={() => onViewHistory(p)}
-                          className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                           title="View Purchases & Sales History"
                         >
                           <History className="w-4 h-4 text-red-600" />
@@ -331,7 +333,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                       {onPrintLabel && (<button
                         type="button"
                         onClick={() => onPrintLabel(p)}
-                        className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-600 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
                         title="Print Barcode Label"
                       >
                         <Printer className="w-4 h-4" />
@@ -339,7 +341,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                       {onDuplicate && (<button
                         type="button"
                         onClick={() => onDuplicate(p)}
-                        className="p-1.5 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors cursor-pointer"
                         title="Duplicate"
                       >
                         <Copy className="w-4 h-4" />
@@ -347,7 +349,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                       {onEdit && (<button
                         type="button"
                         onClick={() => onEdit(p)}
-                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                         title="Edit"
                       >
                         <Edit3 className="w-4 h-4" />
@@ -355,7 +357,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                       {onDelete && (<button
                         type="button"
                         onClick={() => onDelete(p.id)}
-                        className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />

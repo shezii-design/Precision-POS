@@ -2361,23 +2361,23 @@ export default function App() {
                 title="Click to view Inventory (Ctrl + I)"
               >
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block truncate">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-500 uppercase tracking-wider block truncate">
                       Inventory
                     </span>
-                    <kbd className="hidden sm:inline-flex text-[9px] font-mono font-bold bg-slate-100 text-slate-500 px-1 py-0.2 rounded border border-slate-200">
+                    <kbd className="hidden sm:inline-flex text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-300">
                       Ctrl+I
                     </kbd>
                   </div>
-                  <span className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight group-hover:text-red-600 transition-colors block truncate">
+                  <span className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight group-hover:text-red-600 transition-colors block truncate mt-0.5">
                     {products.length} Items
                   </span>
-                  <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium block truncate">
+                  <span className="text-xs sm:text-sm text-slate-600 font-bold block truncate mt-0.5">
                     {totalStockUnits.toLocaleString('en-PK')} Units
                   </span>
                 </div>
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center border border-slate-200 shrink-0 group-hover:bg-red-50 group-hover:text-red-600 group-hover:border-red-200 transition-colors ml-1">
-                  <Box className="w-4 h-4 sm:w-5 sm:h-5" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center border border-slate-200 shrink-0 group-hover:bg-red-50 group-hover:text-red-600 group-hover:border-red-200 transition-colors ml-1">
+                  <Box className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
               </div>
 
@@ -2385,7 +2385,7 @@ export default function App() {
           {/* Stat 3: Low Stock Alerts */}
           <div
             onClick={() => setStockStatusFilter(stockStatusFilter === 'low_stock' ? 'all' : 'low_stock')}
-            className={`p-3 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-2xs min-w-0 ${
+            className={`p-3.5 sm:p-4.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-2xs min-w-0 ${
               lowStockCount > 0
                 ? 'bg-amber-50/70 border-amber-200 hover:bg-amber-50 text-amber-950'
                 : 'bg-white border-slate-200 hover:border-slate-300'
@@ -2393,46 +2393,46 @@ export default function App() {
             title="Click to filter low stock items"
           >
             <div className="min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block truncate">
+              <span className="text-xs sm:text-sm font-extrabold text-slate-500 uppercase tracking-wider block truncate">
                 Low Stock
               </span>
-              <span className="text-lg sm:text-2xl font-black text-amber-700 tracking-tight block truncate">
+              <span className="text-xl sm:text-3xl font-black text-amber-700 tracking-tight block truncate mt-0.5">
                 {lowStockCount} Parts
               </span>
-              <span className="text-[9px] sm:text-[10px] text-amber-800 font-semibold block truncate">
+              <span className="text-xs sm:text-sm text-amber-900 font-bold block truncate mt-0.5">
                 {stockStatusFilter === 'low_stock' ? 'Filter Active' : 'Needs Reorder'}
               </span>
             </div>
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center border border-amber-200 shrink-0 ml-1">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center border border-amber-200 shrink-0 ml-1">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
           </div>
 
           {/* Stat 4: Brands & Storage Cabins */}
-          <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between min-w-0">
+          <div className="bg-white p-3.5 sm:p-4.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between min-w-0">
             <div className="min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block truncate">
+              <span className="text-xs sm:text-sm font-extrabold text-slate-500 uppercase tracking-wider block truncate">
                 Brands & Locs
               </span>
-              <span className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight block truncate">
+              <span className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight block truncate mt-0.5">
                 {brands.length} Brands
               </span>
-              <span className="text-[9px] sm:text-[10px] text-slate-500 font-medium block truncate">
+              <span className="text-xs sm:text-sm text-slate-600 font-bold block truncate mt-0.5">
                 {locations.length} Locations
               </span>
             </div>
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-red-50 text-red-600 flex items-center justify-center border border-red-100 shrink-0 ml-1">
-              <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center border border-red-100 shrink-0 ml-1">
+              <MapPin className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
           </div>
         </section>
 
         {/* SEARCH & FILTERS CONTAINER */}
-        <section className="bg-white rounded-3xl p-3.5 sm:p-5 border border-slate-200 shadow-xs space-y-3 sm:space-y-4">
+        <section className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-3.5 sm:space-y-4">
           {/* PRIMARY SEARCH BAR (Ctrl + F) */}
           <div className="relative group">
             <div className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-600 transition-colors pointer-events-none">
-              <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Search className="w-5 h-5" />
             </div>
             <input
               ref={primarySearchInputRef}
@@ -2440,21 +2440,21 @@ export default function App() {
               value={primarySearch}
               onChange={(e) => setPrimarySearch(e.target.value)}
               placeholder="Search Part Name, ID, Machine (CAT, Komatsu), Size, Thread..."
-              className="w-full pl-10 sm:pl-12 pr-20 sm:pr-28 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
+              className="w-full pl-11 sm:pl-12 pr-20 sm:pr-28 py-3 bg-slate-50 border border-slate-300 rounded-2xl text-sm sm:text-base font-bold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-2xs"
             />
-            <div className="absolute right-2.5 sm:right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-1.5">
+            <div className="absolute right-2.5 sm:right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
               {primarySearch && (
                 <button
                   type="button"
                   onClick={() => setPrimarySearch('')}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
+                  className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 cursor-pointer"
                   title="Clear search"
                 >
-                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <X className="w-4 h-4" />
                 </button>
               )}
               <kbd 
-                className="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-bold bg-slate-200/80 text-slate-600 border border-slate-300 rounded-md shadow-2xs select-none"
+                className="hidden sm:inline-flex items-center px-2 py-0.5 text-xs font-mono font-bold bg-slate-200/90 text-slate-700 border border-slate-300 rounded-md shadow-2xs select-none"
                 title="Keyboard shortcut: Ctrl + F"
               >
                 Ctrl+F
@@ -2471,10 +2471,10 @@ export default function App() {
           />
 
           {/* Quick Shortcuts Bar */}
-          <div className="hidden sm:flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 bg-slate-50/80 border border-slate-200/70 rounded-xl text-[11px] text-slate-600">
+          <div className="hidden sm:flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2 bg-slate-50/90 border border-slate-200 rounded-xl text-xs text-slate-700">
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 font-bold text-slate-500">
-                <Keyboard className="w-3.5 h-3.5 text-red-600" /> Shortcuts:
+              <span className="flex items-center gap-1 font-bold text-slate-600">
+                <Keyboard className="w-4 h-4 text-red-600" /> Shortcuts:
               </span>
               <button
                 type="button"
@@ -2483,7 +2483,7 @@ export default function App() {
                   primarySearchInputRef.current?.select();
                   showToast('Primary Search', 'Ctrl + F');
                 }}
-                className="inline-flex items-center gap-1 px-2 py-0.5 bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 rounded-md border border-slate-200 transition-colors font-medium cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-red-50 text-slate-800 hover:text-red-700 rounded-lg border border-slate-300 transition-colors font-semibold cursor-pointer"
               >
                 <kbd className="font-mono font-bold text-red-700">Ctrl+F</kbd> Search Parts
               </button>
@@ -2494,32 +2494,32 @@ export default function App() {
                   dimensionSearchInputRef.current?.select();
                   showToast('Size Search', 'Ctrl + E');
                 }}
-                className="inline-flex items-center gap-1 px-2 py-0.5 bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 rounded-md border border-slate-200 transition-colors font-medium cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-red-50 text-slate-800 hover:text-red-700 rounded-lg border border-slate-300 transition-colors font-semibold cursor-pointer"
               >
                 <kbd className="font-mono font-bold text-red-700">Ctrl+E</kbd> Search Sizes
               </button>
               <button
                 type="button"
                 onClick={handleGoToInventory}
-                className="inline-flex items-center gap-1 px-2 py-0.5 bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 rounded-md border border-slate-200 transition-colors font-medium cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-red-50 text-slate-800 hover:text-red-700 rounded-lg border border-slate-300 transition-colors font-semibold cursor-pointer"
               >
                 <kbd className="font-mono font-bold text-red-700">Ctrl+I</kbd> Inventory Tab
               </button>
             </div>
-            <span className="text-[10px] text-slate-400 font-mono hidden md:inline">
+            <span className="text-xs text-slate-500 font-mono hidden md:inline">
               Windows/PC: Ctrl+Key • Mac: ⌘+Key
             </span>
           </div>
 
           {/* Quick Filters Row */}
-          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 pt-2 border-t border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-2.5 sm:gap-3.5 pt-2.5 border-t border-slate-200">
             {/* Filter Dropdowns */}
             <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
               {/* Brand Filter */}
               <select
                 value={brandFilter}
                 onChange={(e) => setBrandFilter(e.target.value)}
-                className="w-full sm:w-auto px-2.5 sm:px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-red-500"
+                className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
               >
                 <option value="all">All Brands ({brands.length})</option>
                 {brands.map((b) => (
@@ -2531,7 +2531,7 @@ export default function App() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full sm:w-auto px-2.5 sm:px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-red-500"
+                className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
               >
                 <option value="all">All Types ({types.length})</option>
                 {types.map((t) => (
@@ -2546,7 +2546,7 @@ export default function App() {
                   setLocationFilter(e.target.value);
                   setCabinFilter('all');
                 }}
-                className="w-full sm:w-auto px-2.5 sm:px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-hidden focus:border-red-500"
+                className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-hidden focus:border-red-500 cursor-pointer"
               >
                 <option value="all">All Locations ({locations.length})</option>
                 {locations.map((loc) => (
@@ -2559,7 +2559,7 @@ export default function App() {
                 <select
                   value={cabinFilter}
                   onChange={(e) => setCabinFilter(e.target.value)}
-                  className="w-full sm:w-auto px-2.5 sm:px-3 py-1.5 bg-red-50 border border-red-200 rounded-xl text-xs font-mono font-bold text-red-900 focus:outline-hidden"
+                  className="w-full sm:w-auto px-3 py-2 bg-red-50 border border-red-300 rounded-xl text-xs sm:text-sm font-mono font-bold text-red-950 focus:outline-hidden cursor-pointer"
                 >
                   <option value="all">All Cabins</option>
                   {availableCabins.map((cab) => (
@@ -2570,12 +2570,12 @@ export default function App() {
             </div>
 
             {/* Stock Health Quick Filter Chips */}
-            <div className="flex items-center justify-between sm:justify-start gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-bold overflow-x-auto">
+            <div className="flex items-center justify-between sm:justify-start gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-bold overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setStockStatusFilter('all')}
-                className={`flex-1 sm:flex-initial px-2 sm:px-2.5 py-1 rounded-lg transition-all text-center ${
-                  stockStatusFilter === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                  stockStatusFilter === 'all' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 All ({products.length})
@@ -2583,8 +2583,8 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setStockStatusFilter('in_stock')}
-                className={`flex-1 sm:flex-initial px-2 sm:px-2.5 py-1 rounded-lg transition-all text-center ${
-                  stockStatusFilter === 'in_stock' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-slate-500'
+                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                  stockStatusFilter === 'in_stock' ? 'bg-emerald-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 In Stock
@@ -2592,8 +2592,8 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setStockStatusFilter('low_stock')}
-                className={`flex-1 sm:flex-initial px-2 sm:px-2.5 py-1 rounded-lg transition-all text-center ${
-                  stockStatusFilter === 'low_stock' ? 'bg-amber-600 text-white shadow-2xs' : 'text-slate-500'
+                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                  stockStatusFilter === 'low_stock' ? 'bg-amber-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Low ({lowStockCount})
@@ -2601,8 +2601,8 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setStockStatusFilter('out_of_stock')}
-                className={`flex-1 sm:flex-initial px-2 sm:px-2.5 py-1 rounded-lg transition-all text-center ${
-                  stockStatusFilter === 'out_of_stock' ? 'bg-rose-600 text-white shadow-2xs' : 'text-slate-500'
+                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                  stockStatusFilter === 'out_of_stock' ? 'bg-rose-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Out
@@ -2610,13 +2610,13 @@ export default function App() {
             </div>
 
             {/* Sort By & View Mode Toggle */}
-            <div className="flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-0">
-              <div className="flex items-center gap-1 text-xs font-bold text-slate-600 flex-1 sm:flex-initial">
-                <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-1 sm:pt-0">
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 flex-1 sm:flex-initial">
+                <ArrowUpDown className="w-4 h-4 text-slate-500 shrink-0" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="w-full sm:w-auto px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800"
+                  className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-800 cursor-pointer"
                 >
                   <option value="recent">Recently Added</option>
                   <option value="name_asc">Name (A to Z)</option>
@@ -2629,26 +2629,26 @@ export default function App() {
               </div>
 
               {/* Grid / Table View toggle */}
-              <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
+              <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-300 shrink-0">
                 <button
                   type="button"
                   onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded-lg transition-all ${
-                    viewMode === 'grid' ? 'bg-white text-red-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                  className={`p-2 rounded-lg transition-all cursor-pointer ${
+                    viewMode === 'grid' ? 'bg-white text-red-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                   }`}
                   title="Card Grid View"
                 >
-                  <LayoutGrid className="w-4 h-4" />
+                  <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewMode('table')}
-                  className={`p-1.5 rounded-lg transition-all ${
-                    viewMode === 'table' ? 'bg-white text-red-600 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                  className={`p-2 rounded-lg transition-all cursor-pointer ${
+                    viewMode === 'table' ? 'bg-white text-red-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'
                   }`}
                   title="Compact Table View"
                 >
-                  <TableIcon className="w-4 h-4" />
+                  <TableIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
             </div>
@@ -2658,23 +2658,23 @@ export default function App() {
         {/* INVENTORY SECTION CONTAINER (Ctrl + I Target) */}
         <section id="inventory-section" ref={inventorySectionRef} className="scroll-mt-24 space-y-4">
           {/* RESULTS HEADER & INVENTORY TAB BADGE */}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-500 px-1">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-100/90 text-red-800 rounded-lg text-xs font-black border border-red-200">
-                <Box className="w-3.5 h-3.5 text-red-600" />
+          <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs sm:text-sm font-bold text-slate-600 px-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-900 rounded-lg text-xs sm:text-sm font-black border border-red-200">
+                <Box className="w-4 h-4 text-red-600" />
                 Inventory List
               </span>
               <kbd 
-                className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-200 text-slate-600 border border-slate-300 rounded shadow-2xs"
+                className="hidden sm:inline-flex items-center px-2 py-0.5 text-xs font-mono font-bold bg-slate-200 text-slate-700 border border-slate-300 rounded shadow-xs"
                 title="Keyboard shortcut: Ctrl + I"
               >
                 Ctrl+I
               </kbd>
-              <span>
-                Showing <strong className="text-slate-900">{filteredProducts.length}</strong> of{' '}
-                <strong className="text-slate-900">{products.length}</strong> products
+              <span className="text-xs sm:text-sm">
+                Showing <strong className="text-slate-950 font-black">{filteredProducts.length}</strong> of{' '}
+                <strong className="text-slate-950 font-black">{products.length}</strong> products
                 {(primarySearch || dimensionQuery || brandFilter !== 'all' || typeFilter !== 'all' || stockStatusFilter !== 'all') && (
-                  <span className="text-red-600 ml-1.5 font-semibold">(Filtered)</span>
+                  <span className="text-red-600 ml-1.5 font-bold">(Filtered)</span>
                 )}
               </span>
             </div>
@@ -2691,7 +2691,7 @@ export default function App() {
                   setCabinFilter('all');
                   setStockStatusFilter('all');
                 }}
-                className="text-xs font-bold text-red-600 hover:text-red-700 underline"
+                className="text-xs sm:text-sm font-bold text-red-600 hover:text-red-700 underline cursor-pointer"
               >
                 Reset All Filters
               </button>

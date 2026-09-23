@@ -80,8 +80,9 @@ export const SalesPage: React.FC<SalesPageProps> = ({
       setEndDate(toDateStr);
     } else if (preset === 'thisMonth') {
       const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       setStartDate(firstDay.toISOString().split('T')[0]);
-      setEndDate(toDateStr);
+      setEndDate(lastDay.toISOString().split('T')[0]);
     } else {
       setStartDate('');
       setEndDate('');
@@ -116,10 +117,41 @@ export const SalesPage: React.FC<SalesPageProps> = ({
     return filterAndSortSales(sales, filterOptions);
   }, [sales, searchQuery, startDate, endDate, minAmount, maxAmount, paymentTypeFilter, sortBy]);
 
-  // Summary Metrics
+  // Product lookup map for fast FIFO COGS computation
+  const productsMap = useMemo(() => {
+    const map = new Map<string, Product>();
+    products.forEach(p => {
+      if (p.id) map.set(p.id, p);
+      if (p.internalId) map.set(p.internalId, p);
+    });
+    return map;
+  }, [products]);
+
+  // Summary Metrics aligned with Executive Dashboard
   const summary = useMemo(() => {
-    return calculateSalesSummary(filteredSales);
-  }, [filteredSales]);
+    // If date filters or search query are active, also scope customerReturns accordingly
+    const matchingReturns = customerReturns.filter(ret => {
+      const retDate = new Date(ret.date || ret.createdAt).getTime();
+      if (startDate) {
+        const start = new Date(`${startDate}T00:00:00`).getTime();
+        if (retDate < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(`${endDate}T23:59:59`).getTime();
+        if (retDate > end) return false;
+      }
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchInvoice = ret.saleId?.toLowerCase().includes(q);
+        const matchCustomer = ret.customerName?.toLowerCase().includes(q);
+        const matchNumber = ret.returnNumber?.toLowerCase().includes(q);
+        if (!matchInvoice && !matchCustomer && !matchNumber) return false;
+      }
+      return true;
+    });
+
+    return calculateSalesSummary(filteredSales, productsMap, matchingReturns);
+  }, [filteredSales, productsMap, customerReturns, startDate, endDate, searchQuery]);
 
   return (
     <div id="sales-page" className="space-y-6">
@@ -141,19 +173,22 @@ export const SalesPage: React.FC<SalesPageProps> = ({
           </p>
         </div>
 
-        {/* Metric 2: Total Sales Revenue */}
+        {/* Metric 2: Net Sales Revenue */}
         <div className="bg-white rounded-2xl p-3 sm:p-5 border border-slate-300 shadow-lg min-w-0">
           <div className="flex items-center justify-between text-slate-500 mb-1.5 sm:mb-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Total Sales</span>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-black text-xs shrink-0">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider truncate">Net Sales</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-xs shrink-0">
               ₨
             </div>
           </div>
-          <div className="text-lg sm:text-2xl font-black text-red-600 tracking-tight truncate">
-            {formatPKRShort(summary.totalRevenue)}
+          <div className="text-lg sm:text-2xl font-black text-emerald-600 tracking-tight truncate">
+            {formatPKRShort(summary.netRevenue)}
           </div>
           <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 truncate">
-            Gross sales revenue
+            {summary.totalReturnedAmount > 0 
+              ? `Gross: ${formatPKRShort(summary.grossRevenue)} (Ret: -${formatPKRShort(summary.totalReturnedAmount)})`
+              : 'Gross sales revenue'
+            }
           </p>
         </div>
 

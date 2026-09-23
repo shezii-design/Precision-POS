@@ -42,6 +42,7 @@ import {
 import * as XLSX from 'xlsx';
 import { calculateSaleCogs } from '../services/sales';
 import { addFinancial, roundCurrency } from '../services/financialMath';
+import { calculateUnifiedMetrics, UNIFIED_EXPENSE_CATEGORIES } from '../services/unifiedFinancialMetrics';
 
 interface IncomeStatementPageProps {
   sales: Sale[];
@@ -274,89 +275,40 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
     const targetVendorReturns = vendorReturns.filter(r => isTarget(r.date || (r as any).returnDate || r.createdAt));
     const targetExpenses = expenses.filter(e => isTarget(e.date || e.createdAt));
 
-    // Products lookup map for fast O(1) matching
-    const prodMap = new Map<string, Product>();
-    products.forEach(p => {
-      if (p.id) prodMap.set(p.id, p);
-      if (p.internalId) prodMap.set(p.internalId, p);
+    // Execute standard calculation engine
+    const metrics = calculateUnifiedMetrics({
+      sales: targetSales,
+      customerReturns: targetCustomerReturns,
+      vendorReturns: targetVendorReturns,
+      purchases: targetPurchases,
+      expenses: targetExpenses,
+      products,
     });
-
-    // 1. Revenue Calculations
-    const salesDiscounts = targetSales.reduce((sum, s) => sum + (Number(s.discountAmount) || Number((s as any).discount) || 0), 0);
-    const invoicedSales = targetSales.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-    const grossSales = invoicedSales + salesDiscounts;
-    const salesReturns = targetCustomerReturns.reduce((sum, r) => sum + (Number(r.totalRefundAmount) || Number((r as any).totalReturnAmount) || Number(r.subtotal) || 0), 0);
-    const restockFeesCollected = targetCustomerReturns.reduce((sum, r) => sum + (Number(r.deductionOrRestockFee) || Number((r as any).restockFee) || 0), 0);
-    const netSales = Math.max(0, invoicedSales - salesReturns);
-
-    // 2. Cost of Goods Sold (COGS)
-    // Accurately calculate FIFO COGS without double-multiplying by item.quantity
-    let fifoCOGS = 0;
-    targetSales.forEach(s => {
-      fifoCOGS = addFinancial(fifoCOGS, calculateSaleCogs(s, prodMap, true));
-    });
-
-    // Damaged / scrap inventory losses written off from customer returns
-    const damagedLoss = targetCustomerReturns.reduce((sum, r) => {
-      const returnLoss = (r.items || []).filter(it => it.condition === 'damaged' || it.condition === 'scrap' || (it as any).action === 'scrap').reduce((iSum, it) => {
-        const prod = prodMap.get(it.productId) || (it.internalId ? prodMap.get(it.internalId) : undefined);
-        const unitCost = Number((it as any).costPrice) || Number(prod?.costPrice) || Number((it as any).unitCost) || Number(it.returnRate) || 0;
-        return iSum + (unitCost * (Number(it.quantity) || 1));
-      }, 0);
-      return sum + returnLoss;
-    }, 0);
-
-    const totalCOGS = Math.max(0, roundCurrency(fifoCOGS + damagedLoss));
-
-    // 3. Gross Profit
-    const grossProfit = roundCurrency(netSales - totalCOGS);
-    const grossProfitMargin = netSales > 0 ? (grossProfit / netSales) * 100 : 0;
-
-    // 4. Operating Expenses by Category
-    const expensesByCategory: { [cat: string]: number } = {};
-    EXPENSE_CATEGORIES.forEach(c => { expensesByCategory[c] = 0; });
-    targetExpenses.forEach(e => {
-      const cat = e.category || 'Miscellaneous';
-      expensesByCategory[cat] = (expensesByCategory[cat] || 0) + (Number(e.amount) || 0);
-    });
-
-    const totalOperatingExpenses = targetExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-
-    // 5. Operating Income (EBIT)
-    const operatingIncome = roundCurrency(grossProfit - totalOperatingExpenses);
-    const operatingMargin = netSales > 0 ? (operatingIncome / netSales) * 100 : 0;
-
-    // 6. Other Income
-    const otherIncomeTotal = restockFeesCollected;
-
-    // 7. Net Profit / Net Income
-    const netIncome = roundCurrency(operatingIncome + otherIncomeTotal);
-    const netProfitMargin = netSales > 0 ? (netIncome / netSales) * 100 : 0;
 
     return {
-      grossSales,
-      salesDiscounts,
-      invoicedSales,
-      salesReturns,
-      restockFeesCollected,
-      netSales,
-      fifoCOGS,
-      damagedLoss,
-      totalCOGS,
-      grossProfit,
-      grossProfitMargin,
-      expensesByCategory,
-      totalOperatingExpenses,
-      operatingIncome,
-      operatingMargin,
-      otherIncomeTotal,
-      netIncome,
-      netProfitMargin,
-      salesCount: targetSales.length,
+      grossSales: metrics.grossSalesBeforeDiscount,
+      salesDiscounts: metrics.salesDiscounts,
+      invoicedSales: metrics.grossRevenue,
+      salesReturns: metrics.salesReturnsAmount,
+      restockFeesCollected: metrics.restockFeesCollected,
+      netSales: metrics.netRevenue,
+      fifoCOGS: metrics.fifoCOGS,
+      damagedLoss: metrics.damagedLoss,
+      totalCOGS: metrics.totalCOGS,
+      grossProfit: metrics.grossProfit,
+      grossProfitMargin: metrics.grossMarginPercent,
+      expensesByCategory: metrics.expensesByCategory,
+      totalOperatingExpenses: metrics.totalOperatingExpenses,
+      operatingIncome: metrics.operatingIncome,
+      operatingMargin: metrics.operatingMarginPercent,
+      otherIncomeTotal: metrics.otherIncome,
+      netIncome: metrics.netIncome,
+      netProfitMargin: metrics.netProfitMarginPercent,
+      salesCount: metrics.salesCount,
       customerReturnsCount: targetCustomerReturns.length,
-      expensesCount: targetExpenses.length,
-      purchasesCount: targetPurchases.length,
-      purchasesTotal: targetPurchases.reduce((sum, p) => sum + (Number(p.totalAmount) || 0), 0),
+      expensesCount: metrics.expensesCount,
+      purchasesCount: metrics.purchasesCount,
+      purchasesTotal: metrics.purchasesSpend,
     };
   };
 

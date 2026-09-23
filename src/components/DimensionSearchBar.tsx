@@ -43,8 +43,8 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
       <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
         {/* Input container */}
         <div className="relative flex-1 group min-w-0">
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-400 group-focus-within:text-red-600 transition-colors pointer-events-none">
-            <Ruler className="w-4 h-4" />
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-slate-500 group-focus-within:text-red-600 transition-colors pointer-events-none">
+            <Ruler className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
 
           <input
@@ -57,7 +57,7 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
                 ? 'Size: e.g. 7.85x3.75x3.15 (H x OD x ID in)'
                 : 'Size: e.g. 199.4x95.3 (H x OD x ID mm)'
             }
-            className="w-full pl-10 pr-20 sm:pr-28 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-sm"
+            className="w-full pl-10 sm:pl-11 pr-20 sm:pr-28 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-600 transition-all shadow-sm"
           />
 
           <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -65,24 +65,24 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
               <button
                 type="button"
                 onClick={handleClear}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-300"
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-200 cursor-pointer"
                 title="Clear size query"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             )}
 
             <button
               type="button"
               onClick={() => setShowHelp(!showHelp)}
-              className="text-slate-400 hover:text-red-600 p-1 rounded-md hover:bg-slate-300"
+              className="text-slate-400 hover:text-red-600 p-1.5 rounded-md hover:bg-slate-200 cursor-pointer"
               title="How size search works"
             >
-              <HelpCircle className="w-3.5 h-3.5" />
+              <HelpCircle className="w-4 h-4" />
             </button>
 
             <kbd 
-              className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-bold bg-slate-200 text-slate-500 border border-slate-200 rounded shadow-sm select-none"
+              className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] sm:text-xs font-mono font-bold bg-slate-200 text-slate-600 border border-slate-300 rounded shadow-xs select-none"
               title="Keyboard shortcut: Ctrl + E"
             >
               Ctrl+E
@@ -95,10 +95,10 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
           <button
             type="button"
             onClick={() => handleUnitToggle('inch')}
-            className={`flex-1 xs:flex-initial px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-center ${
+            className={`flex-1 xs:flex-initial px-3 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-extrabold transition-all text-center cursor-pointer ${
               currentUnit === 'inch'
                 ? 'bg-red-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-700 hover:text-slate-900'
             }`}
           >
             Inch (in)
@@ -106,10 +106,10 @@ export const DimensionSearchBar: React.FC<DimensionSearchBarProps> = ({
           <button
             type="button"
             onClick={() => handleUnitToggle('mm')}
-            className={`flex-1 xs:flex-initial px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-center ${
+            className={`flex-1 xs:flex-initial px-3 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-extrabold transition-all text-center cursor-pointer ${
               currentUnit === 'mm'
                 ? 'bg-red-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                : 'text-slate-700 hover:text-slate-900'
             }`}
           >
             mm (Metric)

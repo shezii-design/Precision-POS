@@ -1,6 +1,7 @@
-import { calculateProductStockValue } from "../services/storage";
+import { calculateProductStockValue, calculateCustomerNetBalance, calculateVendorBalance } from "../services/storage";
 import { calculateSaleCogs, calculateSaleItemCogs } from "../services/sales";
 import { addFinancial, roundCurrency } from "../services/financialMath";
+import { calculateUnifiedMetrics, buildProductLookupMap, calculateBalanceSheetSnapshot } from "../services/unifiedFinancialMetrics";
 import React, { useState, useMemo } from 'react';
 import { 
   Product, 
@@ -48,6 +49,7 @@ import {
   Search,
   Zap,
   BarChart3,
+  UserCheck,
   PieChart as PieChartIcon
 } from 'lucide-react';
 import {
@@ -56,6 +58,8 @@ import {
   Area,
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -118,6 +122,216 @@ function formatPKRShort(val: number): string {
   if (Math.abs(num) >= 1000) return `₨ ${(num / 1000).toFixed(1)}k`;
   return `₨ ${Math.round(num).toLocaleString('en-PK')}`;
 }
+
+// ---------------------------------------------------------------------------
+// Interactive Chart Tooltips with Precise Revenue & Metric Figures
+// ---------------------------------------------------------------------------
+
+const MonthlySalesCustomTooltip: React.FC<any> = ({ active, payload, peakMonthKey, total6MoRevenue }) => {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0]?.payload;
+  if (!data) return null;
+
+  const isPeak = (peakMonthKey === data.key || data.isPeak) && data.revenue > 0;
+  const marginPct = data.profitMargin ?? (data.revenue > 0 ? (data.profit / data.revenue) * 100 : 0);
+  const avgOrder = data.avgTicket ?? (data.invoicesCount > 0 ? Math.round(data.revenue / data.invoicesCount) : 0);
+  const revShare = total6MoRevenue > 0 ? Math.round((data.revenue / total6MoRevenue) * 100) : 0;
+
+  return (
+    <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl shadow-2xl p-4 text-white min-w-[290px] max-w-[340px] space-y-3 pointer-events-none transition-all z-50">
+      {/* Tooltip Header: Specific Month Name & Badges */}
+      <div className="flex items-center justify-between pb-2 border-b border-slate-700/80">
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+            Monthly Performance
+          </span>
+          <h4 className="text-sm font-black text-white flex items-center gap-1.5 mt-0.5">
+            <span>🗓️ {data.fullMonthName || data.monthName}</span>
+          </h4>
+        </div>
+        {isPeak ? (
+          <span className="bg-red-500/20 text-red-300 border border-red-500/40 text-[10px] font-black px-2 py-0.5 rounded-lg flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+            Peak Month
+          </span>
+        ) : (
+          <span className="bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-lg">
+            {data.invoicesCount} {data.invoicesCount === 1 ? 'Invoice' : 'Invoices'}
+          </span>
+        )}
+      </div>
+
+      {/* Primary Highlight: Precise Revenue Figure */}
+      <div className="bg-slate-800/90 border border-slate-700/70 rounded-xl p-3">
+        <div className="flex items-center justify-between text-xs text-slate-300 font-medium">
+          <span className="flex items-center gap-1.5 font-bold text-slate-200">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50" />
+            Precise Net Revenue
+          </span>
+          <span className="text-[10px] text-slate-400 font-mono">Net of Returns</span>
+        </div>
+        <div className="mt-1 flex items-baseline justify-between">
+          <span className="text-xl font-black text-white font-mono tracking-tight">
+            {formatPKR(data.revenue)}
+          </span>
+          <span className="text-xs font-bold text-red-400 font-mono">
+            {formatPKRShort(data.revenue)}
+          </span>
+        </div>
+      </div>
+
+      {/* Comprehensive Revenue & Profit Breakdown Grid */}
+      <div className="grid grid-cols-2 gap-2 text-[11px]">
+        <div className="bg-slate-800/60 rounded-xl p-2 border border-slate-700/50">
+          <span className="text-slate-400 block text-[10px] font-semibold">Gross Billed</span>
+          <span className="font-mono font-bold text-slate-100 mt-0.5 block truncate">
+            {formatPKR(data.grossRevenue)}
+          </span>
+        </div>
+        <div className="bg-slate-800/60 rounded-xl p-2 border border-slate-700/50">
+          <span className="text-slate-400 block text-[10px] font-semibold">Refunds / Returns</span>
+          <span className="font-mono font-bold text-rose-300 mt-0.5 block truncate">
+            {data.returns > 0 ? `-${formatPKR(data.returns)}` : '₨ 0'}
+          </span>
+        </div>
+        <div className="bg-slate-800/60 rounded-xl p-2 border border-slate-700/50">
+          <span className="text-slate-400 block text-[10px] font-semibold flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            Gross Profit
+          </span>
+          <span className="font-mono font-bold text-emerald-400 mt-0.5 block truncate">
+            {formatPKR(data.profit)}
+          </span>
+        </div>
+        <div className="bg-slate-800/60 rounded-xl p-2 border border-slate-700/50">
+          <span className="text-slate-400 block text-[10px] font-semibold">Profit Margin</span>
+          <span className="font-mono font-bold text-emerald-300 mt-0.5 block">
+            {Number(marginPct).toFixed(1)}%
+          </span>
+        </div>
+      </div>
+
+      {/* Tooltip Footer Metrics */}
+      <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
+        <span>Avg Ticket: <strong className="text-slate-200 font-mono">{formatPKR(avgOrder)}</strong></span>
+        <span>Share: <strong className="text-slate-200 font-mono">{revShare}% of 6M</strong></span>
+      </div>
+    </div>
+  );
+};
+
+const DailyTrajectoryRevenueTooltip: React.FC<any> = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0]?.payload;
+  if (!data) return null;
+
+  const margin = data.sales > 0 ? Math.round(((data.grossProfit || (data.sales - (data.cogs || 0))) / data.sales) * 100) : 0;
+
+  return (
+    <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 text-white min-w-[270px] space-y-2.5 pointer-events-none z-50">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-700/80">
+        <span className="text-xs font-black text-slate-200">{data.displayDate || data.date || label}</span>
+        <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono font-bold">
+          Daily Ledger
+        </span>
+      </div>
+      <div className="space-y-1.5 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-slate-300 flex items-center gap-1.5 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+            Precise Net Sales:
+          </span>
+          <strong className="font-mono text-emerald-400 font-bold">{formatPKR(data.sales)}</strong>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-slate-300 flex items-center gap-1.5 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+            Cost Basis (COGS):
+          </span>
+          <strong className="font-mono text-slate-300 font-bold">{formatPKR(data.cogs)}</strong>
+        </div>
+        <div className="flex items-center justify-between pt-1 border-t border-slate-800">
+          <span className="text-slate-300 flex items-center gap-1.5 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            Gross Profit:
+          </span>
+          <div className="text-right">
+            <span className="font-mono text-red-400 font-bold block">{formatPKR(data.grossProfit)}</span>
+            <span className="text-[10px] text-emerald-400 font-mono font-bold block">{margin}% Margin</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DailyTrajectoryCashflowTooltip: React.FC<any> = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0]?.payload;
+  if (!data) return null;
+
+  const netDiff = (data.sales || 0) - (data.purchases || 0);
+
+  return (
+    <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 text-white min-w-[270px] space-y-2.5 pointer-events-none z-50">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-700/80">
+        <span className="text-xs font-black text-slate-200">{data.displayDate || data.date || label}</span>
+        <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono font-bold">
+          Cash In vs Out
+        </span>
+      </div>
+      <div className="space-y-1.5 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-slate-300 flex items-center gap-1.5 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+            Sales Inflow:
+          </span>
+          <strong className="font-mono text-emerald-400 font-bold">{formatPKR(data.sales)}</strong>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-slate-300 flex items-center gap-1.5 font-medium">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+            Purchases Outflow:
+          </span>
+          <strong className="font-mono text-amber-400 font-bold">{formatPKR(data.purchases)}</strong>
+        </div>
+        <div className="flex items-center justify-between pt-1 border-t border-slate-800">
+          <span className="text-slate-300 font-medium">Net Trading Flow:</span>
+          <strong className={`font-mono font-bold ${netDiff >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            {netDiff >= 0 ? '+' : ''}{formatPKR(netDiff)}
+          </strong>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CategoryPieCustomTooltip: React.FC<any> = ({ active, payload, totalRevenue }) => {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0]?.payload;
+  if (!data) return null;
+
+  const pct = totalRevenue > 0 ? ((data.revenue / totalRevenue) * 100).toFixed(1) : '0';
+
+  return (
+    <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl shadow-2xl p-3 text-white min-w-[200px] pointer-events-none z-50">
+      <div className="flex items-center gap-2 pb-1.5 border-b border-slate-700/80">
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: data.color }} />
+        <span className="text-xs font-black text-slate-100 truncate">{data.name}</span>
+      </div>
+      <div className="mt-2 space-y-1">
+        <div className="flex items-baseline justify-between text-xs">
+          <span className="text-slate-400 font-medium">Precise Revenue:</span>
+          <span className="font-mono font-bold text-white">{formatPKR(data.revenue)}</span>
+        </div>
+        <div className="flex items-baseline justify-between text-xs">
+          <span className="text-slate-400 font-medium">Catalog Share:</span>
+          <span className="font-mono font-bold text-emerald-400">{pct}%</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   products,
@@ -256,140 +470,102 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const periodVendorReturns = useMemo(() => vendorReturns.filter(r => isDateInRange(r.date || r.createdAt)), [vendorReturns, dateRange]);
   const periodExpenses = useMemo(() => expenses.filter(e => isDateInRange(e.date || e.createdAt)), [expenses, dateRange]);
 
-  // 2. Compute Core Financial Metrics
+  // 2. Compute Core Financial Metrics via Unified Financial Metrics Engine
   const financials = useMemo(() => {
-    // Gross & Net Sales
-    const grossSales = periodSales.reduce((sum, s) => sum + (Number(s.totalAmount) || 0), 0);
-    const salesDiscounts = periodSales.reduce((sum, s) => sum + (Number(s.discountAmount) || 0), 0);
-    const cashCollected = periodSales.reduce((sum, s) => sum + (Number(s.amountReceived) || 0), 0);
-    const creditSales = periodSales.reduce((sum, s) => sum + (Number(s.balanceDue) || 0), 0);
-    const itemsSoldUnits = periodSales.reduce((sum, s) => sum + s.items.reduce((iSum, it) => iSum + (Number(it.quantity) || 0), 0), 0);
-
-    // Sales Returns
-    const salesReturnsAmount = periodCustomerReturns.reduce((sum, r) => sum + (Number(r.totalRefundAmount) || 0), 0);
-    const restockFeesCollected = periodCustomerReturns.reduce((sum, r) => sum + (Number(r.deductionOrRestockFee) || 0), 0);
-
-    // Net Sales
-    const netSales = Math.max(0, grossSales - salesReturnsAmount);
-
-    // Cost of Goods Sold (FIFO basis from items)
-    const prodMap = new Map<string, Product>();
-    products.forEach(p => {
-      if (p.id) prodMap.set(p.id, p);
-      if (p.internalId) prodMap.set(p.internalId, p);
+    const metrics = calculateUnifiedMetrics({
+      sales: periodSales,
+      customerReturns: periodCustomerReturns,
+      vendorReturns: periodVendorReturns,
+      purchases: periodPurchases,
+      expenses: periodExpenses,
+      products,
     });
-
-    let fifoCOGS = 0;
-    periodSales.forEach(s => {
-      fifoCOGS = addFinancial(fifoCOGS, calculateSaleCogs(s, prodMap, true));
-    });
-
-    // Deduct vendor return cost relief
-    const vendorReturnsAmount = periodVendorReturns.reduce((sum, r) => sum + (Number(r.totalAmount) || 0), 0);
-    const totalCOGS = Math.max(0, roundCurrency(fifoCOGS));
-
-    // Gross Profit
-    const grossProfit = roundCurrency(netSales - totalCOGS);
-    const grossMarginPercent = netSales > 0 ? (grossProfit / netSales) * 100 : 0;
-
-    // Operating Expenses
-    const totalExpenses = periodExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-
-    // Net Profit / Net Income
-    const netProfit = roundCurrency(grossProfit + restockFeesCollected - totalExpenses);
-    const netMarginPercent = netSales > 0 ? (netProfit / netSales) * 100 : 0;
-
-    // Purchases Spend
-    const purchasesSpend = periodPurchases.reduce((sum, p) => sum + (Number(p.totalAmount) || 0), 0);
-    const purchasesPaid = periodPurchases.reduce((sum, p) => sum + (Number(p.amountPaid) || 0), 0);
-    const itemsPurchasedUnits = periodPurchases.reduce((sum, p) => sum + p.items.reduce((iSum, it) => iSum + (Number(it.quantity) || 0), 0), 0);
 
     return {
-      grossSales,
-      salesDiscounts,
-      cashCollected,
-      creditSales,
-      itemsSoldUnits,
-      salesReturnsAmount,
-      restockFeesCollected,
-      netSales,
-      fifoCOGS,
-      totalCOGS,
-      vendorReturnsAmount,
-      grossProfit,
-      grossMarginPercent,
-      totalExpenses,
-      netProfit,
-      netMarginPercent,
-      purchasesSpend,
-      purchasesPaid,
-      itemsPurchasedUnits,
-      salesCount: periodSales.length,
-      purchasesCount: periodPurchases.length,
-      customerReturnsCount: periodCustomerReturns.length,
-      expensesCount: periodExpenses.length,
+      grossSales: metrics.grossRevenue,
+      salesDiscounts: metrics.salesDiscounts,
+      cashCollected: metrics.totalCashReceived,
+      creditSales: metrics.totalCreditOutstanding,
+      itemsSoldUnits: metrics.totalItemsSold,
+      salesReturnsAmount: metrics.salesReturnsAmount,
+      restockFeesCollected: metrics.restockFeesCollected,
+      netSales: metrics.netRevenue,
+      fifoCOGS: metrics.fifoCOGS,
+      totalCOGS: metrics.totalCOGS,
+      vendorReturnsAmount: metrics.vendorReturnsAmount,
+      grossProfit: metrics.grossProfit,
+      grossMarginPercent: metrics.grossMarginPercent,
+      totalExpenses: metrics.totalOperatingExpenses,
+      netProfit: metrics.netIncome,
+      netMarginPercent: metrics.netProfitMarginPercent,
+      purchasesSpend: metrics.purchasesSpend,
+      purchasesPaid: metrics.purchasesPaid,
+      itemsPurchasedUnits: metrics.itemsPurchasedUnits,
+      salesCount: metrics.salesCount,
+      purchasesCount: metrics.purchasesCount,
+      customerReturnsCount: metrics.customerReturnsCount,
+      expensesCount: metrics.expensesCount,
     };
   }, [periodSales, periodPurchases, periodCustomerReturns, periodVendorReturns, periodExpenses, products]);
 
   // 3. Balance Sheet & Asset Snapshot (Current Overall)
   const assetSnapshots = useMemo(() => {
-    const inventoryValuationCost = products.reduce((sum, p) => sum + calculateProductStockValue(p), 0);
-    const inventoryValuationRetail = products.reduce((sum, p) => {
-      const retailPrice = p.sellingPrices?.[1]?.price || (p.costPrice * 1.25);
-      return sum + (retailPrice * (Number(p.stockQuantity) || 0));
-    }, 0);
-    const potentialProfitInStock = Math.max(0, inventoryValuationRetail - inventoryValuationCost);
+    const snapshot = calculateBalanceSheetSnapshot({
+      products,
+      customers,
+      vendors,
+      sales,
+      purchases,
+      customerLedger,
+      vendorLedger,
+      expenses,
+    });
 
-    const totalStockUnits = products.reduce((sum, p) => sum + (Number(p.stockQuantity) || 0), 0);
+    // Customer ledger detail list
+    const customerBalances = customers.map(c => {
+      const bal = calculateCustomerNetBalance(
+        c.id,
+        c.openingBalance || 0,
+        sales,
+        customerLedger,
+        c.name
+      );
+      return { customer: c, balance: bal };
+    });
+
+    // Vendor ledger detail list
+    const vendorBalances = vendors.map(v => {
+      const bal = calculateVendorBalance(
+        v.id,
+        vendors,
+        purchases,
+        sales,
+        vendorLedger,
+        v.businessName
+      );
+      return { vendor: v, balance: bal };
+    });
+
     const lowStockProducts = products.filter(p => p.stockQuantity <= p.minStockAlert && p.stockQuantity > 0);
     const outOfStockProducts = products.filter(p => p.stockQuantity === 0);
     const healthyStockProducts = products.filter(p => p.stockQuantity > p.minStockAlert);
 
-    // Receivables (Customer Balances Owed to Us)
-    const customerBalances = customers.map(c => {
-      // Find balance from ledger or calculate
-      const entries = customerLedger.filter(e => e.customerId === c.id);
-      let bal = c.openingBalance || 0;
-      entries.forEach(e => {
-        if (e.type === 'invoice_credit') bal += e.amount;
-        else if (e.type === 'payment_cash' || e.type === 'payment_bank') bal -= e.amount;
-        else if (e.type === 'return_credit') bal -= e.amount;
-      });
-      return { customer: c, balance: bal };
-    });
-    const totalReceivables = customerBalances.reduce((sum, cb) => sum + Math.max(0, cb.balance), 0);
-    const debtorCustomersCount = customerBalances.filter(cb => cb.balance > 0).length;
-
-    // Payables (Vendor Balances We Owe to Suppliers)
-    const vendorBalances = vendors.map(v => {
-      const entries = vendorLedger.filter(e => e.vendorId === v.id);
-      let bal = v.openingBalance || 0;
-      entries.forEach(e => {
-        if (e.type === 'purchase_credit') bal += e.amount;
-        else if (e.type === 'payment_cash' || e.type === 'payment_bank') bal -= e.amount;
-        else if (e.type === 'return_debit') bal -= e.amount;
-      });
-      return { vendor: v, balance: bal };
-    });
-    const totalPayables = vendorBalances.reduce((sum, vb) => sum + Math.max(0, vb.balance), 0);
-    const creditorVendorsCount = vendorBalances.filter(vb => vb.balance > 0).length;
-
     return {
-      inventoryValuationCost,
-      inventoryValuationRetail,
-      potentialProfitInStock,
-      totalStockUnits,
+      inventoryValuationCost: snapshot.inventory.inventoryValuationCost,
+      inventoryValuationRetail: snapshot.inventory.inventoryValuationRetail,
+      potentialProfitInStock: snapshot.inventory.potentialProfitInStock,
+      totalStockUnits: snapshot.inventory.totalStockUnits,
       lowStockProducts,
       outOfStockProducts,
       healthyStockProducts,
-      totalReceivables,
-      debtorCustomersCount,
-      totalPayables,
-      creditorVendorsCount,
+      totalReceivables: snapshot.totalReceivables,
+      debtorCustomersCount: snapshot.debtorCustomersCount,
+      totalPayables: snapshot.totalPayables,
+      creditorVendorsCount: snapshot.creditorVendorsCount,
       customerBalances,
       vendorBalances,
     };
-  }, [products, customers, vendors, customerLedger, vendorLedger]);
+  }, [products, customers, vendors, sales, purchases, customerLedger, vendorLedger, expenses]);
 
   // 4. Product Sales Performance Rankings
   const productPerformance = useMemo(() => {
@@ -521,7 +697,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       }
     }
 
-    // Populate Sales
+    // Populate Sales & Return Adjustments
+    const prodMap = buildProductLookupMap(products);
+
     periodSales.forEach(s => {
       const dStr = (s.date || s.createdAt || '').split('T')[0];
       if (!dStr) return;
@@ -536,16 +714,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       };
 
       const sTotal = Number(s.totalAmount) || 0;
-      const prodMap = new Map<string, Product>();
-      products.forEach(p => {
-        if (p.id) prodMap.set(p.id, p);
-        if (p.internalId) prodMap.set(p.internalId, p);
-      });
       const sCogs = calculateSaleCogs(s, prodMap, true);
 
       entry.sales += sTotal;
       entry.cogs += sCogs;
       entry.grossProfit += (sTotal - sCogs);
+      daysMap.set(dStr, entry);
+    });
+
+    // Populate Customer Returns (Net against sales revenue)
+    periodCustomerReturns.forEach(r => {
+      const dStr = (r.date || (r as any).returnDate || r.createdAt || '').split('T')[0];
+      if (!dStr) return;
+      const entry = daysMap.get(dStr) || {
+        date: dStr,
+        displayDate: dStr.substring(5),
+        sales: 0,
+        cogs: 0,
+        grossProfit: 0,
+        purchases: 0,
+        expenses: 0,
+      };
+      const refund = Number(r.totalRefundAmount || (r as any).totalReturnAmount || r.subtotal) || 0;
+      entry.sales = Math.max(0, entry.sales - refund);
+      entry.grossProfit -= refund;
       daysMap.set(dStr, entry);
     });
 
@@ -584,7 +776,287 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     });
 
     return Array.from(daysMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-  }, [dateRange, periodSales, periodPurchases, periodExpenses, products]);
+  }, [dateRange, periodSales, periodCustomerReturns, periodPurchases, periodExpenses, products]);
+
+  // 6b. Monthly Sales Performance Trend (Last 6 Months)
+  const monthlySalesTrend = useMemo(() => {
+    // Generate the last 6 calendar months ending with the current month
+    const months: {
+      key: string;            // 'YYYY-MM'
+      monthName: string;      // 'Apr 2026'
+      fullMonthName: string;  // 'April 2026'
+      shortMonth: string;     // 'Apr'
+      year: number;
+      monthIndex: number;
+      revenue: number;        // Net Sales Revenue
+      grossRevenue: number;   // Gross Sales
+      returns: number;        // Sales returns
+      profit: number;         // Gross profit
+      invoicesCount: number;  // Count of sales
+    }[] = [];
+
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      const monthKey = `${y}-${String(m + 1).padStart(2, '0')}`;
+      const monthName = d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      const fullMonthName = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      const shortMonth = d.toLocaleString('en-US', { month: 'short' });
+
+      months.push({
+        key: monthKey,
+        monthName,
+        fullMonthName,
+        shortMonth,
+        year: y,
+        monthIndex: m,
+        revenue: 0,
+        grossRevenue: 0,
+        returns: 0,
+        profit: 0,
+        invoicesCount: 0,
+      });
+    }
+
+    const prodMap = buildProductLookupMap(products);
+
+    // Map sales into each month bucket
+    sales.forEach(s => {
+      const dStr = s.date || s.createdAt;
+      if (!dStr) return;
+      const sDate = new Date(dStr);
+      if (isNaN(sDate.getTime())) return;
+      const key = `${sDate.getFullYear()}-${String(sDate.getMonth() + 1).padStart(2, '0')}`;
+      const bucket = months.find(m => m.key === key);
+      if (bucket) {
+        const total = Number(s.totalAmount) || 0;
+        const cogs = calculateSaleCogs(s, prodMap, true);
+        bucket.grossRevenue += total;
+        bucket.revenue += total;
+        bucket.profit += (total - cogs);
+        bucket.invoicesCount += 1;
+      }
+    });
+
+    // Deduct returns in corresponding months
+    customerReturns.forEach(r => {
+      const dStr = r.date || (r as any).returnDate || r.createdAt;
+      if (!dStr) return;
+      const rDate = new Date(dStr);
+      if (isNaN(rDate.getTime())) return;
+      const key = `${rDate.getFullYear()}-${String(rDate.getMonth() + 1).padStart(2, '0')}`;
+      const bucket = months.find(m => m.key === key);
+      if (bucket) {
+        const refund = Number(r.totalRefundAmount || (r as any).totalReturnAmount || r.subtotal) || 0;
+        bucket.returns += refund;
+        bucket.revenue = Math.max(0, bucket.revenue - refund);
+        bucket.profit -= refund;
+      }
+    });
+
+    // Round metrics and compute period-over-period statistics
+    const finalized = months.map(m => {
+      const netRev = Math.round(m.revenue);
+      const grossRev = Math.round(m.grossRevenue);
+      const retVal = Math.round(m.returns);
+      const profVal = Math.round(m.profit);
+      const margin = netRev > 0 ? (profVal / netRev) * 100 : 0;
+      const avg = m.invoicesCount > 0 ? Math.round(netRev / m.invoicesCount) : 0;
+      return {
+        ...m,
+        revenue: netRev,
+        grossRevenue: grossRev,
+        returns: retVal,
+        profit: profVal,
+        profitMargin: Number(margin.toFixed(1)),
+        avgTicket: avg,
+      };
+    });
+
+    const total6MoRevenue = finalized.reduce((sum, m) => sum + m.revenue, 0);
+    const avgMonthlyRevenue = Math.round(total6MoRevenue / (finalized.length || 1));
+    const currentMonthRevenue = finalized[finalized.length - 1]?.revenue || 0;
+    const previousMonthRevenue = finalized[finalized.length - 2]?.revenue || 0;
+    const growthPercent = previousMonthRevenue > 0 
+      ? Math.round(((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100)
+      : (currentMonthRevenue > 0 ? 100 : 0);
+
+    const peakMonth = [...finalized].sort((a, b) => b.revenue - a.revenue)[0];
+
+    return {
+      months: finalized,
+      total6MoRevenue,
+      avgMonthlyRevenue,
+      currentMonthRevenue,
+      previousMonthRevenue,
+      growthPercent,
+      peakMonth,
+    };
+  }, [sales, customerReturns, products]);
+
+  // 6c. Top Executive Summary KPIs (Dynamic calculations for Total Revenue, Monthly Sales Volume, and Active Customers)
+  const topSummaryKpis = useMemo(() => {
+    // 1. All-Time Unified Sales and Revenue
+    const allTimeMetrics = calculateUnifiedMetrics({
+      sales,
+      customerReturns,
+      products,
+    });
+
+    const totalAllTimeRevenue = allTimeMetrics.netRevenue;
+    const totalPeriodRevenue = financials.netSales;
+    const totalCashCollected = allTimeMetrics.totalCashReceived;
+    const totalCreditOutstanding = allTimeMetrics.totalCreditOutstanding;
+    const totalInvoices = sales.length;
+    const avgOrderValue = totalInvoices > 0 ? Math.round(totalAllTimeRevenue / totalInvoices) : 0;
+    const periodAvgOrderValue = financials.salesCount > 0 ? Math.round(financials.netSales / financials.salesCount) : 0;
+
+    // 2. Current Month vs Previous Month Sales Volume
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const currentMonthSales = sales.filter(s => {
+      const dStr = s.date || s.createdAt;
+      if (!dStr) return false;
+      const d = new Date(dStr);
+      return !isNaN(d.getTime()) && d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    });
+
+    const currentMonthReturns = customerReturns.filter(r => {
+      const dStr = r.date || (r as any).returnDate || r.createdAt;
+      if (!dStr) return false;
+      const d = new Date(dStr);
+      return !isNaN(d.getTime()) && d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    });
+
+    const currentMonthMetrics = calculateUnifiedMetrics({
+      sales: currentMonthSales,
+      customerReturns: currentMonthReturns,
+      products,
+    });
+
+    const prevMonthDate = new Date(currentYear, currentMonth - 1, 1);
+    const prevYear = prevMonthDate.getFullYear();
+    const prevMonth = prevMonthDate.getMonth();
+
+    const prevMonthSales = sales.filter(s => {
+      const dStr = s.date || s.createdAt;
+      if (!dStr) return false;
+      const d = new Date(dStr);
+      return !isNaN(d.getTime()) && d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+    });
+
+    const prevMonthReturns = customerReturns.filter(r => {
+      const dStr = r.date || (r as any).returnDate || r.createdAt;
+      if (!dStr) return false;
+      const d = new Date(dStr);
+      return !isNaN(d.getTime()) && d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+    });
+
+    const prevMonthMetrics = calculateUnifiedMetrics({
+      sales: prevMonthSales,
+      customerReturns: prevMonthReturns,
+      products,
+    });
+
+    const momGrowth = prevMonthMetrics.netRevenue > 0
+      ? Math.round(((currentMonthMetrics.netRevenue - prevMonthMetrics.netRevenue) / prevMonthMetrics.netRevenue) * 100)
+      : (currentMonthMetrics.netRevenue > 0 ? 100 : 0);
+
+    // 3. Dynamic Active Customers Calculations based on Sales and Customers State
+    const customerOrderCountMap = new Map<string, number>();
+    const customerSpendMap = new Map<string, number>();
+    const customerLastSaleDateMap = new Map<string, Date>();
+
+    // 90-day active purchase cutoff
+    const activeCutoffDate = new Date();
+    activeCutoffDate.setDate(activeCutoffDate.getDate() - 90);
+
+    sales.forEach(s => {
+      const idKey = s.customerId && s.customerId.trim();
+      const nameKey = s.customerName && s.customerName.trim().toLowerCase();
+      const key = idKey || nameKey;
+      if (!key) return;
+
+      customerOrderCountMap.set(key, (customerOrderCountMap.get(key) || 0) + 1);
+      customerSpendMap.set(key, (customerSpendMap.get(key) || 0) + (Number(s.totalAmount) || 0));
+
+      const sDate = new Date(s.date || s.createdAt);
+      if (!isNaN(sDate.getTime())) {
+        const prevDate = customerLastSaleDateMap.get(key);
+        if (!prevDate || sDate > prevDate) {
+          customerLastSaleDateMap.set(key, sDate);
+        }
+      }
+    });
+
+    const registeredCustomersCount = customers.length;
+    const activeRegisteredCustomers = customers.filter(c => c.status !== 'inactive');
+
+    // Customer keys considered active
+    const activeCustomerKeys = new Set<string>();
+    activeRegisteredCustomers.forEach(c => {
+      if (c.id) activeCustomerKeys.add(c.id);
+      if (c.name) activeCustomerKeys.add(c.name.trim().toLowerCase());
+    });
+
+    customerLastSaleDateMap.forEach((lastDate, key) => {
+      if (lastDate >= activeCutoffDate) {
+        activeCustomerKeys.add(key);
+      }
+    });
+
+    const totalPurchasingCustomers = customerOrderCountMap.size;
+    const activeCustomersCount = Math.max(activeCustomerKeys.size, totalPurchasingCustomers || registeredCustomersCount);
+
+    // Repeat customers (>= 2 orders placed)
+    let repeatCount = 0;
+    customerOrderCountMap.forEach((count) => {
+      if (count >= 2) repeatCount++;
+    });
+
+    const repeatRate = totalPurchasingCustomers > 0
+      ? Math.round((repeatCount / totalPurchasingCustomers) * 100)
+      : 0;
+
+    // Active purchasing accounts in currently selected period
+    const periodActiveCustomersCount = new Set(
+      periodSales
+        .map(s => (s.customerId && s.customerId.trim()) || (s.customerName && s.customerName.trim().toLowerCase()))
+        .filter(Boolean)
+    ).size;
+
+    return {
+      allTimeRevenue: totalAllTimeRevenue,
+      periodRevenue: totalPeriodRevenue,
+      totalCashCollected,
+      totalCreditOutstanding,
+      totalInvoices,
+      avgOrderValue,
+      periodAvgOrderValue,
+      monthlySalesVolume: {
+        revenue: currentMonthMetrics.netRevenue,
+        grossRevenue: currentMonthMetrics.grossRevenue,
+        unitsSold: currentMonthMetrics.totalItemsSold,
+        invoicesCount: currentMonthMetrics.salesCount,
+        grossProfit: currentMonthMetrics.grossProfit,
+        momGrowth,
+        monthName: now.toLocaleString('en-US', { month: 'long', year: 'numeric' }),
+        shortMonthName: now.toLocaleString('en-US', { month: 'short' }),
+      },
+      activeCustomers: {
+        activeCount: activeCustomersCount,
+        totalRegistered: registeredCustomersCount,
+        repeatCount,
+        repeatRate,
+        periodActiveCount: periodActiveCustomersCount,
+        debtorCount: assetSnapshots.debtorCustomersCount,
+      }
+    };
+  }, [sales, customerReturns, customers, products, financials, periodSales, assetSnapshots.debtorCustomersCount]);
 
   // 7. Recent Operational Activity Feed (Sales, Purchases, Returns, Cargo POs, Demands)
   const recentActivities = useMemo(() => {
@@ -788,7 +1260,207 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </section>
 
-      {/* 2. PRIMARY EXECUTIVE KPI METRIC CARDS (8 High Impact Blocks) */}
+      {/* 2. TOP EXECUTIVE SUMMARY GRID (Dynamic KPIs: Total Revenue, Monthly Sales Volume, Active Customers, AOV) */}
+      <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 rounded-3xl p-5 sm:p-6 text-white shadow-xl border border-slate-700/60 relative overflow-hidden">
+        {/* Ambient atmospheric glows */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none -mr-24 -mt-24" />
+        <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none -mb-24" />
+
+        <div className="relative z-10 space-y-4">
+          {/* Header of Summary Grid */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3.5 border-b border-white/10">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-600/30">
+                <Zap className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg font-black tracking-tight text-white">
+                    Executive KPI Summary
+                  </h2>
+                  <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Dynamic Live
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 font-medium">
+                  Real-time business performance calculated dynamically from sales ledgers, customer base, and monthly velocity.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium">Scope:</span>
+              <span className="px-2.5 py-1 bg-white/10 border border-white/10 text-white rounded-xl text-xs font-bold font-mono">
+                {dateRange.label}
+              </span>
+            </div>
+          </div>
+
+          {/* 4-Card Summary Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            
+            {/* KPI 1: Total Revenue */}
+            <div className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-2xl p-4 transition-all flex flex-col justify-between group">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                    Total Revenue
+                  </span>
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm border border-emerald-500/30 group-hover:scale-105 transition-transform">
+                    ₨
+                  </div>
+                </div>
+                <div className="mt-2.5">
+                  <span className="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono block">
+                    {formatPKRShort(topSummaryKpis.periodRevenue)}
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-mono font-bold block mt-0.5">
+                    {formatPKR(topSummaryKpis.periodRevenue)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-white/10 space-y-1.5 text-[11px]">
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">Cash Realized:</span>
+                  <strong className="text-emerald-400 font-mono font-bold">{formatPKRShort(financials.cashCollected)}</strong>
+                </div>
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">All-Time Cumulative:</span>
+                  <span className="font-mono text-slate-200">{formatPKRShort(topSummaryKpis.allTimeRevenue)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* KPI 2: Monthly Sales Volume */}
+            <div className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-2xl p-4 transition-all flex flex-col justify-between group">
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                      Monthly Sales Volume
+                    </span>
+                  </div>
+                  <div className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center font-bold text-sm border border-red-500/30 group-hover:scale-105 transition-transform">
+                    <BarChart3 className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2.5">
+                  <span className="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono block">
+                    {formatPKRShort(topSummaryKpis.monthlySalesVolume.revenue)}
+                  </span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[11px] text-slate-400 font-mono font-bold">
+                      {topSummaryKpis.monthlySalesVolume.shortMonthName} {new Date().getFullYear()}
+                    </span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border flex items-center gap-0.5 ${
+                      topSummaryKpis.monthlySalesVolume.momGrowth >= 0
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                    }`}>
+                      {topSummaryKpis.monthlySalesVolume.momGrowth >= 0 ? '+' : ''}{topSummaryKpis.monthlySalesVolume.momGrowth}% MoM
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-white/10 space-y-1.5 text-[11px]">
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">Sold This Month:</span>
+                  <strong className="text-white font-mono font-bold">{topSummaryKpis.monthlySalesVolume.unitsSold} Units</strong>
+                </div>
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">Monthly Invoices:</span>
+                  <span className="font-mono text-slate-200">{topSummaryKpis.monthlySalesVolume.invoicesCount} Bills</span>
+                </div>
+              </div>
+            </div>
+
+            {/* KPI 3: Active Customers */}
+            <div 
+              onClick={() => onGoToView('customers')}
+              className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-2xl p-4 transition-all flex flex-col justify-between group cursor-pointer"
+              title="Click to view full Customer Directory"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider group-hover:text-amber-300 transition-colors">
+                    Active Customers
+                  </span>
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm border border-amber-500/30 group-hover:scale-105 transition-transform">
+                    <UserCheck className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2.5">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono block">
+                      {topSummaryKpis.activeCustomers.activeCount}
+                    </span>
+                    <span className="text-xs text-slate-400 font-semibold">
+                      Accounts
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-medium block mt-0.5">
+                    {topSummaryKpis.activeCustomers.totalRegistered} Registered Accounts
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-white/10 space-y-1.5 text-[11px]">
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">Repeat Buyers:</span>
+                  <span className="text-amber-300 font-mono font-bold">
+                    {topSummaryKpis.activeCustomers.repeatRate}% ({topSummaryKpis.activeCustomers.repeatCount})
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">In Scope Active:</span>
+                  <span className="font-mono text-slate-200">
+                    {topSummaryKpis.activeCustomers.periodActiveCount} Buyers
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* KPI 4: Average Order Value & Velocity */}
+            <div className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-2xl p-4 transition-all flex flex-col justify-between group">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                    Avg Order Value (AOV)
+                  </span>
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm border border-indigo-500/30 group-hover:scale-105 transition-transform">
+                    <Receipt className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2.5">
+                  <span className="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono block">
+                    {formatPKRShort(topSummaryKpis.periodAvgOrderValue || topSummaryKpis.avgOrderValue)}
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-mono font-bold block mt-0.5">
+                    {formatPKR(topSummaryKpis.periodAvgOrderValue || topSummaryKpis.avgOrderValue)} / Sale
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-white/10 space-y-1.5 text-[11px]">
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">Invoices In Scope:</span>
+                  <strong className="text-white font-mono font-bold">{financials.salesCount} Invoices</strong>
+                </div>
+                <div className="flex items-center justify-between text-slate-300">
+                  <span className="text-slate-400">Gross Margin:</span>
+                  <span className="font-mono text-emerald-400 font-bold">{financials.grossMarginPercent.toFixed(1)}%</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* 3. DETAILED OPERATIONAL & ASSET METRIC CARDS (8 High Impact Blocks) */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
         {/* Metric 1: Net Sales Revenue */}
@@ -1134,11 +1806,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       axisLine={false}
                       tickLine={false}
                     />
-                    <Tooltip 
-                      formatter={(val: any, name: any) => [formatPKR(Number(val)), name === 'sales' ? 'Sales Revenue' : name === 'cogs' ? 'Cost (COGS)' : 'Gross Profit']}
-                      labelFormatter={(label) => `Date: ${label}`}
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px', color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
-                    />
+                    <Tooltip content={<DailyTrajectoryRevenueTooltip />} />
                     <Legend verticalAlign="top" height={36} iconType="circle" />
                     <Area type="monotone" dataKey="sales" name="Sales Revenue" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSales)" />
                     <Area type="monotone" dataKey="grossProfit" name="Gross Profit" stroke="#dc2626" strokeWidth={2.5} fillOpacity={1} fill="url(#colorProfit)" />
@@ -1158,10 +1826,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                       axisLine={false}
                       tickLine={false}
                     />
-                    <Tooltip 
-                      formatter={(val: any, name: any) => [formatPKR(Number(val)), name === 'sales' ? 'Sales Inflow' : 'Purchases Outflow']}
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px', color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
-                    />
+                    <Tooltip content={<DailyTrajectoryCashflowTooltip />} />
                     <Legend verticalAlign="top" height={36} iconType="circle" />
                     <Bar dataKey="sales" name="Sales Inflow (₨)" fill="#10b981" radius={[6, 6, 0, 0]} />
                     <Bar dataKey="purchases" name="Purchases Outflow (₨)" fill="#f59e0b" radius={[6, 6, 0, 0]} />
@@ -1211,8 +1876,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(val: any) => [formatPKR(Number(val)), 'Revenue']}
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px', color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
+                    content={<CategoryPieCustomTooltip totalRevenue={categoryData.reduce((acc, c) => acc + c.revenue, 0)} />}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -1239,6 +1903,171 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
 
+      </section>
+
+      {/* 3b. MONTHLY SALES PERFORMANCE TREND (LAST 6 MONTHS) */}
+      <section className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-300 shadow-lg space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold border border-red-100">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                Monthly Sales Performance
+              </h3>
+              <span className="px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-black rounded-lg">
+                Last 6 Months
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 font-medium mt-1">
+              Multi-month net revenue trend trajectory, peak billing months, and period-over-period growth.
+            </p>
+          </div>
+
+          {/* Quick Metrics Badges */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-1.5 flex items-center gap-2.5">
+              <span className="text-[11px] font-bold text-slate-500 uppercase">6-Mo Volume:</span>
+              <span className="text-xs font-black text-slate-900 font-mono">
+                {formatPKRShort(monthlySalesTrend.total6MoRevenue)}
+              </span>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl px-3.5 py-1.5 flex items-center gap-2.5">
+              <span className="text-[11px] font-bold text-slate-500 uppercase">Monthly Avg:</span>
+              <span className="text-xs font-black text-slate-900 font-mono">
+                {formatPKRShort(monthlySalesTrend.avgMonthlyRevenue)}
+              </span>
+            </div>
+
+            <div className={`rounded-2xl px-3.5 py-1.5 flex items-center gap-1.5 border font-bold text-xs ${
+              monthlySalesTrend.growthPercent >= 0 
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                : 'bg-rose-50 text-rose-700 border-rose-200'
+            }`}>
+              {monthlySalesTrend.growthPercent >= 0 ? (
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              ) : (
+                <ArrowDownRight className="w-3.5 h-3.5" />
+              )}
+              <span>{monthlySalesTrend.growthPercent >= 0 ? '+' : ''}{monthlySalesTrend.growthPercent}% vs Last Mo</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Recharts Area + Line Visualization */}
+        <div className="h-[270px] w-full pt-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart 
+              data={monthlySalesTrend.months} 
+              margin={{ top: 15, right: 15, left: -10, bottom: 5 }}
+            >
+              <defs>
+                <linearGradient id="colorMonthlyRev" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#dc2626" stopOpacity={0.35}/>
+                  <stop offset="95%" stopColor="#dc2626" stopOpacity={0.0}/>
+                </linearGradient>
+                <linearGradient id="colorMonthlyProfit" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis 
+                dataKey="monthName" 
+                tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                axisLine={{ stroke: '#e2e8f0' }}
+                tickLine={false}
+              />
+              <YAxis 
+                tickFormatter={(val) => formatPKRShort(val)}
+                tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip 
+                content={
+                  <MonthlySalesCustomTooltip 
+                    peakMonthKey={monthlySalesTrend.peakMonth?.key} 
+                    total6MoRevenue={monthlySalesTrend.total6MoRevenue} 
+                  />
+                } 
+              />
+              <Legend verticalAlign="top" height={36} iconType="circle" />
+              <Area 
+                type="monotone" 
+                dataKey="revenue" 
+                name="Net Revenue (₨)" 
+                stroke="#dc2626" 
+                strokeWidth={3} 
+                fillOpacity={1} 
+                fill="url(#colorMonthlyRev)" 
+                activeDot={{ 
+                  r: 7, 
+                  fill: '#dc2626', 
+                  stroke: '#ffffff', 
+                  strokeWidth: 3, 
+                  className: "filter drop-shadow-md cursor-pointer transition-all" 
+                }}
+                dot={{ r: 4, fill: '#dc2626', strokeWidth: 1.5, stroke: '#ffffff' }}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="profit" 
+                name="Gross Profit (₨)" 
+                stroke="#10b981" 
+                strokeWidth={2} 
+                strokeDasharray="4 4"
+                fillOpacity={1} 
+                fill="url(#colorMonthlyProfit)" 
+                activeDot={{ 
+                  r: 6, 
+                  fill: '#10b981', 
+                  stroke: '#ffffff', 
+                  strokeWidth: 2, 
+                  className: "filter drop-shadow-sm cursor-pointer transition-all" 
+                }}
+                dot={{ r: 3.5, fill: '#10b981', strokeWidth: 1, stroke: '#ffffff' }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 6-Month Breakdown Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-2 border-t border-slate-100">
+          {monthlySalesTrend.months.map((m) => {
+            const isPeak = monthlySalesTrend.peakMonth?.key === m.key && m.revenue > 0;
+            return (
+              <div 
+                key={m.key}
+                className={`p-3 rounded-2xl border transition-all ${
+                  isPeak 
+                    ? 'bg-red-50/60 border-red-200 shadow-xs' 
+                    : 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100/60'
+                }`}
+              >
+                <div className="flex items-center justify-between text-[11px] mb-1">
+                  <span className={`font-black ${isPeak ? 'text-red-700' : 'text-slate-600'}`}>
+                    {m.monthName}
+                  </span>
+                  {isPeak && (
+                    <span className="text-[9px] font-black uppercase tracking-wider bg-red-600 text-white px-1.5 py-0.2 rounded">
+                      Peak
+                    </span>
+                  )}
+                </div>
+                <div className="font-mono font-black text-sm text-slate-900">
+                  {formatPKRShort(m.revenue)}
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-slate-500 font-medium mt-1">
+                  <span>{m.invoicesCount} Invoices</span>
+                  <span className="text-emerald-600 font-bold">+{formatPKRShort(m.profit)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       {/* 4. BUSINESS RANKINGS & FAST-MOVING LEDGERS */}
