@@ -7,7 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   return {
-    base: './',
+    base: '/',
     plugins: [
       react(), 
       tailwindcss(),
@@ -60,7 +60,7 @@ export default defineConfig(() => {
           ]
         },
         devOptions: {
-          enabled: process.env.DISABLE_HMR !== 'true',
+          enabled: false,
           type: 'module'
         }
       })

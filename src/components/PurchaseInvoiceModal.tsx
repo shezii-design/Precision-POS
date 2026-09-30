@@ -27,6 +27,7 @@ interface PurchaseInvoiceModalProps {
   purchase: Purchase | null;
   vendor?: Vendor | null;
   vendorReturns?: VendorReturn[];
+  onRecordPayment?: (purchase: Purchase) => void;
 }
 
 export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
@@ -35,6 +36,7 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
   purchase,
   vendor,
   vendorReturns = [],
+  onRecordPayment,
 }) => {
   const printContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -315,6 +317,17 @@ export const PurchaseInvoiceModal: React.FC<PurchaseInvoiceModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {onRecordPayment && purchase && ((purchase.balanceDue ?? 0) > 0) && (
+              <button
+                type="button"
+                onClick={() => onRecordPayment(purchase)}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black rounded-xl transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+                title={`Pay vendor for this purchase bill (Balance Due: ₨ ${(purchase.balanceDue ?? 0).toLocaleString()})`}
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Pay Bill</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={handlePrint}

@@ -59,6 +59,9 @@ import {
   recordCashEntryAndUpdateAll,
   updateCashEntryAndUpdateAll,
   deleteCashEntryAndUpdateAll,
+  recordCustomerPaymentAndUpdateAll,
+  updateCustomerPaymentAndUpdateAll,
+  deleteCustomerPaymentAndUpdateAll,
   recordCustomerReturnAndUpdateInventory,
   deleteCustomerReturnAndUpdateAll,
   recordVendorReturnAndUpdateInventory,
@@ -122,7 +125,11 @@ import {
   executeSaleTransactionSupabase,
   executePurchaseTransactionSupabase,
   executeCustomerReturnTransactionSupabase,
-  syncStaffAndDevicesToSupabase
+  syncStaffAndDevicesToSupabase,
+  syncCustomerPaymentToSupabase,
+  syncVendorPaymentToSupabase,
+  deleteCustomerPaymentFromSupabase,
+  deleteVendorPaymentFromSupabase
 } from './services/supabase';
 import { SectionErrorBoundary } from './components/ErrorBoundary';
 
@@ -145,6 +152,7 @@ import { DashboardPage } from './components/DashboardPage';
 import { IncomeStatementPage } from './components/IncomeStatementPage';
 import { SalesPage } from './components/SalesPage';
 import { CustomersPage } from './components/CustomersPage';
+import { CustomerPaymentModal } from './components/CustomerPaymentModal';
 import { PurchasesPage } from './components/PurchasesPage';
 import { PurchaseInvoiceModal } from './components/PurchaseInvoiceModal';
 import { NewSaleModal, InitialSaleItemPreset } from './components/NewSaleModal';
@@ -313,7 +321,14 @@ export default function App() {
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [showCashModal, setShowCashModal] = useState<boolean>(false);
   const [cashModalVendorId, setCashModalVendorId] = useState<string | undefined>(undefined);
+  const [cashModalPurchaseId, setCashModalPurchaseId] = useState<string | undefined>(undefined);
   const [editingLedgerEntry, setEditingLedgerEntry] = useState<VendorLedgerEntry | null>(null);
+
+  // Customer Payment Modal State
+  const [showCustomerPaymentModal, setShowCustomerPaymentModal] = useState<boolean>(false);
+  const [customerPaymentCustomer, setCustomerPaymentCustomer] = useState<Customer | null>(null);
+  const [customerPaymentSaleId, setCustomerPaymentSaleId] = useState<string | undefined>(undefined);
+  const [editingCustomerPaymentEntry, setEditingCustomerPaymentEntry] = useState<CustomerLedgerEntry | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState<boolean>(false);
   const [purchaseModalVendorId, setPurchaseModalVendorId] = useState<string | undefined>(undefined);
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
@@ -1022,11 +1037,12 @@ export default function App() {
     showToast(`Vendor Deleted`, vendor.businessName);
   };
 
-  // Cash / Payment Entry Handlers
-  const handleOpenCashModal = (vendorId?: string, editingEntry?: VendorLedgerEntry | null) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
+  // Cash / Vendor Payment Entry Handlers
+  const handleOpenCashModal = (vendorId?: string, editingEntry?: VendorLedgerEntry | null, initialPurchaseId?: string) => {
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.'); return; }
     const validVendorId = typeof vendorId === 'string' ? vendorId : undefined;
     setCashModalVendorId(validVendorId);
+    setCashModalPurchaseId(initialPurchaseId);
     setEditingLedgerEntry(editingEntry && typeof editingEntry === 'object' && 'amount' in editingEntry ? editingEntry : null);
     setShowCashModal(true);
   };
@@ -1034,78 +1050,278 @@ export default function App() {
   const handleSaveCashEntry = (entryData: Omit<VendorLedgerEntry, 'id' | 'createdAt'>, entryId?: string) => {
     if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.'); return; }
     
+    let updatedPurObj: Purchase | undefined;
+    let updatedSaleObj: Sale | undefined;
+
     // Check if this payment is being applied to a specific Sale to Vendor
     let saleUpdated = false;
     if (!entryId && entryData.type === 'cash_received' && entryData.referenceId) {
-      setSales(prev => {
-        const updated = prev.map(s => {
-          if (s.id === entryData.referenceId && s.isVendorSale) {
-            saleUpdated = true;
-            const newReceived = (s.amountReceived || 0) + Number(entryData.credit);
-            const newBalance = Math.max(0, (s.netAmount !== undefined ? s.netAmount : s.totalAmount) - newReceived);
-            return {
-              ...s,
-              amountReceived: newReceived,
-              balanceDue: newBalance,
-              paymentStatus: newBalance <= 0 ? 'paid' as const : (newReceived > 0 ? 'partial' as const : 'credit' as const),
-              updatedAt: new Date().toISOString()
-            };
-          }
-          return s;
-        });
-        saveStoredSales(updated);
-        return updated;
+      const updatedSalesList = sales.map(s => {
+        if (s.id === entryData.referenceId && s.isVendorSale) {
+          saleUpdated = true;
+          const newReceived = (s.amountReceived || 0) + Number(entryData.credit || entryData.amount || 0);
+          const newBalance = Math.max(0, (s.netAmount !== undefined ? s.netAmount : s.totalAmount) - newReceived);
+          return {
+            ...s,
+            amountReceived: newReceived,
+            balanceDue: newBalance,
+            paymentStatus: newBalance <= 0 ? ('paid' as const) : (newReceived > 0 ? ('partial' as const) : ('credit' as const)),
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return s;
       });
+      if (saleUpdated) {
+        setSales(updatedSalesList);
+        saveStoredSales(updatedSalesList);
+        updatedSaleObj = updatedSalesList.find(s => s.id === entryData.referenceId);
+      }
     }
 
     // Check if this cash sent is being applied to a specific Purchase Bill
     let purchaseUpdated = false;
     if (!entryId && entryData.type === 'cash_sent' && entryData.referenceId) {
-      setPurchases(prev => {
-        const updated = prev.map(p => {
-          if (p.id === entryData.referenceId) {
-            purchaseUpdated = true;
-            const newPaid = (p.amountPaid || 0) + Number(entryData.debit);
-            const totalToPay = p.netAmount !== undefined ? p.netAmount : p.totalAmount;
-            const newBalance = Math.max(0, totalToPay - newPaid);
-            return {
-              ...p,
-              amountPaid: newPaid,
-              balanceDue: newBalance,
-              netBalanceDue: newBalance,
-              paymentStatus: newBalance <= 0 ? 'paid' as const : (newPaid > 0 ? 'partial' as const : 'credit' as const),
-              updatedAt: new Date().toISOString()
-            };
-          }
-          return p;
-        });
-        saveStoredPurchases(updated);
-        return updated;
+      const updatedPurchasesList = purchases.map(p => {
+        if (p.id === entryData.referenceId) {
+          purchaseUpdated = true;
+          const newPaid = (p.amountPaid || 0) + Number(entryData.debit || entryData.amount || 0);
+          const totalToPay = p.netAmount !== undefined ? p.netAmount : p.totalAmount;
+          const newBalance = Math.max(0, totalToPay - newPaid);
+          return {
+            ...p,
+            amountPaid: newPaid,
+            balanceDue: newBalance,
+            netBalanceDue: newBalance,
+            paymentStatus: newBalance <= 0 ? ('paid' as const) : (newPaid > 0 ? ('partial' as const) : ('credit' as const)),
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return p;
       });
+      if (purchaseUpdated) {
+        setPurchases(updatedPurchasesList);
+        saveStoredPurchases(updatedPurchasesList);
+        updatedPurObj = updatedPurchasesList.find(p => p.id === entryData.referenceId);
+        if (updatedPurObj && activePurchaseForInvoice && activePurchaseForInvoice.id === updatedPurObj.id) {
+          setActivePurchaseForInvoice(updatedPurObj);
+        }
+      }
     }
+
+    let finalEntry: VendorLedgerEntry | undefined;
+    let affectedVendor: Vendor | undefined;
 
     if (entryId) {
       const res = updateCashEntryAndUpdateAll(entryId, entryData, ledgerEntries, vendors);
       setLedgerEntries(res.updatedLedgerEntries);
+      saveStoredVendorLedgerEntries(res.updatedLedgerEntries);
       setVendors(res.updatedVendors);
+      saveStoredVendors(res.updatedVendors);
+      finalEntry = res.updatedLedgerEntries.find(e => e.id === entryId);
+      affectedVendor = res.updatedVendors.find(v => v.id === entryData.vendorId);
       showToast('Payment Entry Updated', `${entryData.type === 'cash_sent' ? 'Cash Sent' : 'Payment Received'}: ${formatPKR(Number(entryData.amount))}`);
     } else {
       const res = recordCashEntryAndUpdateAll(entryData, ledgerEntries, vendors);
       setLedgerEntries(res.updatedLedgerEntries);
+      saveStoredVendorLedgerEntries(res.updatedLedgerEntries);
       setVendors(res.updatedVendors);
+      saveStoredVendors(res.updatedVendors);
+      finalEntry = res.createdEntry || res.updatedLedgerEntries.find(e => e.vendorId === entryData.vendorId) || res.updatedLedgerEntries[0];
+      affectedVendor = res.updatedVendors.find(v => v.id === entryData.vendorId);
       const tag = purchaseUpdated ? ' (Purchase Bill Updated)' : saleUpdated ? ' (Invoice Updated)' : '';
       showToast('Payment Entry Recorded', `${entryData.type === 'cash_sent' ? 'Cash Sent' : 'Payment Received'}: ${formatPKR(Number(entryData.amount))}${tag}`);
     }
+
+    // Immediately sync to Supabase backend if connected
+    if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey && finalEntry) {
+      try {
+        const client = getSupabaseClient(supabaseConfig);
+        if (client) {
+          syncVendorPaymentToSupabase(client, finalEntry, updatedPurObj, updatedSaleObj)
+            .then(res => {
+              if (res.success) {
+                console.info('Vendor payment synced to Supabase backend');
+              } else {
+                console.warn('Vendor payment backend sync warning:', res.error);
+              }
+            })
+            .catch(err => {
+              console.warn('Network issue syncing vendor payment to backend:', err);
+            });
+        }
+      } catch (err) {
+        console.warn('Failed to initiate vendor payment sync to Supabase:', err);
+      }
+    }
+
     setShowCashModal(false);
     setEditingLedgerEntry(null);
+    setCashModalPurchaseId(undefined);
   };
 
   const handleDeleteLedgerEntry = (entryId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.'); return; }
     if (!window.confirm('Are you sure you want to delete this payment record?')) return;
-    const res = deleteCashEntryAndUpdateAll(entryId, ledgerEntries, vendors);
+
+    const existing = ledgerEntries.find(e => e.id === entryId);
+    const res = deleteCashEntryAndUpdateAll(entryId, ledgerEntries, vendors, purchases, sales);
     setLedgerEntries(res.updatedLedgerEntries);
+    saveStoredVendorLedgerEntries(res.updatedLedgerEntries);
     setVendors(res.updatedVendors);
+    saveStoredVendors(res.updatedVendors);
+
+    let updatedPurObj: Purchase | undefined;
+    if (res.updatedPurchases) {
+      setPurchases(res.updatedPurchases);
+      saveStoredPurchases(res.updatedPurchases);
+      if (existing && existing.referenceId) {
+        updatedPurObj = res.updatedPurchases.find(p => p.id === existing.referenceId);
+        if (updatedPurObj && activePurchaseForInvoice && activePurchaseForInvoice.id === updatedPurObj.id) {
+          setActivePurchaseForInvoice(updatedPurObj);
+        }
+      }
+    }
+    if (res.updatedSales) {
+      setSales(res.updatedSales);
+      saveStoredSales(res.updatedSales);
+    }
+
+    if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+      try {
+        const client = getSupabaseClient(supabaseConfig);
+        if (client) {
+          deleteVendorPaymentFromSupabase(client, entryId, updatedPurObj)
+            .then(res => {
+              if (res.success) console.info('Vendor payment deleted from backend');
+            })
+            .catch(console.warn);
+        }
+      } catch (err) {
+        console.warn('Error deleting vendor payment from Supabase:', err);
+      }
+    }
+
+    showToast('Payment Record Deleted', 'Ledger Adjusted');
+  };
+
+  // Customer Payment Handlers (Immediate backend sync & ledger update)
+  const handleOpenCustomerPaymentModal = (
+    customer?: Customer | null,
+    saleId?: string,
+    editingEntry?: CustomerLedgerEntry | null
+  ) => {
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.'); return; }
+    setCustomerPaymentCustomer(customer || null);
+    setCustomerPaymentSaleId(saleId);
+    setEditingCustomerPaymentEntry(editingEntry || null);
+    setShowCustomerPaymentModal(true);
+  };
+
+  const handleSaveCustomerPayment = (
+    entryData: Omit<CustomerLedgerEntry, 'id' | 'createdAt'>,
+    entryId?: string
+  ) => {
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.'); return; }
+
+    let updatedSaleObj: Sale | undefined;
+    const result = entryId
+      ? updateCustomerPaymentAndUpdateAll(entryId, entryData, customerLedger, customers, sales)
+      : recordCustomerPaymentAndUpdateAll(entryData, customerLedger, customers, sales);
+
+    setCustomerLedger(result.updatedLedgerEntries);
+    saveStoredCustomerLedger(result.updatedLedgerEntries);
+
+    setCustomers(result.updatedCustomers);
+    saveStoredCustomers(result.updatedCustomers);
+
+    if (result.updatedSales) {
+      setSales(result.updatedSales);
+      saveStoredSales(result.updatedSales);
+      if (entryData.referenceId) {
+        updatedSaleObj = result.updatedSales.find(s => s.id === entryData.referenceId);
+        if (updatedSaleObj && activeSaleForInvoice && activeSaleForInvoice.id === updatedSaleObj.id) {
+          setActiveSaleForInvoice(updatedSaleObj);
+        }
+      }
+    }
+
+    const affectedCustomer = result.updatedCustomers.find(c => c.id === entryData.customerId);
+    const createdOrUpdatedEntry = entryId
+      ? result.updatedLedgerEntries.find(e => e.id === entryId)
+      : (result.createdEntry || result.updatedLedgerEntries.find(e => e.customerId === entryData.customerId) || result.updatedLedgerEntries[result.updatedLedgerEntries.length - 1]);
+
+    // Immediately sync to Supabase backend if connected
+    if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey && createdOrUpdatedEntry) {
+      try {
+        const client = getSupabaseClient(supabaseConfig);
+        if (client) {
+          syncCustomerPaymentToSupabase(client, createdOrUpdatedEntry, updatedSaleObj)
+            .then(res => {
+              if (res.success) {
+                console.info('Customer payment synced to Supabase backend');
+              } else {
+                console.warn('Customer payment backend sync warning:', res.error);
+              }
+            })
+            .catch(err => {
+              console.warn('Network issue syncing customer payment to backend:', err);
+            });
+        }
+      } catch (err) {
+        console.warn('Failed to initiate customer payment sync to Supabase:', err);
+      }
+    }
+
+    showToast(
+      entryId ? 'Customer Payment Updated' : 'Customer Payment Recorded',
+      `${entryData.type === 'payment_received' ? 'Payment Received' : 'Cash Refund'}: ${formatPKR(Number(entryData.amount))}`
+    );
+
+    setShowCustomerPaymentModal(false);
+    setEditingCustomerPaymentEntry(null);
+    setCustomerPaymentCustomer(null);
+    setCustomerPaymentSaleId(undefined);
+  };
+
+  const handleDeleteCustomerPayment = (entryId: string) => {
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.'); return; }
+    if (!window.confirm('Are you sure you want to remove this ledger entry?')) return;
+
+    const existing = customerLedger.find(e => e.id === entryId);
+    const result = deleteCustomerPaymentAndUpdateAll(entryId, customerLedger, customers, sales);
+    setCustomerLedger(result.updatedLedgerEntries);
+    saveStoredCustomerLedger(result.updatedLedgerEntries);
+
+    setCustomers(result.updatedCustomers);
+    saveStoredCustomers(result.updatedCustomers);
+
+    let updatedSaleObj: Sale | undefined;
+    if (result.updatedSales) {
+      setSales(result.updatedSales);
+      saveStoredSales(result.updatedSales);
+      if (existing && existing.referenceId) {
+        updatedSaleObj = result.updatedSales.find(s => s.id === existing.referenceId);
+        if (updatedSaleObj && activeSaleForInvoice && activeSaleForInvoice.id === updatedSaleObj.id) {
+          setActiveSaleForInvoice(updatedSaleObj);
+        }
+      }
+    }
+
+    if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+      try {
+        const client = getSupabaseClient(supabaseConfig);
+        if (client) {
+          deleteCustomerPaymentFromSupabase(client, entryId, updatedSaleObj)
+            .then(res => {
+              if (res.success) console.info('Customer payment deleted from backend');
+            })
+            .catch(console.warn);
+        }
+      } catch (err) {
+        console.warn('Error deleting customer payment from Supabase:', err);
+      }
+    }
+
     showToast('Payment Record Deleted', 'Ledger Adjusted');
   };
 
@@ -2181,6 +2397,10 @@ export default function App() {
             onViewInvoice={handleViewInvoice}
             onEditSale={isActionAllowed(currentEmployee, 'canEditSales') ? handleEditSale : undefined}
             onOpenCustomerReturn={isActionAllowed(currentEmployee, 'canProcessReturns') ? (sale) => handleOpenCustomerReturnModal(sale) : undefined}
+            onRecordPayment={isActionAllowed(currentEmployee, 'canCreateSales') ? (sale) => {
+              const cust = customers.find(c => c.id === sale.customerId) || (sale.customerId ? { id: sale.customerId, name: sale.customerName || 'Customer', totalPurchases: sale.totalAmount } as Customer : null);
+              handleOpenCustomerPaymentModal(cust, sale.id);
+            } : undefined}
           />
         ) : currentView === 'inventory_audit' ? (
           <InventoryAuditLog
@@ -2220,6 +2440,9 @@ export default function App() {
               handleOpenPurchaseModal(purchase.vendorId, purchase);
             }}
             onDeletePurchase={isActionAllowed(currentEmployee, 'canDeletePurchases') ? handleDeletePurchase : undefined}
+            onRecordPayment={isActionAllowed(currentEmployee, 'canRecordVendorPayments') ? (purchase) => {
+              handleOpenCashModal(purchase.vendorId, null, purchase.id);
+            } : undefined}
             onGoToPurchaseOrders={() => {
               setCurrentView('purchase_orders');
               showToast('Purchase Orders & Cargo', 'Ctrl + O');
@@ -2275,6 +2498,7 @@ export default function App() {
           />
         ) : currentView === 'customers' ? (
           <CustomersPage
+            currentEmployee={currentEmployee}
             customers={customers}
             products={products}
             sales={sales}
@@ -2289,6 +2513,8 @@ export default function App() {
             }}
             onViewInvoice={handleViewInvoice}
             onEditSale={isActionAllowed(currentEmployee, 'canEditSales') ? handleEditSale : undefined}
+            onSaveCustomerPayment={handleSaveCustomerPayment}
+            onDeleteCustomerPayment={handleDeleteCustomerPayment}
           />
         ) : currentView === 'vendors' ? (
           selectedVendorForDetails ? (
@@ -2994,6 +3220,10 @@ export default function App() {
         isOpen={showInvoiceModal}
         onClose={() => setShowInvoiceModal(false)}
         sale={activeSaleForInvoice}
+        onRecordPayment={isActionAllowed(currentEmployee, 'canCreateSales') ? (sale) => {
+          const cust = customers.find(c => c.id === sale.customerId) || (sale.customerId ? { id: sale.customerId, name: sale.customerName || 'Customer', totalPurchases: sale.totalAmount } as Customer : null);
+          handleOpenCustomerPaymentModal(cust, sale.id);
+        } : undefined}
         onSavePdfEdits={(saleId, edits) => {
           const updatedSales = sales.map(s => s.id === saleId ? { ...s, pdfEdits: edits } : s);
           setSales(updatedSales);
@@ -3024,13 +3254,32 @@ export default function App() {
           setShowCashModal(false);
           setEditingLedgerEntry(null);
           setCashModalVendorId(undefined);
+          setCashModalPurchaseId(undefined);
         }}
         vendors={vendors}
         sales={sales}
         purchases={purchases}
         selectedVendorId={cashModalVendorId}
+        initialPurchaseId={cashModalPurchaseId}
         editingEntry={editingLedgerEntry}
         onSaveEntry={handleSaveCashEntry}
+      />
+
+      {/* 12b. Customer Payment / Khata Entry Modal */}
+      <CustomerPaymentModal
+        isOpen={showCustomerPaymentModal}
+        onClose={() => {
+          setShowCustomerPaymentModal(false);
+          setEditingCustomerPaymentEntry(null);
+          setCustomerPaymentCustomer(null);
+          setCustomerPaymentSaleId(undefined);
+        }}
+        customers={customers}
+        sales={sales}
+        preselectedCustomer={customerPaymentCustomer}
+        preselectedSaleId={customerPaymentSaleId}
+        editingEntry={editingCustomerPaymentEntry}
+        onSavePayment={handleSaveCustomerPayment}
       />
 
       {/* 13. Purchase Bill Modal */}
@@ -3059,6 +3308,9 @@ export default function App() {
         purchase={activePurchaseForInvoice}
         vendor={vendors.find(v => v.id === activePurchaseForInvoice?.vendorId)}
         vendorReturns={vendorReturns}
+        onRecordPayment={isActionAllowed(currentEmployee, 'canRecordVendorPayments') ? (purchase) => {
+          handleOpenCashModal(purchase.vendorId, null, purchase.id);
+        } : undefined}
       />
 
       {/* 14. Configure Linked Products to Vendor Modal */}

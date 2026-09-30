@@ -52,7 +52,7 @@ interface VendorDetailsPageProps {
   products: Product[];
   purchaseOrders?: PurchaseOrder[];
   onBack: () => void;
-  onOpenCashModal?: (vendorId: string, editingEntry?: VendorLedgerEntry | null) => void;
+  onOpenCashModal?: (vendorId: string, editingEntry?: VendorLedgerEntry | null, initialPurchaseId?: string) => void;
   onOpenPurchaseModal?: (vendorId: string, editingPurchase?: Purchase | null) => void;
   onOpenCreatePO?: (vendorId: string) => void;
   onOpenReceivePO?: (po: PurchaseOrder) => void;
@@ -1109,6 +1109,16 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
 
                             <td className="px-3 py-3 text-center whitespace-nowrap" onClick={e => e.stopPropagation()}>
                               <div className="flex items-center justify-center gap-1">
+                                {(pur.balanceDue ?? 0) > 0 && onOpenCashModal && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenCashModal(vendor.id, null, pur.id)}
+                                    className="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-bold"
+                                    title={`Pay vendor for Bill #${pur.billNumber || pur.id} (Balance Due: ₨ ${(pur.balanceDue ?? 0).toLocaleString()})`}
+                                  >
+                                    Pay Bill
+                                  </button>
+                                )}
                                 {onViewPurchase && (
                                   <button
                                     type="button"

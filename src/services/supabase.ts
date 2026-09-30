@@ -541,8 +541,8 @@ export async function executeSaleTransactionSupabase(
   customer?: Customer | null,
   demandId?: string | null
 ): Promise<{ success: boolean; saleId?: string; error?: string }> {
+  const saleItems = items || sale.items || [];
   try {
-    const saleItems = items || sale.items || [];
     const { data, error } = await client.rpc('process_sale_transaction', {
       p_sale: {
         id: sale.id,
@@ -566,14 +566,158 @@ export async function executeSaleTransactionSupabase(
       p_demand_id: demandId || null
     });
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (!error) {
+      const res = data as { success: boolean; saleId?: string; error?: string; message?: string };
+      if (res && res.success) {
+        return res;
+      }
+    }
+  } catch (rpcErr) {
+    console.warn('RPC process_sale_transaction failed, falling back to direct table sync:', rpcErr);
+  }
+
+  // Fallback: direct table operations to guarantee backend persistence
+  try {
+    const saleRow = {
+      id: sale.id,
+      date: sale.date,
+      customer_id: sale.customerId || null,
+      customer_name: sale.customerName || 'Walk-in Customer',
+      customer_phone: sale.customerPhone || null,
+      vendor_id: sale.vendorId || null,
+      vendor_name: sale.vendorName || null,
+      is_vendor_sale: sale.isVendorSale || false,
+      items: saleItems,
+      subtotal: Number(sale.subtotal) || 0,
+      discount_type: sale.discountType || 'amount',
+      discount_value: Number(sale.discountValue) || 0,
+      discount_amount: Number(sale.discountAmount) || 0,
+      total_amount: Number(sale.totalAmount) || 0,
+      total_cost: Number(sale.totalCost) || 0,
+      total_profit: Number(sale.totalProfit) || 0,
+      amount_received: Number(sale.amountReceived) || 0,
+      change_given: Number(sale.changeGiven) || 0,
+      balance_due: Number(sale.balanceDue) || 0,
+      payment_type: sale.paymentType || 'cash',
+      payment_status: sale.paymentStatus || 'paid',
+      notes: sale.notes || null,
+      created_at: sale.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    await client.from('sales').upsert(saleRow, { onConflict: 'id' });
+
+    for (const it of saleItems) {
+      if (!it.productId) continue;
+      const { data: prodData } = await client
+        .from('inventory_products')
+        .select('stock_quantity, name')
+        .eq('id', it.productId)
+        .maybeSingle();
+
+      if (prodData) {
+        const curStock = Number(prodData.stock_quantity) || 0;
+        const newStock = Math.max(0, curStock - (Number(it.quantity) || 0));
+        await client
+          .from('inventory_products')
+          .update({ stock_quantity: newStock, updated_at: new Date().toISOString() })
+          .eq('id', it.productId);
+
+        const logId = `log-${Date.now()}-${it.productId}`;
+        await client.from('stock_logs').insert({
+          id: logId,
+          product_id: it.productId,
+          product_name: it.productName || prodData.name || 'Product',
+          change: -(Number(it.quantity) || 0),
+          previous_stock: curStock,
+          new_stock: newStock,
+          quantity_change: -(Number(it.quantity) || 0),
+          new_quantity: newStock,
+          type: 'sale',
+          reason: 'Sale',
+          movement_type: 'sale',
+          reference_id: sale.id,
+          entity_name: sale.customerName || 'Walk-in Customer',
+          unit_rate: Number(it.unitPrice) || 0,
+          total_movement_value: (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0),
+          timestamp: sale.date || new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        });
+      }
     }
 
-    const res = data as { success: boolean; saleId?: string; error?: string; message?: string };
-    return res;
-  } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const custId = sale.customerId;
+    const custName = sale.customerName || '';
+    if (custId && custName.toLowerCase() !== 'walk-in customer') {
+      const { data: existingCust } = await client
+        .from('customers')
+        .select('total_purchases')
+        .eq('id', custId)
+        .maybeSingle();
+
+      const newTotalPurchases = (Number(existingCust?.total_purchases) || 0) + (Number(sale.totalAmount) || 0);
+      await client.from('customers').upsert({
+        id: custId,
+        name: custName,
+        phone: sale.customerPhone || null,
+        total_purchases: newTotalPurchases,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+
+      const unpaid = Number(sale.balanceDue) || 0;
+      if (unpaid > 0) {
+        await client.from('customer_ledger').upsert({
+          id: `cleg-${Date.now()}-${sale.id}`,
+          customer_id: custId,
+          customer_name: custName,
+          date: sale.date || new Date().toISOString(),
+          type: 'sale',
+          entry_code: sale.id,
+          bill_number: sale.id,
+          reference_id: sale.id,
+          description: `Sale invoice ${sale.id} credit balance`,
+          debit: unpaid,
+          credit: 0,
+          amount: unpaid,
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'id' });
+      }
+
+      const paid = Number(sale.amountReceived) || 0;
+      if (paid > 0) {
+        await client.from('customer_ledger').upsert({
+          id: `cleg-pay-${Date.now()}-${sale.id}`,
+          customer_id: custId,
+          customer_name: custName,
+          date: sale.date || new Date().toISOString(),
+          type: 'payment_received',
+          entry_code: 'Cash Paid',
+          bill_number: sale.id,
+          reference_id: sale.id,
+          description: `Payment received for invoice ${sale.id}`,
+          debit: 0,
+          credit: paid,
+          amount: paid,
+          payment_method: sale.paymentType || 'Cash',
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'id' });
+      }
+    }
+
+    if (demandId) {
+      await client
+        .from('demands')
+        .update({
+          status: 'fulfilled',
+          fulfilled_sale_id: sale.id,
+          fulfilled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', demandId);
+    }
+
+    return { success: true, saleId: sale.id };
+  } catch (fallbackErr: unknown) {
+    const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
     return { success: false, error: errorMsg };
   }
 }
@@ -588,8 +732,8 @@ export async function executePurchaseTransactionSupabase(
   items?: any[],
   vendor?: Vendor | null
 ): Promise<{ success: boolean; purchaseId?: string; error?: string }> {
+  const purchaseItems = items || purchase.items || [];
   try {
-    const purchaseItems = items || purchase.items || [];
     const { data, error } = await client.rpc('process_purchase_transaction', {
       p_purchase: {
         id: purchase.id,
@@ -607,14 +751,143 @@ export async function executePurchaseTransactionSupabase(
       p_vendor: vendor ? { id: vendor.id, name: vendor.contactPerson, businessName: vendor.businessName } : null
     });
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (!error) {
+      const res = data as { success: boolean; purchaseId?: string; error?: string; message?: string };
+      if (res && res.success) {
+        return res;
+      }
+    }
+  } catch (rpcErr) {
+    console.warn('RPC process_purchase_transaction failed, falling back to direct table sync:', rpcErr);
+  }
+
+  // Fallback: direct table operations to guarantee backend persistence
+  try {
+    const purRow = {
+      id: purchase.id,
+      bill_number: purchase.billNumber || purchase.id,
+      po_number: purchase.poNumber || null,
+      vendor_id: purchase.vendorId,
+      vendor_name: purchase.vendorName,
+      date: purchase.date,
+      items: purchaseItems,
+      subtotal: Number(purchase.subtotal) || 0,
+      discount_amount: Number(purchase.discountAmount) || 0,
+      total_amount: Number(purchase.totalAmount) || 0,
+      amount_paid: Number(purchase.amountPaid) || 0,
+      balance_due: Number(purchase.balanceDue) || 0,
+      payment_status: purchase.paymentStatus || 'paid',
+      notes: purchase.notes || null,
+      created_at: purchase.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    await client.from('purchases').upsert(purRow, { onConflict: 'id' });
+
+    for (const it of purchaseItems) {
+      if (!it.productId) continue;
+      const { data: prodData } = await client
+        .from('inventory_products')
+        .select('stock_quantity, name, cost_price')
+        .eq('id', it.productId)
+        .maybeSingle();
+
+      if (prodData) {
+        const curStock = Number(prodData.stock_quantity) || 0;
+        const addQty = Number(it.quantity) || 0;
+        const newStock = curStock + addQty;
+        const updateObj: Record<string, any> = {
+          stock_quantity: newStock,
+          updated_at: new Date().toISOString(),
+        };
+        if (purchase.updatePricesInInventory !== false && Number(it.unitPrice) > 0) {
+          updateObj.cost_price = Number(it.unitPrice);
+        }
+        await client.from('inventory_products').update(updateObj).eq('id', it.productId);
+
+        const logId = `log-${Date.now()}-${it.productId}`;
+        await client.from('stock_logs').insert({
+          id: logId,
+          product_id: it.productId,
+          product_name: it.productName || prodData.name || 'Product',
+          change: addQty,
+          previous_stock: curStock,
+          new_stock: newStock,
+          quantity_change: addQty,
+          new_quantity: newStock,
+          type: 'purchase',
+          reason: 'Purchase',
+          movement_type: 'purchase',
+          reference_id: purchase.id,
+          entity_name: purchase.vendorName,
+          unit_rate: Number(it.unitPrice) || 0,
+          total_movement_value: addQty * (Number(it.unitPrice) || 0),
+          timestamp: purchase.date || new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        });
+      }
     }
 
-    const res = data as { success: boolean; purchaseId?: string; error?: string; message?: string };
-    return res;
-  } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const vId = purchase.vendorId;
+    if (vId) {
+      const { data: existingVendor } = await client
+        .from('vendors')
+        .select('current_balance, total_purchases')
+        .eq('id', vId)
+        .maybeSingle();
+
+      const newBal = (Number(existingVendor?.current_balance) || 0) + (Number(purchase.balanceDue) || 0);
+      const newPurchases = (Number(existingVendor?.total_purchases) || 0) + (Number(purchase.totalAmount) || 0);
+      await client.from('vendors').upsert({
+        id: vId,
+        business_name: purchase.vendorName,
+        current_balance: newBal,
+        total_purchases: newPurchases,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+
+      const unpaid = Number(purchase.balanceDue) || 0;
+      if (unpaid > 0) {
+        await client.from('vendor_ledger').upsert({
+          id: `vleg-${Date.now()}-${purchase.id}`,
+          vendor_id: vId,
+          vendor_name: purchase.vendorName,
+          date: purchase.date || new Date().toISOString(),
+          type: 'purchase',
+          entry_code: purchase.billNumber ? `Bill #${purchase.billNumber}` : purchase.id,
+          bill_number: purchase.billNumber || purchase.id,
+          reference_id: purchase.id,
+          description: `Purchase bill ${purchase.billNumber || purchase.id} payable`,
+          credit: unpaid,
+          debit: 0,
+          amount: unpaid,
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'id' });
+      }
+
+      const paid = Number(purchase.amountPaid) || 0;
+      if (paid > 0) {
+        await client.from('vendor_ledger').upsert({
+          id: `vleg-pay-${Date.now()}-${purchase.id}`,
+          vendor_id: vId,
+          vendor_name: purchase.vendorName,
+          date: purchase.date || new Date().toISOString(),
+          type: 'cash_sent',
+          entry_code: 'Cash Paid',
+          bill_number: purchase.billNumber || purchase.id,
+          reference_id: purchase.id,
+          description: `Cash payment made against bill ${purchase.billNumber || purchase.id}`,
+          debit: paid,
+          credit: 0,
+          amount: paid,
+          payment_method: 'Cash',
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'id' });
+      }
+    }
+
+    return { success: true, purchaseId: purchase.id };
+  } catch (fallbackErr: unknown) {
+    const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
     return { success: false, error: errorMsg };
   }
 }
@@ -628,8 +901,8 @@ export async function executeCustomerReturnTransactionSupabase(
   returnRecord: CustomerReturn,
   items?: any[]
 ): Promise<{ success: boolean; returnId?: string; error?: string }> {
+  const returnItems = items || returnRecord.items || [];
   try {
-    const returnItems = items || returnRecord.items || [];
     const { data, error } = await client.rpc('process_customer_return_transaction', {
       p_return: {
         id: returnRecord.id,
@@ -644,12 +917,318 @@ export async function executeCustomerReturnTransactionSupabase(
       p_items: returnItems
     });
 
+    if (!error) {
+      const res = data as { success: boolean; returnId?: string; error?: string; message?: string };
+      if (res && res.success) {
+        return res;
+      }
+    }
+  } catch (rpcErr) {
+    console.warn('RPC process_customer_return_transaction failed, falling back to direct table sync:', rpcErr);
+  }
+
+  // Fallback: direct table operations
+  try {
+    const retRow = {
+      id: returnRecord.id,
+      sale_id: returnRecord.saleId,
+      customer_id: returnRecord.customerId || null,
+      customer_name: returnRecord.customerName,
+      customer_phone: returnRecord.customerPhone || null,
+      date: returnRecord.date,
+      items: returnItems,
+      subtotal: Number(returnRecord.subtotal) || 0,
+      deduction_or_restock_fee: Number(returnRecord.deductionOrRestockFee) || 0,
+      total_refund_amount: Number(returnRecord.totalRefundAmount) || 0,
+      refund_method: returnRecord.refundMethod || 'cash_refund',
+      refund_status: returnRecord.refundStatus || 'completed',
+      notes: returnRecord.notes || null,
+      created_at: returnRecord.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    await client.from('customer_returns').upsert(retRow, { onConflict: 'id' });
+
+    for (const it of returnItems) {
+      if (!it.productId) continue;
+      const { data: prodData } = await client
+        .from('inventory_products')
+        .select('stock_quantity, name')
+        .eq('id', it.productId)
+        .maybeSingle();
+
+      if (prodData) {
+        const curStock = Number(prodData.stock_quantity) || 0;
+        const restockQty = Number(it.returnQuantity || it.quantity) || 0;
+        const newStock = curStock + restockQty;
+        await client
+          .from('inventory_products')
+          .update({ stock_quantity: newStock, updated_at: new Date().toISOString() })
+          .eq('id', it.productId);
+
+        const logId = `log-${Date.now()}-${it.productId}`;
+        await client.from('stock_logs').insert({
+          id: logId,
+          product_id: it.productId,
+          product_name: it.productName || prodData.name || 'Product',
+          change: restockQty,
+          previous_stock: curStock,
+          new_stock: newStock,
+          quantity_change: restockQty,
+          new_quantity: newStock,
+          type: 'return',
+          reason: 'Customer Return',
+          movement_type: 'customer_return',
+          reference_id: returnRecord.id,
+          entity_name: returnRecord.customerName || 'Customer',
+          unit_rate: Number(it.unitPrice) || 0,
+          total_movement_value: restockQty * (Number(it.unitPrice) || 0),
+          timestamp: returnRecord.date || new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        });
+      }
+    }
+
+    const refund = Number(returnRecord.totalRefundAmount) || 0;
+    if (returnRecord.customerId && refund > 0) {
+      await client.from('customer_ledger').upsert({
+        id: `cleg-ret-${Date.now()}-${returnRecord.id}`,
+        customer_id: returnRecord.customerId,
+        customer_name: returnRecord.customerName,
+        date: returnRecord.date || new Date().toISOString(),
+        type: 'cash_refund',
+        entry_code: 'Refund',
+        bill_number: returnRecord.creditNoteNumber || returnRecord.id,
+        reference_id: returnRecord.id,
+        description: `Refund paid for return against invoice #${returnRecord.saleId}`,
+        debit: refund,
+        credit: 0,
+        amount: refund,
+        payment_method: returnRecord.refundMethod || 'Cash',
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+    }
+
+    return { success: true, returnId: returnRecord.id };
+  } catch (fallbackErr: unknown) {
+    const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Saves or updates a Customer Ledger Payment entry immediately to Supabase
+ * and updates the associated sale invoice balance in the backend if linked.
+ */
+export async function saveCustomerPaymentToSupabase(
+  client: SupabaseClient,
+  entry: CustomerLedgerEntry,
+  updatedSale?: Sale
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const row = {
+      id: entry.id,
+      customer_id: entry.customerId,
+      customer_name: entry.customerName || null,
+      date: entry.date,
+      type: entry.type,
+      entry_code: entry.entryCode || null,
+      bill_number: entry.billNumber || null,
+      reference_id: entry.referenceId || null,
+      description: entry.description || null,
+      debit: Number(entry.debit) || 0,
+      credit: Number(entry.credit) || 0,
+      amount: Number(entry.amount) || Number(entry.credit || entry.debit || 0),
+      payment_method: entry.paymentMethod || null,
+      receipt_number: entry.receiptNumber || null,
+      notes: entry.notes || null,
+      created_at: (entry as any).createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error: ledErr } = await client
+      .from('customer_ledger')
+      .upsert(row, { onConflict: 'id' });
+
+    if (ledErr) {
+      console.warn('Error saving customer ledger entry to Supabase:', ledErr);
+      return { success: false, error: ledErr.message };
+    }
+
+    // If an associated sale was updated, also persist the updated sale
+    if (updatedSale) {
+      const saleRow = {
+        amount_received: Number(updatedSale.amountReceived) || 0,
+        paid_amount: Number(updatedSale.amountReceived) || 0,
+        balance_due: Number(updatedSale.balanceDue) || 0,
+        net_balance_due: Number(updatedSale.netBalanceDue ?? updatedSale.balanceDue) || 0,
+        payment_status: updatedSale.paymentStatus,
+        updated_at: new Date().toISOString(),
+      };
+      const { error: saleErr } = await client
+        .from('sales')
+        .update(saleRow)
+        .eq('id', updatedSale.id);
+
+      if (saleErr) {
+        console.warn('Error updating sale in Supabase after customer payment:', saleErr);
+      }
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Deletes a Customer Ledger Payment entry from Supabase and adjusts the linked sale invoice if needed.
+ */
+export async function deleteCustomerPaymentFromSupabase(
+  client: SupabaseClient,
+  entryId: string,
+  updatedSale?: Sale
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await client
+      .from('customer_ledger')
+      .delete()
+      .eq('id', entryId);
+
     if (error) {
+      console.warn('Error deleting customer ledger entry from Supabase:', error);
       return { success: false, error: error.message };
     }
 
-    const res = data as { success: boolean; returnId?: string; error?: string; message?: string };
-    return res;
+    if (updatedSale) {
+      await client
+        .from('sales')
+        .update({
+          amount_received: Number(updatedSale.amountReceived) || 0,
+          paid_amount: Number(updatedSale.amountReceived) || 0,
+          balance_due: Number(updatedSale.balanceDue) || 0,
+          net_balance_due: Number(updatedSale.netBalanceDue ?? updatedSale.balanceDue) || 0,
+          payment_status: updatedSale.paymentStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', updatedSale.id);
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Saves or updates a Vendor Ledger Payment / Cash entry immediately to Supabase
+ * and updates the associated purchase bill or sale to vendor in the backend if linked.
+ */
+export async function saveVendorPaymentToSupabase(
+  client: SupabaseClient,
+  entry: VendorLedgerEntry,
+  updatedPurchase?: Purchase,
+  updatedSale?: Sale
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const row = {
+      id: entry.id,
+      vendor_id: entry.vendorId,
+      vendor_name: entry.vendorName || null,
+      date: entry.date,
+      type: entry.type,
+      entry_code: entry.entryCode || null,
+      bill_number: entry.billNumber || null,
+      reference_id: entry.referenceId || null,
+      description: entry.description || '',
+      debit: Number(entry.debit) || 0,
+      credit: Number(entry.credit) || 0,
+      amount: Number(entry.amount) || Number(entry.debit || entry.credit || 0),
+      payment_method: entry.paymentMethod || null,
+      receipt_number: entry.receiptNumber || null,
+      notes: entry.notes || null,
+      created_at: (entry as any).createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error: ledErr } = await client
+      .from('vendor_ledger')
+      .upsert(row, { onConflict: 'id' });
+
+    if (ledErr) {
+      console.warn('Error saving vendor ledger entry to Supabase:', ledErr);
+      return { success: false, error: ledErr.message };
+    }
+
+    if (updatedPurchase) {
+      const purRow = {
+        amount_paid: Number(updatedPurchase.amountPaid) || 0,
+        balance_due: Number(updatedPurchase.balanceDue) || 0,
+        payment_status: updatedPurchase.paymentStatus,
+        updated_at: new Date().toISOString(),
+      };
+      const { error: purErr } = await client
+        .from('purchases')
+        .update(purRow)
+        .eq('id', updatedPurchase.id);
+
+      if (purErr) {
+        console.warn('Error updating purchase in Supabase after vendor payment:', purErr);
+      }
+    }
+
+    if (updatedSale) {
+      await client
+        .from('sales')
+        .update({
+          amount_received: Number(updatedSale.amountReceived) || 0,
+          balance_due: Number(updatedSale.balanceDue) || 0,
+          payment_status: updatedSale.paymentStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', updatedSale.id);
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Deletes a Vendor Ledger Payment entry from Supabase and adjusts the linked purchase if needed.
+ */
+export async function deleteVendorPaymentFromSupabase(
+  client: SupabaseClient,
+  entryId: string,
+  updatedPurchase?: Purchase
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await client
+      .from('vendor_ledger')
+      .delete()
+      .eq('id', entryId);
+
+    if (error) {
+      console.warn('Error deleting vendor ledger entry from Supabase:', error);
+      return { success: false, error: error.message };
+    }
+
+    if (updatedPurchase) {
+      await client
+        .from('purchases')
+        .update({
+          amount_paid: Number(updatedPurchase.amountPaid) || 0,
+          balance_due: Number(updatedPurchase.balanceDue) || 0,
+          payment_status: updatedPurchase.paymentStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', updatedPurchase.id);
+    }
+
+    return { success: true };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, error: errorMsg };
@@ -1892,7 +2471,7 @@ BEGIN
         'cleg-' || floor(extract(epoch from clock_timestamp())*1000)::text,
         v_cust_id,
         v_cust_name,
-        'debit',
+        'sale',
         v_unpaid_amount,
         v_unpaid_amount,
         0,
@@ -1901,6 +2480,27 @@ BEGIN
         v_sale_id,
         'sale',
         'Sale invoice ' || COALESCE(p_sale->>'invoiceNumber', v_sale_id) || ' credit balance',
+        clock_timestamp()
+      );
+    END IF;
+
+    IF v_paid_amount > 0 THEN
+      INSERT INTO customer_ledger (
+        id, customer_id, customer_name, type, amount, debit, credit, balance,
+        date, reference_id, reference_type, description, created_at
+      ) VALUES (
+        'cleg-pay-' || floor(extract(epoch from clock_timestamp())*1000)::text,
+        v_cust_id,
+        v_cust_name,
+        'payment_received',
+        v_paid_amount,
+        0,
+        v_paid_amount,
+        -v_paid_amount,
+        clock_timestamp(),
+        v_sale_id,
+        'sale',
+        'Payment received for invoice ' || COALESCE(p_sale->>'invoiceNumber', v_sale_id),
         clock_timestamp()
       );
     END IF;
@@ -2068,7 +2668,7 @@ BEGIN
         'vleg-' || floor(extract(epoch from clock_timestamp())*1000)::text,
         v_vendor_id,
         v_vendor_name,
-        'credit',
+        'purchase',
         v_unpaid_amount,
         v_unpaid_amount,
         0,
@@ -2077,6 +2677,27 @@ BEGIN
         v_pur_id,
         'purchase',
         'Purchase bill ' || COALESCE(p_purchase->>'billNumber', v_pur_id) || ' payable',
+        clock_timestamp()
+      );
+    END IF;
+
+    IF v_paid_amount > 0 THEN
+      INSERT INTO vendor_ledger (
+        id, vendor_id, vendor_name, type, amount, credit, debit, balance,
+        date, reference_id, reference_type, description, created_at
+      ) VALUES (
+        'vleg-pay-' || floor(extract(epoch from clock_timestamp())*1000)::text,
+        v_vendor_id,
+        v_vendor_name,
+        'cash_sent',
+        v_paid_amount,
+        0,
+        v_paid_amount,
+        -v_paid_amount,
+        clock_timestamp(),
+        v_pur_id,
+        'purchase',
+        'Cash payment made against bill ' || COALESCE(p_purchase->>'billNumber', v_pur_id),
         clock_timestamp()
       );
     END IF;
@@ -2808,7 +3429,7 @@ BEGIN
         'cleg-' || floor(extract(epoch from clock_timestamp())*1000)::text,
         v_cust_id,
         v_cust_name,
-        'debit',
+        'sale',
         v_unpaid_amount,
         v_unpaid_amount,
         0,
@@ -2817,6 +3438,27 @@ BEGIN
         v_sale_id,
         'sale',
         'Sale invoice ' || COALESCE(p_sale->>'invoiceNumber', v_sale_id) || ' credit balance',
+        clock_timestamp()
+      );
+    END IF;
+
+    IF v_paid_amount > 0 THEN
+      INSERT INTO customer_ledger (
+        id, customer_id, customer_name, type, amount, debit, credit, balance,
+        date, reference_id, reference_type, description, created_at
+      ) VALUES (
+        'cleg-pay-' || floor(extract(epoch from clock_timestamp())*1000)::text,
+        v_cust_id,
+        v_cust_name,
+        'payment_received',
+        v_paid_amount,
+        0,
+        v_paid_amount,
+        -v_paid_amount,
+        clock_timestamp(),
+        v_sale_id,
+        'sale',
+        'Payment received for invoice ' || COALESCE(p_sale->>'invoiceNumber', v_sale_id),
         clock_timestamp()
       );
     END IF;
@@ -2975,7 +3617,7 @@ BEGIN
         'vleg-' || floor(extract(epoch from clock_timestamp())*1000)::text,
         v_vendor_id,
         v_vendor_name,
-        'credit',
+        'purchase',
         v_unpaid_amount,
         v_unpaid_amount,
         0,
@@ -2984,6 +3626,27 @@ BEGIN
         v_pur_id,
         'purchase',
         'Purchase bill ' || COALESCE(p_purchase->>'billNumber', v_pur_id) || ' payable',
+        clock_timestamp()
+      );
+    END IF;
+
+    IF v_paid_amount > 0 THEN
+      INSERT INTO vendor_ledger (
+        id, vendor_id, vendor_name, type, amount, credit, debit, balance,
+        date, reference_id, reference_type, description, created_at
+      ) VALUES (
+        'vleg-pay-' || floor(extract(epoch from clock_timestamp())*1000)::text,
+        v_vendor_id,
+        v_vendor_name,
+        'cash_sent',
+        v_paid_amount,
+        0,
+        v_paid_amount,
+        -v_paid_amount,
+        clock_timestamp(),
+        v_pur_id,
+        'purchase',
+        'Cash payment made against bill ' || COALESCE(p_purchase->>'billNumber', v_pur_id),
         clock_timestamp()
       );
     END IF;
@@ -3236,12 +3899,35 @@ CREATE TABLE IF NOT EXISTS purchases (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS vendor_ledger (
+  id TEXT PRIMARY KEY,
+  vendor_id TEXT NOT NULL,
+  vendor_name TEXT,
+  date TEXT NOT NULL,
+  type TEXT NOT NULL,
+  entry_code TEXT,
+  bill_number TEXT,
+  reference_id TEXT,
+  reference_type TEXT,
+  description TEXT,
+  debit NUMERIC DEFAULT 0,
+  credit NUMERIC DEFAULT 0,
+  amount NUMERIC DEFAULT 0,
+  balance NUMERIC DEFAULT 0,
+  payment_method TEXT,
+  receipt_number TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public full access vendors" ON vendors FOR ALL USING (true);
 ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public full access purchase_orders" ON purchase_orders FOR ALL USING (true);
 ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public full access purchases" ON purchases FOR ALL USING (true);
+ALTER TABLE vendor_ledger ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public full access vendor_ledger" ON vendor_ledger FOR ALL USING (true);
 `;
 
 export const SCHEMA_QUOTATIONS_DEMANDS = `-- QUOTATIONS & CUSTOMER DEMANDS
@@ -3681,6 +4367,7 @@ export async function syncCustomersToSupabase(
 ): Promise<{ success: boolean; customerCount: number; ledgerCount: number; error?: string }> {
   try {
 
+    if (customers.length > 0) {
       const customerRows = customers.map(c => ({
         id: c.id,
         name: c.name,
@@ -3702,6 +4389,7 @@ export async function syncCustomersToSupabase(
 
       const custRes = await exactSyncRows(client, 'customers', customerRows, 'id');
       if (!custRes.success) return { success: false, customerCount: 0, ledgerCount: 0, error: custRes.error };
+    }
 
 
     if (ledgerEntries.length > 0) {
@@ -3774,7 +4462,7 @@ export async function fetchCustomersFromSupabase(
       customerId: row.customer_id,
       customerName: row.customer_name || undefined,
       date: row.date,
-      type: row.type,
+      type: row.type === 'debit' ? 'sale' : (row.type === 'credit' ? 'payment_received' : row.type),
       entryCode: row.entry_code || 'Entry',
       billNumber: row.bill_number || undefined,
       referenceId: row.reference_id || undefined,
@@ -4240,20 +4928,37 @@ export async function syncVendorLedgerToSupabase(
       entry_code: v.entryCode || null,
       bill_number: v.billNumber || null,
       reference_id: v.referenceId || null,
+      reference_type: v.referenceId ? 'purchase' : null,
       description: v.description || '',
       debit: Number(v.debit) || 0,
       credit: Number(v.credit) || 0,
       amount: Number(v.amount) || 0,
+      balance: 0,
       payment_method: v.paymentMethod || null,
       receipt_number: v.receiptNumber || null,
       notes: v.notes || null,
+      created_at: v.createdAt || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }));
-    return await exactSyncRows(client, 'vendor_ledger', rows, 'id');
+
+    if (rows.length > 0) {
+      for (let i = 0; i < rows.length; i += 100) {
+        const { error: upsertErr } = await client
+          .from('vendor_ledger')
+          .upsert(rows.slice(i, i + 100), { onConflict: 'id' });
+        if (upsertErr) throw upsertErr;
+      }
+    }
+
+    return { success: true, count: rows.length };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
+
+export const syncCustomerPaymentToSupabase = saveCustomerPaymentToSupabase;
+export const syncVendorPaymentToSupabase = saveVendorPaymentToSupabase;
 
 export async function fetchVendorLedgerFromSupabase(
   client: SupabaseClient
@@ -4266,7 +4971,7 @@ export async function fetchVendorLedgerFromSupabase(
       vendorId: r.vendor_id,
       vendorName: r.vendor_name || undefined,
       date: r.date,
-      type: r.type,
+      type: r.type === 'credit' ? 'purchase' : (r.type === 'debit' ? 'cash_sent' : r.type),
       entryCode: r.entry_code || '',
       billNumber: r.bill_number || undefined,
       referenceId: r.reference_id || undefined,

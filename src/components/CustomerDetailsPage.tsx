@@ -77,6 +77,11 @@ interface CustomerDetailsPageProps {
   onUpdateSales?: (sales: Sale[]) => void;
   onViewInvoice?: (sale: Sale) => void;
   onEditSale?: (sale: Sale) => void;
+  onSavePayment?: (
+    entryData: Omit<CustomerLedgerEntry, 'id' | 'createdAt'>,
+    entryId?: string
+  ) => void;
+  onDeletePaymentEntry?: (entryId: string) => void;
 }
 
 export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
@@ -93,6 +98,8 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
   onUpdateSales,
   onViewInvoice,
   onEditSale,
+  onSavePayment,
+  onDeletePaymentEntry,
 }) => {
   const isCompany = customer.type === 'company';
   const [activeTab, setActiveTab] = useState<'ledger' | 'demand' | 'invoices'>(
@@ -279,6 +286,10 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
     entryId?: string
   ) => {
     if (typeof window !== 'undefined' && !window.navigator.onLine) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
+    if (onSavePayment) {
+      onSavePayment(entryData, entryId);
+      return;
+    }
     if (entryId) {
       const result = updateCustomerPaymentAndUpdateAll(entryId, entryData, customerLedger, allCustomers, sales);
       onUpdateLedger(result.updatedLedgerEntries);
@@ -298,6 +309,10 @@ export const CustomerDetailsPage: React.FC<CustomerDetailsPageProps> = ({
 
   const handleDeletePaymentEntry = (entryId: string) => {
     if (typeof window !== 'undefined' && !window.navigator.onLine) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
+    if (onDeletePaymentEntry) {
+      onDeletePaymentEntry(entryId);
+      return;
+    }
     if (window.confirm('Are you sure you want to remove this ledger entry?')) {
       const result = deleteCustomerPaymentAndUpdateAll(entryId, customerLedger, allCustomers, sales);
       onUpdateLedger(result.updatedLedgerEntries);

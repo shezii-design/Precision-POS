@@ -28,6 +28,7 @@ interface InvoiceModalProps {
   sale: Sale | null;
   customerReturns?: CustomerReturn[];
   onSavePdfEdits?: (saleId: string, edits: Record<string, string>) => void;
+  onRecordPayment?: (sale: Sale) => void;
 }
 
 export const InvoiceModal: React.FC<InvoiceModalProps> = ({
@@ -36,6 +37,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   sale,
   customerReturns = [],
   onSavePdfEdits,
+  onRecordPayment,
 }) => {
   const printContainerRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = React.useState('original');
@@ -344,6 +346,17 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {onRecordPayment && sale && ((sale.netBalanceDue ?? sale.balanceDue ?? 0) > 0) && (
+              <button
+                type="button"
+                onClick={() => onRecordPayment(sale)}
+                className="px-2.5 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+                title={`Receive payment for this invoice (Balance: ₨ ${(sale.netBalanceDue ?? sale.balanceDue ?? 0).toLocaleString()})`}
+              >
+                <Banknote className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline">Receive Payment</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={handlePrint}

@@ -31,7 +31,8 @@ import {
   ArrowUpRight,
   Sparkles,
   Download,
-  Truck
+  Truck,
+  CreditCard
 } from 'lucide-react';
 
 interface PurchasesPageProps {
@@ -45,6 +46,7 @@ interface PurchasesPageProps {
   onSelectVendor?: (vendor: Vendor) => void;
   onExportExcel?: () => void;
   onGoToPurchaseOrders?: () => void;
+  onRecordPayment?: (purchase: Purchase) => void;
 }
 
 export const PurchasesPage: React.FC<PurchasesPageProps> = ({
@@ -58,6 +60,7 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
   onSelectVendor,
   onExportExcel,
   onGoToPurchaseOrders,
+  onRecordPayment,
 }) => {
   // Filters State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -664,6 +667,17 @@ export const PurchasesPage: React.FC<PurchasesPageProps> = ({
                       {/* Actions */}
                       <td className="px-4 py-3.5 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1">
+                          {onRecordPayment && ((purchase.balanceDue ?? 0) > 0) && (
+                            <button
+                              type="button"
+                              onClick={() => onRecordPayment(purchase)}
+                              className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
+                              title={`Pay Bill (Due: ₨ ${(purchase.balanceDue ?? 0).toLocaleString()})`}
+                            >
+                              <CreditCard className="w-4 h-4" />
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => onViewPurchase(purchase)}

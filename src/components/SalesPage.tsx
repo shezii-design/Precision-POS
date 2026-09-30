@@ -41,6 +41,7 @@ interface SalesPageProps {
   onEditSale?: (sale: Sale) => void;
   onDeleteSale?: (saleId: string) => void;
   onOpenCustomerReturn?: (sale: Sale) => void;
+  onRecordPayment?: (sale: Sale) => void;
 }
 
 export const SalesPage: React.FC<SalesPageProps> = ({
@@ -53,6 +54,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({
   onEditSale,
   onDeleteSale,
   onOpenCustomerReturn,
+  onRecordPayment,
 }) => {
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -657,6 +659,16 @@ export const SalesPage: React.FC<SalesPageProps> = ({
                               >
                                 <RotateCcw className="w-4 h-4" />
                               </button> : null )}
+                            {onRecordPayment && ((sale.netBalanceDue ?? sale.balanceDue ?? 0) > 0) && (
+                              <button
+                                type="button"
+                                onClick={() => onRecordPayment(sale)}
+                                className="p-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-lg transition-colors cursor-pointer"
+                                title={`Receive Payment (Due: ₨ ${(sale.netBalanceDue ?? sale.balanceDue ?? 0).toLocaleString()})`}
+                              >
+                                <Banknote className="w-4 h-4" />
+                              </button>
+                            )}
                             {onEditSale && (
                               <button
                                 type="button"

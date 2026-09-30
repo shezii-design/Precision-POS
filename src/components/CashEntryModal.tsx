@@ -21,6 +21,7 @@ interface CashEntryModalProps {
   onClose: () => void;
   vendors: Vendor[];
   selectedVendorId?: string;
+  initialPurchaseId?: string;
   editingEntry?: VendorLedgerEntry | null;
   onSaveEntry: (entry: Omit<VendorLedgerEntry, 'id' | 'createdAt'>, entryId?: string) => void;
 }
@@ -32,6 +33,7 @@ export const CashEntryModal: React.FC<CashEntryModalProps> = ({
   sales = [],
   purchases = [],
   selectedVendorId,
+  initialPurchaseId,
   editingEntry,
   onSaveEntry,
 }) => {
@@ -84,23 +86,45 @@ export const CashEntryModal: React.FC<CashEntryModalProps> = ({
         setTargetPurchaseId(editingEntry.type === 'cash_sent' ? (editingEntry.referenceId || 'advance') : 'advance');
         setTargetSaleId(editingEntry.type === 'cash_received' ? (editingEntry.referenceId || 'advance') : 'advance');
       } else {
-        setVendorId(selectedVendorId || (vendors[0]?.id || ''));
+        const defaultVendorId = selectedVendorId || (vendors[0]?.id || '');
         setEntryType('cash_sent');
-        setAmount('');
         setEntryCode('Cash');
-        setBillNumber('');
         setDate(currentDateStr);
         setTime(currentTimeStr);
         setPaymentMethod('Cash');
         setReceiptNumber('');
-        setDescription('');
-        setNotes('');
-        setTargetPurchaseId('advance');
         setTargetSaleId('advance');
+
+        if (initialPurchaseId) {
+          const targetPur = purchases.find(p => p.id === initialPurchaseId);
+          if (targetPur) {
+            setVendorId(targetPur.vendorId || defaultVendorId);
+            setTargetPurchaseId(initialPurchaseId);
+            const due = targetPur.balanceDue ?? Math.max(0, (targetPur.netAmount ?? targetPur.totalAmount) - (targetPur.amountPaid || 0));
+            setAmount(due > 0 ? String(due) : '');
+            setBillNumber(targetPur.billNumber || targetPur.id);
+            setDescription(`Cash payment sent for Bill #${targetPur.billNumber || targetPur.id}`);
+            setNotes(`Payment against purchase bill #${targetPur.billNumber || targetPur.id}`);
+          } else {
+            setVendorId(defaultVendorId);
+            setTargetPurchaseId(initialPurchaseId);
+            setAmount('');
+            setBillNumber('');
+            setDescription('');
+            setNotes('');
+          }
+        } else {
+          setVendorId(defaultVendorId);
+          setAmount('');
+          setBillNumber('');
+          setDescription('');
+          setNotes('');
+          setTargetPurchaseId('advance');
+        }
       }
       setError('');
     }
-  }, [isOpen, editingEntry?.id, selectedVendorId]);
+  }, [isOpen, editingEntry?.id, selectedVendorId, initialPurchaseId]);
 
   if (!isOpen) return null;
 

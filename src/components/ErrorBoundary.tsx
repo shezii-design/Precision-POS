@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { Component, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Trash2, Home } from 'lucide-react';
 
 interface Props {

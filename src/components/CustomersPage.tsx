@@ -65,6 +65,11 @@ interface CustomersPageProps {
   onUpdateSales?: (sales: Sale[]) => void;
   onViewInvoice?: (sale: Sale) => void;
   onEditSale?: (sale: Sale) => void;
+  onSaveCustomerPayment?: (
+    entryData: Omit<CustomerLedgerEntry, 'id' | 'createdAt'>,
+    entryId?: string
+  ) => void;
+  onDeleteCustomerPayment?: (entryId: string) => void;
 }
 
 export const CustomersPage: React.FC<CustomersPageProps> = ({
@@ -80,6 +85,8 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
   onUpdateSales,
   onViewInvoice,
   onEditSale,
+  onSaveCustomerPayment,
+  onDeleteCustomerPayment,
 }) => {
   const safeCustomers = customers || [];
   const safeSales = sales || [];
@@ -235,6 +242,10 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
     entryId?: string
   ) => {
     if (typeof window !== 'undefined' && !window.navigator.onLine) { alert('Offline Mode (Read-Only)\nCannot perform write/edit actions while offline.'); return; }
+    if (onSaveCustomerPayment) {
+      onSaveCustomerPayment(entryData, entryId);
+      return;
+    }
     const result = entryId
       ? updateCustomerPaymentAndUpdateAll(entryId, entryData, customerLedger, customers, sales)
       : recordCustomerPaymentAndUpdateAll(entryData, customerLedger, customers, sales);
@@ -264,6 +275,8 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({
           onUpdateSales={onUpdateSales}
           onViewInvoice={onViewInvoice}
           onEditSale={onEditSale}
+          onSavePayment={onSaveCustomerPayment || handleSavePayment}
+          onDeletePaymentEntry={onDeleteCustomerPayment}
         />
       );
     }

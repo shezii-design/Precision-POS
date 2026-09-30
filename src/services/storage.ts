@@ -944,15 +944,16 @@ export function calculateCustomerNetBalance(
   let openBalFromLedger: number | null = null;
 
   for (const entry of customerEntries) {
-    if (entry.type === 'opening_balance') {
+    const eType = (entry.type as string) === 'debit' ? 'sale' : ((entry.type as string) === 'credit' ? 'payment_received' : entry.type);
+    if (eType === 'opening_balance') {
       const d = safeFinancialNumber(entry.debit) || (entry.amount > 0 ? safeFinancialNumber(entry.amount) : 0);
       const c = safeFinancialNumber(entry.credit) || (entry.amount < 0 ? Math.abs(safeFinancialNumber(entry.amount)) : 0);
       openBalFromLedger = subtractFinancial(d, c);
-    } else if (entry.type === 'payment_received') {
+    } else if (eType === 'payment_received') {
       ledgerCredits = addFinancial(ledgerCredits, entry.amount ?? entry.credit ?? 0);
-    } else if (entry.type === 'cash_refund') {
+    } else if (eType === 'cash_refund') {
       ledgerDebits = addFinancial(ledgerDebits, entry.amount ?? entry.debit ?? 0);
-    } else if (entry.type === 'adjustment') {
+    } else if (eType === 'adjustment') {
       ledgerDebits = addFinancial(ledgerDebits, entry.debit ?? (entry.amount > 0 ? entry.amount : 0));
       ledgerCredits = addFinancial(ledgerCredits, entry.credit ?? (entry.amount < 0 ? Math.abs(entry.amount) : 0));
     }
@@ -1089,18 +1090,24 @@ export function computeCustomerLedgerRows(
 
   // 4. Other Direct Customer Ledger Entries
   for (const entry of directEntries) {
-    if (entry.type === 'opening_balance') continue; // Handled as opening balance row above
+    const eType = (entry.type as string) === 'debit' ? 'sale' : ((entry.type as string) === 'credit' ? 'payment_received' : entry.type);
+    if (eType === 'opening_balance') continue; // Handled as opening balance row above
 
     let debit = 0;
     let credit = 0;
 
-    if (entry.type === 'payment_received') {
+    if (eType === 'payment_received') {
       credit = Number(entry.amount ?? entry.credit ?? 0);
-    } else if (entry.type === 'cash_refund') {
+    } else if (eType === 'cash_refund') {
       debit = Number(entry.amount ?? entry.debit ?? 0);
-    } else if (entry.type === 'adjustment') {
+    } else if (eType === 'adjustment') {
       debit = Number(entry.debit ?? (entry.amount > 0 ? entry.amount : 0));
       credit = Number(entry.credit ?? (entry.amount < 0 ? Math.abs(entry.amount) : 0));
+    } else if (eType === 'sale') {
+      // If a sale row is already present from sales array, skip to avoid double counting
+      const alreadyInRows = rows.some(r => r.referenceId === entry.referenceId || r.billNumber === entry.billNumber || r.id === entry.id);
+      if (alreadyInRows) continue;
+      debit = Number(entry.amount ?? entry.debit ?? 0);
     } else {
       debit = Number(entry.debit || 0);
       credit = Number(entry.credit || 0);
@@ -1108,9 +1115,9 @@ export function computeCustomerLedgerRows(
 
     rows.push({
       id: entry.id,
-      sourceType: entry.type,
+      sourceType: eType as any,
       date: entry.date || entry.createdAt || new Date().toISOString(),
-      entryCode: entry.entryCode || (entry.type === 'payment_received' ? 'Payment' : (entry.type === 'cash_refund' ? 'Refund' : 'Adjustment')),
+      entryCode: entry.entryCode || (eType === 'payment_received' ? 'Payment' : (eType === 'cash_refund' ? 'Refund' : 'Adjustment')),
       billNumber: entry.billNumber || entry.receiptNumber,
       referenceId: entry.referenceId,
       description: entry.description || (entry.type === 'payment_received' ? 'Payment received' : (entry.type === 'cash_refund' ? 'Cash refund paid' : 'Adjustment entry')),
@@ -1212,11 +1219,26 @@ export function recordCustomerPaymentAndUpdateAll(
   currentCustomers: Customer[],
   currentSales?: Sale[]
 ): {
+  createdEntry?: CustomerLedgerEntry;
   updatedLedgerEntries: CustomerLedgerEntry[];
   updatedCustomers: Customer[];
   updatedSales?: Sale[];
 } {
-  const updatedLedger = recordCustomerPayment(entryData, currentLedger);
+  const entryDate = entryData.date || new Date().toISOString();
+  const newEntry: CustomerLedgerEntry = {
+    ...entryData,
+    id: `CLE-${Date.now()}`,
+    date: entryDate,
+    createdAt: (entryData as any).createdAt || entryDate,
+  };
+
+  const updatedLedger = [...currentLedger, newEntry].sort((a, b) => {
+    const tA = new Date(a.date || a.createdAt).getTime();
+    const tB = new Date(b.date || b.createdAt).getTime();
+    return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+  });
+  saveStoredCustomerLedger(updatedLedger);
+
   const salesList = currentSales || getStoredSales();
   let updatedSales = [...salesList];
 
@@ -1247,6 +1269,7 @@ export function recordCustomerPaymentAndUpdateAll(
   }
 
   return {
+    createdEntry: newEntry,
     updatedLedgerEntries: updatedLedger,
     updatedCustomers: currentCustomers,
     updatedSales,
@@ -1260,6 +1283,7 @@ export function updateCustomerPaymentAndUpdateAll(
   currentCustomers: Customer[],
   currentSales?: Sale[]
 ): {
+  createdEntry?: CustomerLedgerEntry;
   updatedLedgerEntries: CustomerLedgerEntry[];
   updatedCustomers: Customer[];
   updatedSales?: Sale[];
@@ -1339,6 +1363,7 @@ export function updateCustomerPaymentAndUpdateAll(
   };
   const updatedLedger = updateCustomerPayment(updatedEntry, currentLedger);
   return {
+    createdEntry: updatedEntry,
     updatedLedgerEntries: updatedLedger,
     updatedCustomers: currentCustomers,
     updatedSales,
@@ -1698,18 +1723,19 @@ export function calculateVendorBalance(
   let ledgerCredits = 0;
 
   for (const entry of vendorEntries) {
-    if (entry.type === 'opening_balance') {
+    const eType = (entry.type as string) === 'credit' ? 'purchase' : ((entry.type as string) === 'debit' ? 'cash_sent' : entry.type);
+    if (eType === 'opening_balance') {
       const c = safeFinancialNumber(entry.credit) || (Number(entry.amount) > 0 ? safeFinancialNumber(entry.amount) : 0);
       const d = safeFinancialNumber(entry.debit) || (Number(entry.amount) < 0 ? Math.abs(safeFinancialNumber(entry.amount)) : 0);
       openBalFromLedger = subtractFinancial(c, d);
-    } else if (entry.type === 'cash_sent') {
+    } else if (eType === 'cash_sent') {
       ledgerDebits = addFinancial(ledgerDebits, entry.amount ?? entry.debit ?? 0);
-    } else if (entry.type === 'cash_received') {
+    } else if (eType === 'cash_received') {
       ledgerCredits = addFinancial(ledgerCredits, entry.amount ?? entry.credit ?? 0);
-    } else if (entry.type === 'adjustment') {
+    } else if (eType === 'adjustment') {
       ledgerDebits = addFinancial(ledgerDebits, entry.debit ?? (entry.amount < 0 ? Math.abs(entry.amount) : 0));
       ledgerCredits = addFinancial(ledgerCredits, entry.credit ?? (entry.amount > 0 ? entry.amount : 0));
-    } else if (entry.type === 'purchase') {
+    } else if (eType === 'purchase') {
       // If purchase is already in purchases array, skip to avoid double counting
       const alreadyInPurchases = purchases.some(p => 
         p.id === entry.id || 
@@ -1732,12 +1758,18 @@ export function calculateVendorBalance(
     (vId && p.vendorId === vId) || 
     (vNameLower && p.vendorName && p.vendorName.trim().toLowerCase() === vNameLower)
   );
+  let totalPurchasesCashPaid = 0;
   for (const pur of vendorPurchases) {
     balance = addFinancial(balance, pur.totalAmount || 0);
+    const directForThisPur = vendorEntries
+      .filter(e => (e.referenceId === pur.id || e.billNumber === pur.billNumber) && (e.type === 'cash_sent' || (e.type as string) === 'debit'))
+      .reduce((acc, e) => addFinancial(acc, e.amount ?? e.debit ?? 0), 0);
+    const checkoutCash = Math.max(0, subtractFinancial(pur.amountPaid || 0, directForThisPur));
+    totalPurchasesCashPaid = addFinancial(totalPurchasesCashPaid, checkoutCash);
   }
 
-  // 2. Add net ledger credits - debits
-  balance = addFinancial(balance, ledgerCredits, -ledgerDebits);
+  // 2. Add net ledger credits - debits, and subtract checkout cash
+  balance = addFinancial(balance, ledgerCredits, -ledgerDebits, -totalPurchasesCashPaid);
 
   // 3. Subtract sales made to this vendor from us (sales offset what we owe)
   const vendorSales = sales.filter(s => 
@@ -1851,12 +1883,37 @@ export function getVendorFullLedger(
       credit: Number(pur.totalAmount) || 0,
       rawObject: pur,
     });
+
+    // Check if initial checkout payment was made and not already recorded as a standalone ledger entry
+    const directCashPaid = vEntries
+      .filter(e => (e.referenceId === pur.id || e.billNumber === pur.billNumber) && (e.type === 'cash_sent' || (e.type as string) === 'debit'))
+      .reduce((acc, e) => acc + (Number(e.amount ?? e.debit) || 0), 0);
+    const amountPaidAtCheckout = Math.max(0, (Number(pur.amountPaid) || 0) - directCashPaid);
+    if (amountPaidAtCheckout > 0) {
+      const purDate = pur.date || pur.createdAt || new Date().toISOString();
+      const baseMs = parseDateTimestamp(purDate);
+      const payDate = baseMs > 0 ? new Date(baseMs + 1000).toISOString() : purDate;
+      rawRows.push({
+        id: `pur-pay-${pur.id}`,
+        sourceType: 'cash_sent',
+        date: payDate,
+        entryCode: 'Cash Paid',
+        billNumber: pur.billNumber || pur.id,
+        referenceId: pur.id,
+        description: `Cash payment made for Bill #${pur.billNumber || pur.id} (Paid: ₨ ${amountPaidAtCheckout.toLocaleString()})`,
+        debit: amountPaidAtCheckout,
+        credit: 0,
+        paymentMethod: 'Cash',
+        rawObject: pur,
+      });
+    }
   }
 
   // 3. Cash Entries, Adjustments & Purchase Entries (including pending 0-balance PO entries)
   const vEntriesWithoutOpen = vEntries.filter(e => e.type !== 'opening_balance');
   for (const entry of vEntriesWithoutOpen) {
-    if (entry.type === 'purchase') {
+    const eType = (entry.type as string) === 'credit' ? 'purchase' : ((entry.type as string) === 'debit' ? 'cash_sent' : entry.type);
+    if (eType === 'purchase') {
       // Check if this purchase was already added from the purchases array in step 2
       const alreadyInRawRows = rawRows.some(r => 
         r.id === entry.id || 
@@ -1873,14 +1930,14 @@ export function getVendorFullLedger(
 
     let debit = 0;
     let credit = 0;
-    if (entry.type === 'cash_sent') {
+    if (eType === 'cash_sent') {
       debit = Number(entry.amount ?? entry.debit ?? 0);
-    } else if (entry.type === 'cash_received') {
+    } else if (eType === 'cash_received') {
       credit = Number(entry.amount ?? entry.credit ?? 0);
-    } else if (entry.type === 'adjustment') {
+    } else if (eType === 'adjustment') {
       debit = Number(entry.debit ?? (entry.amount < 0 ? Math.abs(entry.amount) : 0));
       credit = Number(entry.credit ?? (entry.amount > 0 ? entry.amount : 0));
-    } else if (entry.type === 'purchase') {
+    } else if (eType === 'purchase') {
       debit = Number(entry.debit || 0);
       credit = Number(entry.credit ?? entry.amount ?? 0);
     } else {
@@ -1890,12 +1947,12 @@ export function getVendorFullLedger(
 
     rawRows.push({
       id: entry.id,
-      sourceType: entry.type,
+      sourceType: eType as any,
       date: entry.date || entry.createdAt || new Date().toISOString(),
-      entryCode: entry.entryCode || (entry.type === 'cash_sent' ? 'Cash Sent' : (entry.type === 'cash_received' ? 'Cash Recv' : (entry.type === 'purchase' ? (credit === 0 ? 'PO (Pending)' : 'Purchase') : 'Adjustment'))),
+      entryCode: entry.entryCode || (eType === 'cash_sent' ? 'Cash Sent' : (eType === 'cash_received' ? 'Cash Recv' : (eType === 'purchase' ? (credit === 0 ? 'PO (Pending)' : 'Purchase') : 'Adjustment'))),
       billNumber: entry.billNumber,
       referenceId: entry.referenceId || entry.id,
-      description: entry.description || (entry.type === 'cash_sent' ? 'Cash payment sent' : (entry.type === 'cash_received' ? 'Cash payment received' : (entry.type === 'purchase' ? 'Purchase Order Cargo Received' : 'Balance adjustment'))),
+      description: entry.description || (eType === 'cash_sent' ? 'Cash payment sent' : (eType === 'cash_received' ? 'Cash payment received' : (eType === 'purchase' ? 'Purchase Order Cargo Received' : 'Balance adjustment'))),
       debit,
       credit,
       paymentMethod: entry.paymentMethod,
@@ -2313,11 +2370,34 @@ export function recordCashEntryAndUpdateAll(
   currentLedger: VendorLedgerEntry[],
   currentVendors: Vendor[]
 ): {
+  createdEntry: VendorLedgerEntry;
   updatedLedgerEntries: VendorLedgerEntry[];
   updatedVendors: Vendor[];
 } {
-  const updatedLedger = recordCashEntry(entryData, currentLedger);
+  const isSent = entryData.type === 'cash_sent';
+  const newId = `CSH-${Date.now()}`;
+  const entryDate = entryData.date || new Date().toISOString();
+
+  const newEntry: VendorLedgerEntry = {
+    ...entryData,
+    id: newId,
+    date: entryDate,
+    entryCode: entryData.entryCode || (isSent ? 'Cash' : 'Cash Recv'),
+    debit: entryData.debit !== undefined ? entryData.debit : (isSent ? entryData.amount : 0),
+    credit: entryData.credit !== undefined ? entryData.credit : (!isSent ? entryData.amount : 0),
+    createdAt: (entryData as any).createdAt || entryDate,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const updatedLedger = [...currentLedger, newEntry].sort((a, b) => {
+    const tA = new Date(a.date || a.createdAt).getTime();
+    const tB = new Date(b.date || b.createdAt).getTime();
+    return (isNaN(tA) ? 0 : tA) - (isNaN(tB) ? 0 : tB);
+  });
+  saveStoredVendorLedger(updatedLedger);
+
   return {
+    createdEntry: newEntry,
     updatedLedgerEntries: updatedLedger,
     updatedVendors: currentVendors,
   };
@@ -2359,15 +2439,76 @@ export function updateCashEntryAndUpdateAll(
 export function deleteCashEntryAndUpdateAll(
   entryId: string,
   currentLedger: VendorLedgerEntry[],
-  currentVendors: Vendor[]
+  currentVendors: Vendor[],
+  currentPurchases?: Purchase[],
+  currentSales?: Sale[]
 ): {
   updatedLedgerEntries: VendorLedgerEntry[];
   updatedVendors: Vendor[];
+  updatedPurchases?: Purchase[];
+  updatedSales?: Sale[];
 } {
+  const existing = currentLedger.find(e => e.id === entryId);
   const updatedLedger = deleteCashEntry(entryId, currentLedger);
+  const purchaseList = currentPurchases || getStoredPurchases();
+  let updatedPurchases = [...purchaseList];
+  const salesList = currentSales || getStoredSales();
+  let updatedSales = [...salesList];
+
+  if (existing && existing.type === 'cash_sent' && existing.referenceId) {
+    const payAmount = Number(existing.debit ?? existing.amount ?? 0);
+    let purChanged = false;
+    updatedPurchases = updatedPurchases.map(p => {
+      if (p.id === existing.referenceId) {
+        purChanged = true;
+        const reversedPaid = Math.max(0, (p.amountPaid || 0) - payAmount);
+        const totalToPay = p.netAmount !== undefined ? p.netAmount : p.totalAmount;
+        const newBalance = Math.max(0, totalToPay - reversedPaid);
+        return {
+          ...p,
+          amountPaid: reversedPaid,
+          balanceDue: newBalance,
+          netBalanceDue: newBalance,
+          paymentStatus: newBalance <= 0 ? ('paid' as const) : (reversedPaid > 0 ? ('partial' as const) : ('unpaid' as const)),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return p;
+    });
+    if (purChanged) {
+      saveStoredPurchases(updatedPurchases);
+    }
+  }
+
+  if (existing && existing.type === 'cash_received' && existing.referenceId) {
+    const payAmount = Number(existing.credit ?? existing.amount ?? 0);
+    let saleChanged = false;
+    updatedSales = updatedSales.map(s => {
+      if (s.id === existing.referenceId && s.isVendorSale) {
+        saleChanged = true;
+        const reversedReceived = Math.max(0, (s.amountReceived || 0) - payAmount);
+        const totalToPay = s.netAmount !== undefined ? s.netAmount : s.totalAmount;
+        const newBalance = Math.max(0, totalToPay - reversedReceived);
+        return {
+          ...s,
+          amountReceived: reversedReceived,
+          balanceDue: newBalance,
+          paymentStatus: newBalance <= 0 ? ('paid' as const) : (reversedReceived > 0 ? ('partial' as const) : ('credit' as const)),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return s;
+    });
+    if (saleChanged) {
+      saveStoredSales(updatedSales);
+    }
+  }
+
   return {
     updatedLedgerEntries: updatedLedger,
     updatedVendors: currentVendors,
+    updatedPurchases,
+    updatedSales,
   };
 }
 
