@@ -18,7 +18,7 @@ interface AuthModalProps {
   authState: AuthState;
   onAuthSuccess: (employee?: EmployeeAccount) => void;
   deviceInfo: DeviceInfo;
-  onUpdateAuthState: (state: AuthState) => void;
+  onUpdateAuthState?: (state: AuthState) => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -70,12 +70,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setEnteredEmail('');
         setEnteredPassword('');
         
-        onUpdateAuthState({ 
-          ...authState, 
-          currentUserId: emp.id, 
-          isLocked: false,
-          lastUnlockedAt: new Date().toISOString()
-        });
+        if (onUpdateAuthState) {
+          onUpdateAuthState({ 
+            ...authState, 
+            currentUserId: emp.id, 
+            isLocked: false,
+            lastUnlockedAt: new Date().toISOString()
+          });
+        }
         onAuthSuccess(emp);
       } else {
         setErrorMessage(empRes.error || 'Invalid credentials. Access denied.');

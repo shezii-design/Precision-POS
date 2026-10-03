@@ -52,7 +52,7 @@ interface VendorDetailsPageProps {
   products: Product[];
   purchaseOrders?: PurchaseOrder[];
   onBack: () => void;
-  onOpenCashModal?: (vendorId: string, editingEntry?: VendorLedgerEntry | null, initialPurchaseId?: string) => void;
+  onOpenCashModal?: (vendorId: string, editingEntry?: VendorLedgerEntry | null, initialPurchaseId?: string, initialEntryType?: any, initialSaleId?: string) => void;
   onOpenPurchaseModal?: (vendorId: string, editingPurchase?: Purchase | null) => void;
   onOpenCreatePO?: (vendorId: string) => void;
   onOpenReceivePO?: (po: PurchaseOrder) => void;
@@ -999,6 +999,16 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
 
                             <td className="px-3 py-3 text-center whitespace-nowrap" onClick={e => e.stopPropagation()}>
                               <div className="flex items-center justify-center gap-1.5">
+                                {(sale.balanceDue ?? 0) > 0 && onOpenCashModal && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onOpenCashModal(vendor.id, null, undefined, 'cash_received', sale.id)}
+                                    className="px-2 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-bold"
+                                    title={`Receive payment for Sale #${sale.id} (Balance Due: ₨ ${(sale.balanceDue ?? 0).toLocaleString()})`}
+                                  >
+                                    Receive Payment
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => onEditSale(sale)}

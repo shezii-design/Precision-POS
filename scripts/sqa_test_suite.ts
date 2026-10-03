@@ -15,6 +15,7 @@ import {
   DEFAULT_PRICING_SETTINGS 
 } from '../src/services/pricing';
 import { normalizeSearchTerm, matchesPrimarySearch, filterAndSortProducts, FilterOptions } from '../src/services/search';
+import { calculateVendorBalance, getVendorFullLedger } from '../src/services/storage';
 import { 
   Product, 
   Customer, 
@@ -497,6 +498,129 @@ describe('6. Sales, Payments & Ledger Math', () => {
     }
 
     expect(payableBalance).toBe(15000);
+  });
+
+  it('correctly calculates vendor balance when a sale to vendor is made and payment is received', () => {
+    const mockVendor: Vendor = {
+      id: 'VEN-TEST-1',
+      businessName: 'Apex Auto Spares',
+      contactPerson: 'Ali Raza',
+      phone: '03001234567',
+      openingBalance: 0,
+      linkedProductIds: [],
+      createdAt: '2026-01-01T00:00:00.000Z'
+    };
+
+    const mockItem = {
+      id: 'si-1',
+      internalId: 'PLG-1',
+      unit: 'Pcs' as const,
+      productId: 'p1',
+      productName: 'Spark Plug',
+      quantity: 5,
+      unitPrice: 1000,
+      costPrice: 700,
+      totalPrice: 5000
+    };
+
+    // Case 1: Sale of 5,000 PKR to vendor with full payment received at checkout
+    const paidSale: Sale = {
+      id: 'INV-VEN-101',
+      date: '2026-02-01T10:00:00.000Z',
+      customerName: 'Apex Auto Spares',
+      items: [mockItem],
+      subtotal: 5000,
+      discountType: 'amount',
+      discountValue: 0,
+      discountAmount: 0,
+      totalAmount: 5000,
+      amountReceived: 5000,
+      changeGiven: 0,
+      paymentType: 'cash',
+      paymentStatus: 'paid',
+      paymentMethod: 'Cash',
+      balanceDue: 0,
+      invoiceNamingPreference: 'product_name',
+      vendorId: 'VEN-TEST-1',
+      vendorName: 'Apex Auto Spares',
+      isVendorSale: true,
+      createdAt: '2026-02-01T10:00:00.000Z'
+    };
+
+    const balanceFullPaid = calculateVendorBalance('VEN-TEST-1', [mockVendor], [], [paidSale], []);
+    // Balance should be exactly 0 (Settled) - NOT -5000 (showing they owe us money)
+    expect(balanceFullPaid).toBe(0);
+
+    const fullLedger = getVendorFullLedger('VEN-TEST-1', [mockVendor], [], [paidSale], []);
+    // Should have 2 entries: Sale (Debit 5,000) and Cash Recv (Credit 5,000)
+    expect(fullLedger.length).toBe(2);
+    expect(fullLedger[0].debit).toBe(5000);
+    expect(fullLedger[0].credit).toBe(0);
+    expect(fullLedger[1].debit).toBe(0);
+    expect(fullLedger[1].credit).toBe(5000);
+    expect(fullLedger[1].runningBalance).toBe(0);
+
+    // Case 2: Sale of 5,000 PKR with partial payment (2,000 PKR received, 3,000 PKR balance due)
+    const partialSale: Sale = {
+      id: 'INV-VEN-102',
+      date: '2026-02-02T10:00:00.000Z',
+      customerName: 'Apex Auto Spares',
+      items: [mockItem],
+      subtotal: 5000,
+      discountType: 'amount',
+      discountValue: 0,
+      discountAmount: 0,
+      totalAmount: 5000,
+      amountReceived: 2000,
+      changeGiven: 0,
+      paymentType: 'partial',
+      paymentStatus: 'partial',
+      paymentMethod: 'Cash',
+      balanceDue: 3000,
+      invoiceNamingPreference: 'product_name',
+      vendorId: 'VEN-TEST-1',
+      vendorName: 'Apex Auto Spares',
+      isVendorSale: true,
+      createdAt: '2026-02-02T10:00:00.000Z'
+    };
+
+    const balancePartial = calculateVendorBalance('VEN-TEST-1', [mockVendor], [], [partialSale], []);
+    // Balance should be -3000 (They owe us 3000, not 5000)
+    expect(balancePartial).toBe(-3000);
+
+    // Case 3: When 3,000 PKR cash received entry is added later for that partial sale
+    const cashRecvEntry = {
+      id: 'CSH-101',
+      vendorId: 'VEN-TEST-1',
+      vendorName: 'Apex Auto Spares',
+      date: '2026-02-03T10:00:00.000Z',
+      type: 'cash_received' as const,
+      entryCode: 'Cash Recv',
+      description: 'Cash payment received for Invoice #INV-VEN-102',
+      amount: 3000,
+      debit: 0,
+      credit: 3000,
+      referenceId: 'INV-VEN-102',
+      billNumber: 'INV-VEN-102',
+      createdAt: '2026-02-03T10:00:00.000Z'
+    };
+
+    // When payment is recorded, sale.amountReceived is updated to 5000 and balanceDue is 0
+    const settledSale: Sale = {
+      ...partialSale,
+      amountReceived: 5000,
+      balanceDue: 0,
+      paymentType: 'cash',
+      paymentStatus: 'paid'
+    };
+
+    const balanceAfterSettlement = calculateVendorBalance('VEN-TEST-1', [mockVendor], [], [settledSale], [cashRecvEntry]);
+    expect(balanceAfterSettlement).toBe(0);
+
+    const ledgerAfterSettlement = getVendorFullLedger('VEN-TEST-1', [mockVendor], [], [settledSale], [cashRecvEntry]);
+    expect(ledgerAfterSettlement.length).toBe(3);
+    // Sale (Debit 5000), Checkout Cash (Credit 2000), Direct Entry (Credit 3000) -> Running Balance 0
+    expect(ledgerAfterSettlement[ledgerAfterSettlement.length - 1].runningBalance).toBe(0);
   });
 });
 

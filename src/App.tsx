@@ -322,6 +322,8 @@ export default function App() {
   const [showCashModal, setShowCashModal] = useState<boolean>(false);
   const [cashModalVendorId, setCashModalVendorId] = useState<string | undefined>(undefined);
   const [cashModalPurchaseId, setCashModalPurchaseId] = useState<string | undefined>(undefined);
+  const [cashModalSaleId, setCashModalSaleId] = useState<string | undefined>(undefined);
+  const [cashModalEntryType, setCashModalEntryType] = useState<any | undefined>(undefined);
   const [editingLedgerEntry, setEditingLedgerEntry] = useState<VendorLedgerEntry | null>(null);
 
   // Customer Payment Modal State
@@ -1038,11 +1040,19 @@ export default function App() {
   };
 
   // Cash / Vendor Payment Entry Handlers
-  const handleOpenCashModal = (vendorId?: string, editingEntry?: VendorLedgerEntry | null, initialPurchaseId?: string) => {
+  const handleOpenCashModal = (
+    vendorId?: string, 
+    editingEntry?: VendorLedgerEntry | null, 
+    initialPurchaseId?: string,
+    initialEntryType?: any,
+    initialSaleId?: string
+  ) => {
     if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.'); return; }
     const validVendorId = typeof vendorId === 'string' ? vendorId : undefined;
     setCashModalVendorId(validVendorId);
     setCashModalPurchaseId(initialPurchaseId);
+    setCashModalSaleId(initialSaleId);
+    setCashModalEntryType(initialEntryType);
     setEditingLedgerEntry(editingEntry && typeof editingEntry === 'object' && 'amount' in editingEntry ? editingEntry : null);
     setShowCashModal(true);
   };
@@ -2398,8 +2408,12 @@ export default function App() {
             onEditSale={isActionAllowed(currentEmployee, 'canEditSales') ? handleEditSale : undefined}
             onOpenCustomerReturn={isActionAllowed(currentEmployee, 'canProcessReturns') ? (sale) => handleOpenCustomerReturnModal(sale) : undefined}
             onRecordPayment={isActionAllowed(currentEmployee, 'canCreateSales') ? (sale) => {
-              const cust = customers.find(c => c.id === sale.customerId) || (sale.customerId ? { id: sale.customerId, name: sale.customerName || 'Customer', totalPurchases: sale.totalAmount } as Customer : null);
-              handleOpenCustomerPaymentModal(cust, sale.id);
+              if (sale.isVendorSale && sale.vendorId) {
+                handleOpenCashModal(sale.vendorId, null, undefined, 'cash_received', sale.id);
+              } else {
+                const cust = customers.find(c => c.id === sale.customerId) || (sale.customerId ? { id: sale.customerId, name: sale.customerName || 'Customer', totalPurchases: sale.totalAmount } as Customer : null);
+                handleOpenCustomerPaymentModal(cust, sale.id);
+              }
             } : undefined}
           />
         ) : currentView === 'inventory_audit' ? (
@@ -3221,8 +3235,12 @@ export default function App() {
         onClose={() => setShowInvoiceModal(false)}
         sale={activeSaleForInvoice}
         onRecordPayment={isActionAllowed(currentEmployee, 'canCreateSales') ? (sale) => {
-          const cust = customers.find(c => c.id === sale.customerId) || (sale.customerId ? { id: sale.customerId, name: sale.customerName || 'Customer', totalPurchases: sale.totalAmount } as Customer : null);
-          handleOpenCustomerPaymentModal(cust, sale.id);
+          if (sale.isVendorSale && sale.vendorId) {
+            handleOpenCashModal(sale.vendorId, null, undefined, 'cash_received', sale.id);
+          } else {
+            const cust = customers.find(c => c.id === sale.customerId) || (sale.customerId ? { id: sale.customerId, name: sale.customerName || 'Customer', totalPurchases: sale.totalAmount } as Customer : null);
+            handleOpenCustomerPaymentModal(cust, sale.id);
+          }
         } : undefined}
         onSavePdfEdits={(saleId, edits) => {
           const updatedSales = sales.map(s => s.id === saleId ? { ...s, pdfEdits: edits } : s);
@@ -3255,12 +3273,16 @@ export default function App() {
           setEditingLedgerEntry(null);
           setCashModalVendorId(undefined);
           setCashModalPurchaseId(undefined);
+          setCashModalSaleId(undefined);
+          setCashModalEntryType(undefined);
         }}
         vendors={vendors}
         sales={sales}
         purchases={purchases}
         selectedVendorId={cashModalVendorId}
         initialPurchaseId={cashModalPurchaseId}
+        initialSaleId={cashModalSaleId}
+        initialEntryType={cashModalEntryType}
         editingEntry={editingLedgerEntry}
         onSaveEntry={handleSaveCashEntry}
       />

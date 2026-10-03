@@ -13,32 +13,33 @@
     <meta name="description" content="Cross-device offline & cloud inventory management with Staff Management & RBAC Permissions, Executive Business Dashboard, multi-step Income Statement (P&L), POS sales, customer repeat pricing history, printable invoices, customer demand tracking, Purchase Orders with cargo landed cost distribution, comprehensive stock audit logs, customer & vendor ledgers, quotations, and tiered PKR pricing formulas." />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="alternate icon" href="favicon.ico" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
-      // Self-healing: Unregister any stale or broken service workers from prior dev runs
-      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for (var i = 0; i < registrations.length; i++) {
-            registrations[i].unregister();
-          }
-        }).catch(function() {});
+      // Self-healing: Unregister any stale or broken service workers from prior dev runs immediately
+      if (typeof window !== 'undefined') {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (var i = 0; i < registrations.length; i++) {
+              registrations[i].unregister();
+            }
+          }).catch(function() {});
+        }
         if (window.caches) {
           caches.keys().then(function(names) {
             for (var j = 0; j < names.length; j++) {
-              if (names[j].indexOf('workbox') >= 0 || names[j].indexOf('google-fonts') >= 0) {
-                caches.delete(names[j]);
-              }
+              caches.delete(names[j]);
             }
           }).catch(function() {});
         }
       }
-      // Top-level error catcher for early boot
-      window.addEventListener('error', function(event) {
+
+      function showBootError(msg) {
         var root = document.getElementById('root');
-        if (root && root.children.length === 0) {
-          console.error('Fatal boot error:', event.error || event.message);
+        if (root && (!root.firstElementChild || root.querySelector('#initial-loader'))) {
+          console.error('Boot recovery triggered:', msg);
           root.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#f8fafc;font-family:sans-serif;padding:20px;text-align:center;">' +
             '<div style="max-width:440px;background:#1e293b;border:1px solid #334155;border-radius:16px;padding:24px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);">' +
             '<div style="width:48px;height:48px;border-radius:12px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;font-weight:bold;">!</div>' +
@@ -48,10 +49,17 @@
             '<button onclick="window.location.reload();" style="width:100%;padding:10px;background:#334155;color:#f8fafc;border:none;border-radius:10px;font-size:13px;cursor:pointer;">Reload App</button>' +
             '</div></div>';
         }
+      }
+
+      // Capture fatal module script loading errors specifically
+      window.addEventListener('error', function(event) {
+        if (event.error) {
+          console.error('Window error:', event.error);
+        }
       });
     </script>
   </head>
-  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-red-600 selection:text-white">
+  <body class="bg-slate-900 text-slate-100 antialiased selection:bg-red-600 selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -79,6 +79,7 @@ const CLEAN_STORAGE_VERSION_KEY = 'kfh_inventory_clean_state_v1';
 
 export function ensureCleanStorage(): void {
   try {
+    if (typeof localStorage === 'undefined') return;
     const isCleaned = localStorage.getItem(CLEAN_STORAGE_VERSION_KEY);
     if (!isCleaned) {
       localStorage.setItem(PRODUCTS_KEY, JSON.stringify([]));
@@ -1772,12 +1773,23 @@ export function calculateVendorBalance(
   balance = addFinancial(balance, ledgerCredits, -ledgerDebits, -totalPurchasesCashPaid);
 
   // 3. Subtract sales made to this vendor from us (sales offset what we owe)
+  // and add back any payments received on those sales (payments received restore what we owe or settle the offset)
   const vendorSales = sales.filter(s => 
     (vId && (s.vendorId === vId || (s.isVendorSale && s.customerId === vId))) || 
     (vNameLower && s.vendorName && s.vendorName.trim().toLowerCase() === vNameLower)
   );
   for (const sale of vendorSales) {
     balance = subtractFinancial(balance, sale.totalAmount || 0);
+
+    // Direct cash received entries recorded in vendor ledger for this sale are already counted in ledgerCredits
+    const directCashReceived = vendorEntries
+      .filter(e => (e.referenceId === sale.id || e.billNumber === sale.id) && (e.type === 'cash_received' || (e.type as string) === 'credit'))
+      .reduce((acc, e) => addFinancial(acc, e.amount ?? e.credit ?? 0), 0);
+    // Any checkout cash received or invoice payment not yet in vendorEntries as cash_received
+    const amountReceivedAtCheckout = Math.max(0, subtractFinancial(sale.amountReceived || 0, directCashReceived));
+    if (amountReceivedAtCheckout > 0) {
+      balance = addFinancial(balance, amountReceivedAtCheckout);
+    }
   }
 
   return roundCurrency(balance);
@@ -1980,6 +1992,44 @@ export function getVendorFullLedger(
       credit: 0,
       rawObject: sale,
     });
+
+    // Check if initial checkout payment or invoice payment was received and not already recorded as a standalone cash_received entry
+    const directCashReceived = vEntries
+      .filter(e => (e.referenceId === sale.id || e.billNumber === sale.id) && (e.type === 'cash_received' || (e.type as string) === 'credit'))
+      .reduce((acc, e) => acc + (Number(e.amount ?? e.credit) || 0), 0);
+    const amountReceivedAtCheckout = Math.max(0, (Number(sale.amountReceived) || 0) - directCashReceived);
+    if (amountReceivedAtCheckout > 0) {
+      const saleDate = sale.date || sale.createdAt || new Date().toISOString();
+      const baseMs = parseDateTimestamp(saleDate);
+      const payDate = baseMs > 0 ? new Date(baseMs + 1000).toISOString() : saleDate;
+      const isFull = amountReceivedAtCheckout >= (Number(sale.totalAmount) || 0);
+      const isHalf = !isFull && Math.abs(amountReceivedAtCheckout - Math.round((Number(sale.totalAmount) || 0) / 2)) <= 1;
+      const isPartial = !isFull;
+
+      let payCode = 'Cash Recv';
+      let payDesc = `Payment received for Invoice #${sale.id} (Paid: ₨ ${amountReceivedAtCheckout.toLocaleString()})`;
+      if (isHalf) {
+        payCode = 'Half Recv';
+        payDesc = `Half / 50% payment received for Invoice #${sale.id} (Paid: ₨ ${amountReceivedAtCheckout.toLocaleString()}, Due: ₨ ${(sale.balanceDue || 0).toLocaleString()})`;
+      } else if (isPartial) {
+        payCode = 'Semi-Recv';
+        payDesc = `Partial payment received for Invoice #${sale.id} (Paid: ₨ ${amountReceivedAtCheckout.toLocaleString()}, Due: ₨ ${(sale.balanceDue || 0).toLocaleString()})`;
+      }
+
+      rawRows.push({
+        id: `sale-pay-${sale.id}`,
+        sourceType: 'cash_received',
+        date: payDate,
+        entryCode: payCode,
+        billNumber: sale.id,
+        referenceId: sale.id,
+        description: payDesc,
+        debit: 0,
+        credit: amountReceivedAtCheckout,
+        paymentMethod: sale.paymentMethod || 'Cash',
+        rawObject: sale,
+      });
+    }
   }
 
   // Sort strictly chronologically (oldest to newest) by timestamp (date / createdAt)

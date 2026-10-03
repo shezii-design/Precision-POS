@@ -1,0 +1,22 @@
+{
+  "name": "Precision Parts & Automotive POS",
+  "short_name": "PrecisionPOS",
+  "description": "Cross-device offline & cloud inventory management with POS sales.",
+  "theme_color": "#b91c1c",
+  "background_color": "#f8fafc",
+  "display": "standalone",
+  "start_url": "./",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "./favicon.ico",
+      "sizes": "48x48 32x32 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

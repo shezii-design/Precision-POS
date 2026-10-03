@@ -22,6 +22,8 @@ interface CashEntryModalProps {
   vendors: Vendor[];
   selectedVendorId?: string;
   initialPurchaseId?: string;
+  initialSaleId?: string;
+  initialEntryType?: LedgerEntryType;
   editingEntry?: VendorLedgerEntry | null;
   onSaveEntry: (entry: Omit<VendorLedgerEntry, 'id' | 'createdAt'>, entryId?: string) => void;
 }
@@ -34,6 +36,8 @@ export const CashEntryModal: React.FC<CashEntryModalProps> = ({
   purchases = [],
   selectedVendorId,
   initialPurchaseId,
+  initialSaleId,
+  initialEntryType,
   editingEntry,
   onSaveEntry,
 }) => {
@@ -87,15 +91,36 @@ export const CashEntryModal: React.FC<CashEntryModalProps> = ({
         setTargetSaleId(editingEntry.type === 'cash_received' ? (editingEntry.referenceId || 'advance') : 'advance');
       } else {
         const defaultVendorId = selectedVendorId || (vendors[0]?.id || '');
-        setEntryType('cash_sent');
-        setEntryCode('Cash');
+        const targetType = initialEntryType || (initialSaleId ? 'cash_received' : 'cash_sent');
+        setEntryType(targetType);
+        setEntryCode(targetType === 'cash_received' ? 'Cash Recv' : 'Cash');
         setDate(currentDateStr);
         setTime(currentTimeStr);
         setPaymentMethod('Cash');
         setReceiptNumber('');
         setTargetSaleId('advance');
 
-        if (initialPurchaseId) {
+        if (initialSaleId) {
+          const targetSale = sales.find(s => s.id === initialSaleId);
+          if (targetSale) {
+            setVendorId(targetSale.vendorId || defaultVendorId);
+            setEntryType('cash_received');
+            setEntryCode('Cash Recv');
+            setTargetSaleId(initialSaleId);
+            const due = targetSale.balanceDue ?? Math.max(0, (targetSale.netAmount !== undefined ? targetSale.netAmount : targetSale.totalAmount) - (targetSale.amountReceived || 0));
+            setAmount(due > 0 ? String(due) : '');
+            setBillNumber(targetSale.id);
+            setDescription(`Payment received for Invoice #${targetSale.id}`);
+            setNotes(`Payment against sale invoice #${targetSale.id}`);
+          } else {
+            setVendorId(defaultVendorId);
+            setTargetSaleId(initialSaleId);
+            setAmount('');
+            setBillNumber(initialSaleId);
+            setDescription(`Payment received for Invoice #${initialSaleId}`);
+            setNotes('');
+          }
+        } else if (initialPurchaseId) {
           const targetPur = purchases.find(p => p.id === initialPurchaseId);
           if (targetPur) {
             setVendorId(targetPur.vendorId || defaultVendorId);
@@ -120,11 +145,12 @@ export const CashEntryModal: React.FC<CashEntryModalProps> = ({
           setDescription('');
           setNotes('');
           setTargetPurchaseId('advance');
+          setTargetSaleId('advance');
         }
       }
       setError('');
     }
-  }, [isOpen, editingEntry?.id, selectedVendorId, initialPurchaseId]);
+  }, [isOpen, editingEntry?.id, selectedVendorId, initialPurchaseId, initialSaleId, initialEntryType]);
 
   if (!isOpen) return null;
 

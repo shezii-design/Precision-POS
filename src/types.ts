@@ -461,6 +461,7 @@ export interface Sale {
   totalProfit?: number; // in PKR (totalAmount - totalCost)
   amountReceived: number; // in PKR
   paymentType: PaymentType; // 'cash' (full), 'partial' (semi-paid), or 'credit' (unpaid)
+  paymentMethod?: string; // 'Cash', 'Bank Transfer', etc.
   paymentStatus?: 'paid' | 'partial' | 'credit';
   balanceDue: number; // totalAmount - amountReceived (if > 0)
   pdfEdits?: Record<string, string>; // JSON object for visual invoice overrides
