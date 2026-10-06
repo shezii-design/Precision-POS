@@ -1,6 +1,104 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 
+export function safeJsonParse<T = any>(val: any, fallback: T): T {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'object') return val;
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return parsed !== null && parsed !== undefined ? parsed : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
+export function safeJsonArray<T = any>(val: any): T[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+export function safeJsonObject<T extends Record<string, any>>(val: any, fallback: T): T {
+  if (!val) return fallback;
+  if (typeof val === 'object' && !Array.isArray(val)) return val;
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      return typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null ? parsed : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
+/**
+ * Universally retrieves ALL records from a Supabase table with transparent auto-pagination.
+ * Prevents PostgREST's default 1,000-row limit from truncating data or neglecting entries.
+ */
+export async function fetchAllRows<T = Record<string, any>>(
+  client: SupabaseClient,
+  tableName: string,
+  options?: {
+    select?: string;
+    orderCol?: string;
+    ascending?: boolean;
+  }
+): Promise<{ data: T[]; error?: string }> {
+  try {
+    const select = options?.select || '*';
+    const orderCol = options?.orderCol;
+    const ascending = options?.ascending ?? true;
+    
+    let allData: T[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      let query = client.from(tableName).select(select).range(from, from + pageSize - 1);
+      if (orderCol) {
+        query = query.order(orderCol, { ascending });
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        // Table not found is expected if schema not yet created in Supabase
+        if (error.code === '42P01' || error.code === 'PGRST205') {
+          return { data: [] };
+        }
+        return { data: allData, error: error.message };
+      }
+
+      if (data && data.length > 0) {
+        allData = allData.concat(data as T[]);
+        from += pageSize;
+        if (data.length < pageSize) {
+          hasMore = false;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    return { data: allData };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { data: [], error: msg };
+  }
+}
+
 async function sha256Hash(str: string): Promise<string> {
   try {
     const encoder = new TextEncoder();
@@ -17,44 +115,56 @@ async function exactSyncRows(
   client: SupabaseClient,
   tableName: string,
   rows: any[],
-  idCol: string = 'id'
+  idCol: string = 'id',
+  allowDeletions: boolean = false
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
-    let existing: any[] = [];
-    let hasMore = true;
-    let from = 0;
-    const step = 1000;
+    if (!rows || rows.length === 0) {
+      return { success: true, count: 0 };
+    }
 
-    while (hasMore) {
-      const { data, error: selectErr } = await client.from(tableName).select(idCol).range(from, from + step - 1);
-      if (selectErr && selectErr.code !== '42P01' && selectErr.code !== 'PGRST205') throw selectErr; // Ignore table missing if it doesn't exist yet
-      if (selectErr && (selectErr.code === '42P01' || selectErr.code === 'PGRST205')) {
-        hasMore = false;
-        break;
-      }
-      if (data && data.length > 0) {
-        existing = existing.concat(data);
-        from += step;
-        if (data.length < step) hasMore = false;
-      } else {
-        hasMore = false;
+    // Upsert rows in safe batches of 100
+    for (let i = 0; i < rows.length; i += 100) {
+      const chunk = rows.slice(i, i + 100);
+      const { error: upsertErr } = await client.from(tableName).upsert(chunk, { onConflict: idCol });
+      if (upsertErr) {
+        if (upsertErr.code === '42P01' || upsertErr.code === 'PGRST205') {
+          return { success: false, count: 0, error: 'Table not initialized' };
+        }
+        throw upsertErr;
       }
     }
-    
-    const existingIds = new Set(existing.map(r => r[idCol]));
-    const currentIds = new Set(rows.map(r => r[idCol]));
-    const idsToDelete = [...existingIds].filter(id => !currentIds.has(id));
-    
-    if (idsToDelete.length > 0) {
-      for (let i = 0; i < idsToDelete.length; i += 100) {
-        await client.from(tableName).delete().in(idCol, idsToDelete.slice(i, i + 100));
+
+    // Only delete orphaned rows if explicitly commanded (avoids wiping cloud data across multi-devices)
+    if (allowDeletions) {
+      let existing: any[] = [];
+      let hasMore = true;
+      let from = 0;
+      const step = 1000;
+
+      while (hasMore) {
+        const { data, error: selectErr } = await client.from(tableName).select(idCol).range(from, from + step - 1);
+        if (selectErr && (selectErr.code === '42P01' || selectErr.code === 'PGRST205')) {
+          hasMore = false;
+          break;
+        }
+        if (selectErr) throw selectErr;
+        if (data && data.length > 0) {
+          existing = existing.concat(data);
+          from += step;
+          if (data.length < step) hasMore = false;
+        } else {
+          hasMore = false;
+        }
       }
-    }
-    
-    if (rows.length > 0) {
-      for (let i = 0; i < rows.length; i += 100) {
-        const { error: upsertErr } = await client.from(tableName).upsert(rows.slice(i, i + 100), { onConflict: idCol });
-        if (upsertErr) throw upsertErr;
+      
+      const currentIds = new Set(rows.map(r => r[idCol]));
+      const idsToDelete = existing.map(r => r[idCol]).filter(id => !currentIds.has(id));
+      
+      if (idsToDelete.length > 0) {
+        for (let i = 0; i < idsToDelete.length; i += 100) {
+          await client.from(tableName).delete().in(idCol, idsToDelete.slice(i, i + 100));
+        }
       }
     }
     
@@ -1403,6 +1513,38 @@ export const SCHEMA_FULL_DATABASE = `-- ========================================
 
 -- 0. ENABLE CRYPTOGRAPHIC FUNCTIONS FOR BCRYPT HASHING
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 0.1 APPLICATION SNAPSHOTS (Time-Machine Recovery & History Table)
+CREATE TABLE IF NOT EXISTS application_snapshots (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  description TEXT,
+  summary_info JSONB,
+  snapshot_data JSONB
+);
+ALTER TABLE application_snapshots ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public access application_snapshots" ON application_snapshots;
+CREATE POLICY "Public access application_snapshots" ON application_snapshots FOR ALL TO public USING (true) WITH CHECK (true);
+GRANT ALL ON application_snapshots TO anon, authenticated, service_role;
+
+-- 0.2 DISCREPANCY LOGS (Stock Reconciliation Table)
+CREATE TABLE IF NOT EXISTS discrepancy_logs (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  product_id TEXT,
+  product_name TEXT,
+  internal_id TEXT,
+  recorded_stock NUMERIC,
+  calculated_stock NUMERIC,
+  difference NUMERIC,
+  status TEXT DEFAULT 'detected',
+  notes TEXT,
+  reconciled_at TIMESTAMPTZ
+);
+ALTER TABLE discrepancy_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public access discrepancy_logs" ON discrepancy_logs;
+CREATE POLICY "Public access discrepancy_logs" ON discrepancy_logs FOR ALL TO public USING (true) WITH CHECK (true);
+GRANT ALL ON discrepancy_logs TO anon, authenticated, service_role;
 
 -- 1. INVENTORY PRODUCTS (Cell-by-Cell Relational Columns)
 CREATE TABLE IF NOT EXISTS inventory_products (
@@ -4307,8 +4449,10 @@ export function supabaseRowToProduct(row: Record<string, any>): Product {
     costPrice: Number(row.cost_price) || 0,
     lastPurchasePrice: row.last_purchase_price !== null && row.last_purchase_price !== undefined ? Number(row.last_purchase_price) : undefined,
     lastPurchaseDate: row.last_purchase_date || undefined,
-    sellingPrices,
-    costBatches: row.cost_batches || undefined,
+    sellingPrices: safeJsonArray<ProductSellingPrice>(row.selling_prices || row.sellingPrices).length > 0
+      ? safeJsonArray<ProductSellingPrice>(row.selling_prices || row.sellingPrices)
+      : sellingPrices,
+    costBatches: safeJsonArray<any>(row.cost_batches || row.costBatches),
     dimensions,
     dimensionLabels,
     machineNames: row.machine_names || '',
@@ -4343,13 +4487,13 @@ export async function fetchProductsFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; products: Product[]; error?: string }> {
   try {
-    const { data, error } = await client
-      .from('inventory_products')
-      .select('*')
-      .order('internal_id', { ascending: true });
+    const { data, error } = await fetchAllRows(client, 'inventory_products', {
+      orderCol: 'internal_id',
+      ascending: true,
+    });
 
     if (error) {
-      return { success: false, products: [], error: error.message };
+      return { success: false, products: [], error };
     }
 
     const products: Product[] = (data || []).map(row => supabaseRowToProduct(row));
@@ -4430,12 +4574,12 @@ export async function fetchCustomersFromSupabase(
 ): Promise<{ success: boolean; customers: Customer[]; ledger: CustomerLedgerEntry[]; error?: string }> {
   try {
     const [custRes, ledRes] = await Promise.all([
-      client.from('customers').select('*').order('name', { ascending: true }),
-      client.from('customer_ledger').select('*').order('date', { ascending: false }),
+      fetchAllRows(client, 'customers', { orderCol: 'name', ascending: true }),
+      fetchAllRows(client, 'customer_ledger', { orderCol: 'date', ascending: false }),
     ]);
 
-    if (custRes.error) return { success: false, customers: [], ledger: [], error: custRes.error.message };
-    if (ledRes.error) return { success: false, customers: [], ledger: [], error: ledRes.error.message };
+    if (custRes.error) return { success: false, customers: [], ledger: [], error: custRes.error };
+    if (ledRes.error) return { success: false, customers: [], ledger: [], error: ledRes.error };
 
     const customers: Customer[] = (custRes.data || []).map((row: any) => ({
       id: row.id,
@@ -4451,7 +4595,7 @@ export async function fetchCustomersFromSupabase(
       strn: row.strn || undefined,
       openingBalance: Number(row.opening_balance) || 0,
       totalPurchases: Number(row.total_purchases) || 0,
-      machines: row.machines || [],
+      machines: safeJsonArray<any>(row.machines),
       notes: row.notes || undefined,
       createdAt: row.created_at || new Date().toISOString(),
       updatedAt: row.updated_at || new Date().toISOString(),
@@ -4809,8 +4953,8 @@ export async function fetchSalesFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; sales: Sale[]; error?: string }> {
   try {
-    const { data, error } = await client.from('sales').select('*').order('date', { ascending: false });
-    if (error) return { success: false, sales: [], error: error.message };
+    const { data, error } = await fetchAllRows(client, 'sales', { orderCol: 'date', ascending: false });
+    if (error) return { success: false, sales: [], error };
     const sales: Sale[] = (data || []).map(r => ({
       id: r.id,
       date: r.date,
@@ -4820,7 +4964,7 @@ export async function fetchSalesFromSupabase(
       vendorId: r.vendor_id || undefined,
       vendorName: r.vendor_name || undefined,
       isVendorSale: r.is_vendor_sale || false,
-      items: Array.isArray(r.items) ? r.items : [],
+      items: safeJsonArray<SaleItem>(r.items),
       subtotal: Number(r.subtotal) || 0,
       discountType: r.discount_type || 'amount',
       discountValue: Number(r.discount_value) || 0,
@@ -4838,7 +4982,7 @@ export async function fetchSalesFromSupabase(
       netAmount: Number(r.net_amount ?? r.total_amount) || 0,
       netBalanceDue: Number(r.net_balance_due) || 0,
       returnedItemsCount: Number(r.returned_items_count) || 0,
-      returnsList: Array.isArray(r.returns_list) ? r.returns_list : undefined,
+      returnsList: safeJsonArray<any>(r.returns_list),
       invoiceNamingPreference: r.invoice_naming_preference || 'product_name',
       notes: r.notes || undefined,
       createdAt: r.created_at || new Date().toISOString(),
@@ -4886,8 +5030,8 @@ export async function fetchCustomerReturnsFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; returns: CustomerReturn[]; error?: string }> {
   try {
-    const { data, error } = await client.from('customer_returns').select('*').order('date', { ascending: false });
-    if (error) return { success: false, returns: [], error: error.message };
+    const { data, error } = await fetchAllRows(client, 'customer_returns', { orderCol: 'date', ascending: false });
+    if (error) return { success: false, returns: [], error };
     const returns: CustomerReturn[] = (data || []).map(r => ({
       id: r.id,
       returnNumber: r.return_number,
@@ -4897,7 +5041,7 @@ export async function fetchCustomerReturnsFromSupabase(
       customerName: r.customer_name,
       customerPhone: r.customer_phone || undefined,
       date: r.date,
-      items: Array.isArray(r.items) ? r.items : [],
+      items: safeJsonArray<any>(r.items),
       subtotal: Number(r.subtotal) || 0,
       deductionOrRestockFee: Number(r.deduction_or_restock_fee) || 0,
       totalRefundAmount: Number(r.total_refund_amount) || 0,
@@ -4964,8 +5108,8 @@ export async function fetchVendorLedgerFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; ledger: VendorLedgerEntry[]; error?: string }> {
   try {
-    const { data, error } = await client.from('vendor_ledger').select('*').order('date', { ascending: false });
-    if (error) return { success: false, ledger: [], error: error.message };
+    const { data, error } = await fetchAllRows(client, 'vendor_ledger', { orderCol: 'date', ascending: false });
+    if (error) return { success: false, ledger: [], error };
     const ledger: VendorLedgerEntry[] = (data || []).map(r => ({
       id: r.id,
       vendorId: r.vendor_id,
@@ -5023,8 +5167,8 @@ export async function fetchVendorReturnsFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; returns: VendorReturn[]; error?: string }> {
   try {
-    const { data, error } = await client.from('vendor_returns').select('*').order('date', { ascending: false });
-    if (error) return { success: false, returns: [], error: error.message };
+    const { data, error } = await fetchAllRows(client, 'vendor_returns', { orderCol: 'date', ascending: false });
+    if (error) return { success: false, returns: [], error };
     const returns: VendorReturn[] = (data || []).map(r => ({
       id: r.id,
       returnNumber: r.return_number,
@@ -5033,7 +5177,7 @@ export async function fetchVendorReturnsFromSupabase(
       vendorId: r.vendor_id,
       vendorName: r.vendor_name,
       date: r.date,
-      items: Array.isArray(r.items) ? r.items : [],
+      items: safeJsonArray<any>(r.items),
       subtotal: Number(r.subtotal) || 0,
       totalAmount: Number(r.total_amount) || 0,
       settlementMethod: r.settlement_method || 'cash_refund',
@@ -5120,8 +5264,8 @@ export async function fetchStockLogsFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; logs: StockLog[]; error?: string }> {
   try {
-    const { data, error } = await client.from('stock_logs').select('*').order('timestamp', { ascending: false });
-    if (error) return { success: false, logs: [], error: error.message };
+    const { data, error } = await fetchAllRows(client, 'stock_logs', { orderCol: 'timestamp', ascending: false });
+    if (error) return { success: false, logs: [], error };
     const logs: StockLog[] = (data || []).map(r => ({
       id: r.id,
       productId: r.product_id,
@@ -5157,10 +5301,14 @@ export async function fetchVendorsAndPurchasesFromSupabase(
 ): Promise<{ success: boolean; vendors: Vendor[]; purchases: Purchase[]; purchaseOrders: PurchaseOrder[]; error?: string }> {
   try {
     const [vRes, pRes, poRes] = await Promise.all([
-      client.from('vendors').select('*').order('business_name', { ascending: true }),
-      client.from('purchases').select('*').order('date', { ascending: false }),
-      client.from('purchase_orders').select('*').order('order_date', { ascending: false }),
+      fetchAllRows(client, 'vendors', { orderCol: 'business_name', ascending: true }),
+      fetchAllRows(client, 'purchases', { orderCol: 'date', ascending: false }),
+      fetchAllRows(client, 'purchase_orders', { orderCol: 'order_date', ascending: false }),
     ]);
+
+    if (vRes.error) return { success: false, vendors: [], purchases: [], purchaseOrders: [], error: vRes.error };
+    if (pRes.error) return { success: false, vendors: [], purchases: [], purchaseOrders: [], error: pRes.error };
+    if (poRes.error) return { success: false, vendors: [], purchases: [], purchaseOrders: [], error: poRes.error };
 
     const vendors: Vendor[] = (vRes.data || []).map(r => ({
       id: r.id,
@@ -5172,7 +5320,7 @@ export async function fetchVendorsAndPurchasesFromSupabase(
       address: r.address || undefined,
       city: r.city || undefined,
       openingBalance: Number(r.opening_balance) || 0,
-      linkedProductIds: Array.isArray(r.linked_product_ids) ? r.linked_product_ids : [],
+      linkedProductIds: safeJsonArray<string>(r.linked_product_ids),
       notes: r.notes || undefined,
       createdAt: r.created_at || new Date().toISOString(),
       updatedAt: r.updated_at || undefined,
@@ -5185,7 +5333,7 @@ export async function fetchVendorsAndPurchasesFromSupabase(
       vendorId: r.vendor_id,
       vendorName: r.vendor_name,
       date: r.date,
-      items: Array.isArray(r.items) ? r.items : [],
+      items: safeJsonArray<any>(r.items),
       subtotal: Number(r.subtotal) || 0,
       discountAmount: Number(r.discount_amount) || 0,
       totalAmount: Number(r.total_amount) || 0,
@@ -5211,7 +5359,7 @@ export async function fetchVendorsAndPurchasesFromSupabase(
       receivingDate: r.receiving_date || undefined,
       costsFinalizedDate: r.costs_finalized_date || undefined,
       status: r.status || 'draft',
-      items: Array.isArray(r.items) ? r.items : [],
+      items: safeJsonArray<any>(r.items),
       totalOrderedQty: Number(r.total_ordered_qty) || 0,
       totalReceivedQty: Number(r.total_received_qty) || 0,
       cargoCost: Number(r.cargo_cost) || 0,
@@ -5241,8 +5389,8 @@ export async function fetchQuotationsFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; quotations: Quotation[]; error?: string }> {
   try {
-    const { data, error } = await client.from('quotations').select('*').order('date', { ascending: false });
-    if (error) return { success: false, quotations: [], error: error.message };
+    const { data, error } = await fetchAllRows(client, 'quotations', { orderCol: 'date', ascending: false });
+    if (error) return { success: false, quotations: [], error };
     const quotations: Quotation[] = (data || []).map(r => ({
       id: r.id,
       quotationNumber: r.quotation_number,
@@ -5259,7 +5407,7 @@ export async function fetchQuotationsFromSupabase(
       date: r.date,
       validUntil: r.valid_until,
       validityDays: Number(r.validity_days) || 7,
-      items: Array.isArray(r.items) ? r.items : [],
+      items: safeJsonArray<any>(r.items),
       subtotal: Number(r.subtotal) || 0,
       discountType: r.discount_type || 'amount',
       discountValue: Number(r.discount_value) || 0,
@@ -5286,8 +5434,8 @@ export async function fetchDemandsFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; demands: Demand[]; error?: string }> {
   try {
-    const { data, error } = await client.from('demands').select('*').order('created_at', { ascending: false });
-    if (error) return { success: false, demands: [], error: error.message };
+    const { data, error } = await fetchAllRows(client, 'demands', { orderCol: 'created_at', ascending: false });
+    if (error) return { success: false, demands: [], error };
     const demands: Demand[] = (data || []).map(r => ({
       id: r.id,
       demandNumber: r.demand_number,
@@ -5322,8 +5470,8 @@ export async function fetchExpensesFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; expenses: Expense[]; error?: string }> {
   try {
-    const { data, error } = await client.from('expenses').select('*').order('date', { ascending: false });
-    if (error) return { success: false, expenses: [], error: error.message };
+    const { data, error } = await fetchAllRows(client, 'expenses', { orderCol: 'date', ascending: false });
+    if (error) return { success: false, expenses: [], error };
     const expenses: Expense[] = (data || []).map(r => ({
       id: r.id,
       expenseNumber: r.expense_number,
@@ -5349,14 +5497,13 @@ export async function fetchStaffAndDevicesFromSupabase(
   client: SupabaseClient
 ): Promise<{ success: boolean; employees: EmployeeAccount[]; devices: RegisteredDevice[]; error?: string }> {
   try {
-    // Attempt to fetch safe employee profiles
     let empData: any[] = [];
     let devData: any[] = [];
 
     try {
       const [empRes, devRes] = await Promise.all([
-        client.from('employee_accounts').select('*').order('name', { ascending: true }),
-        client.from('registered_devices').select('*').order('registered_at', { ascending: false }),
+        fetchAllRows(client, 'employee_accounts', { orderCol: 'name', ascending: true }),
+        fetchAllRows(client, 'registered_devices', { orderCol: 'registered_at', ascending: false }),
       ]);
       if (empRes.data) empData = empRes.data;
       if (devRes.data) devData = devRes.data;
@@ -5364,63 +5511,61 @@ export async function fetchStaffAndDevicesFromSupabase(
       // Fallback
     }
 
-    const employees: EmployeeAccount[] = empData.map(r => ({
-      id: r.id,
-      name: r.name,
-      email: r.email,
-      phone: r.phone || undefined,
-      pin: r.pin || r.plain_pin || undefined,
-      password: r.password || undefined,
-      pinHash: r.pin_hash || undefined,
-      passwordHash: r.password_hash || undefined,
-      authUserId: r.auth_user_id || undefined,
-      role: r.role || 'cashier',
-      designation: r.designation || 'Staff',
-      status: r.status || 'active',
-      permissions: r.permissions || {
-        allowedTabs: ['sales', 'inventory'],
-        isEditor: true,
-        canCreateSales: true,
-        canEditSales: false,
-        canDeleteSales: false,
-        canApplySaleDiscount: false,
-        canViewCostPrices: false,
-        canViewProfitMargins: false,
-        canCreatePurchases: false,
-        canEditPurchases: false,
-        canDeletePurchases: false,
-        canCreatePurchaseOrders: false,
-        canReceivePurchaseOrders: false,
-        canManageVendors: false,
-        canCreateProducts: false,
-        canEditProducts: false,
-        canDeleteProducts: false,
-        canAdjustStock: false,
-        canManageExpenses: false,
-        canViewFinancialReports: false,
-        canManageCustomers: true,
-        canManageCustomerLedger: false,
-        canCreateQuotations: true,
-        canManageQuotations: true,
-        canCreateDemands: true,
-        canManageDemands: true,
-        canProcessCustomerReturns: true,
-        canProcessVendorReturns: false,
-        canManageSettings: false,
-        canManageEmployees: false,
-        canManageDevices: false,
-        canExportData: false,
-        canImportData: false,
-        canPerformInventoryAudit: false,
-      },
-      restrictToDevices: r.restrict_to_devices || false,
-      allowedDeviceIds: Array.isArray(r.allowed_device_ids) ? r.allowed_device_ids : [],
-      avatarColor: r.avatar_color || undefined,
-      lastLoginAt: r.last_login_at || undefined,
-      lastLoginDeviceId: r.last_login_device_id || undefined,
-      notes: r.notes || undefined,
-      createdAt: r.created_at || new Date().toISOString(),
-    }));
+    const employees: EmployeeAccount[] = empData.map(r => {
+      const rawPerms = safeJsonObject<any>(r.permissions, {});
+      return {
+        id: r.id,
+        name: r.name,
+        email: r.email,
+        phone: r.phone || undefined,
+        pin: r.pin || r.plain_pin || undefined,
+        password: r.password || undefined,
+        pinHash: r.pin_hash || undefined,
+        passwordHash: r.password_hash || undefined,
+        authUserId: r.auth_user_id || undefined,
+        role: r.role || 'cashier',
+        designation: r.designation || 'Staff',
+        status: r.status || 'active',
+        permissions: {
+          allowedTabs: Array.isArray(rawPerms.allowedTabs) ? rawPerms.allowedTabs : ['sales', 'inventory'],
+          isEditor: rawPerms.isEditor ?? true,
+          canCreateSales: rawPerms.canCreateSales ?? true,
+          canEditSales: rawPerms.canEditSales ?? false,
+          canDeleteSales: rawPerms.canDeleteSales ?? false,
+          canApplySaleDiscount: rawPerms.canApplySaleDiscount ?? false,
+          canViewCostPrices: rawPerms.canViewCostPrices ?? false,
+          canViewProfitMargins: rawPerms.canViewProfitMargins ?? false,
+          canCreatePurchases: rawPerms.canCreatePurchases ?? false,
+          canEditPurchases: rawPerms.canEditPurchases ?? false,
+          canDeletePurchases: rawPerms.canDeletePurchases ?? false,
+          canCreatePurchaseOrders: rawPerms.canCreatePurchaseOrders ?? false,
+          canReceivePurchaseOrders: rawPerms.canReceivePurchaseOrders ?? false,
+          canManageVendors: rawPerms.canManageVendors ?? false,
+          canRecordVendorPayments: rawPerms.canRecordVendorPayments ?? false,
+          canAddProducts: rawPerms.canAddProducts ?? rawPerms.canCreateProducts ?? false,
+          canEditProducts: rawPerms.canEditProducts ?? false,
+          canDeleteProducts: rawPerms.canDeleteProducts ?? false,
+          canAdjustStock: rawPerms.canAdjustStock ?? false,
+          canPrintLabels: rawPerms.canPrintLabels ?? true,
+          canImportExport: rawPerms.canImportExport ?? rawPerms.canExportData ?? false,
+          canManageCustomers: rawPerms.canManageCustomers ?? true,
+          canRecordCustomerPayments: rawPerms.canRecordCustomerPayments ?? rawPerms.canManageCustomerLedger ?? false,
+          canProcessReturns: rawPerms.canProcessReturns ?? rawPerms.canProcessCustomerReturns ?? true,
+          canManageQuotations: rawPerms.canManageQuotations ?? true,
+          canManageDemands: rawPerms.canManageDemands ?? true,
+          canViewIncomeStatement: rawPerms.canViewIncomeStatement ?? rawPerms.canViewFinancialReports ?? false,
+          canManageExpenses: rawPerms.canManageExpenses ?? false,
+          canManageSettings: rawPerms.canManageSettings ?? false,
+        },
+        restrictToDevices: r.restrict_to_devices || false,
+        allowedDeviceIds: safeJsonArray<string>(r.allowed_device_ids),
+        avatarColor: r.avatar_color || undefined,
+        lastLoginAt: r.last_login_at || undefined,
+        lastLoginDeviceId: r.last_login_device_id || undefined,
+        notes: r.notes || undefined,
+        createdAt: r.created_at || new Date().toISOString(),
+      };
+    });
 
     const devices: RegisteredDevice[] = devData.map(r => ({
       id: r.id,
@@ -5447,14 +5592,14 @@ export async function fetchMasterDataFromSupabase(
 ): Promise<{ success: boolean; brands: Brand[]; types: ProductType[]; locations: LocationItem[]; error?: string }> {
   try {
     const [bRes, tRes, lRes] = await Promise.all([
-      client.from('inventory_brands').select('*'),
-      client.from('inventory_categories').select('*'),
-      client.from('inventory_locations').select('*'),
+      fetchAllRows(client, 'inventory_brands'),
+      fetchAllRows(client, 'inventory_categories'),
+      fetchAllRows(client, 'inventory_locations'),
     ]);
 
     const brands: Brand[] = (bRes.data || []).map(r => ({ id: r.id, name: r.name, itemCount: r.item_count || 0 }));
     const types: ProductType[] = (tRes.data || []).map(r => ({ id: r.id, name: r.name, itemCount: r.item_count || 0 }));
-    const locations: LocationItem[] = (lRes.data || []).map(r => ({ id: r.id, name: r.name, cabins: Array.isArray(r.cabins) ? r.cabins : [] }));
+    const locations: LocationItem[] = (lRes.data || []).map(r => ({ id: r.id, name: r.name, cabins: safeJsonArray<string>(r.cabins) }));
 
     return { success: true, brands, types, locations };
   } catch (err: unknown) {
@@ -5855,8 +6000,157 @@ export async function syncAllModulesToSupabase(
   };
 }
 
+export interface ApplicationSnapshotRecord {
+  id: string;
+  createdAt: string;
+  description: string;
+  summary: {
+    productCount: number;
+    salesCount: number;
+    customerCount: number;
+    vendorCount: number;
+  };
+  data?: FullSyncDataBundle;
+}
+
+/**
+ * Saves a complete application state recovery snapshot to the separate `application_snapshots` table in Supabase.
+ */
+export async function saveApplicationSnapshotToSupabase(
+  client: SupabaseClient,
+  bundle: FullSyncDataBundle,
+  description: string = 'Automated Recovery Snapshot'
+): Promise<{ success: boolean; snapshotId?: string; error?: string }> {
+  try {
+    const snapId = `snap-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const now = new Date().toISOString();
+    const summary = {
+      productCount: bundle.products?.length || 0,
+      salesCount: bundle.sales?.length || 0,
+      customerCount: bundle.customers?.length || 0,
+      vendorCount: bundle.vendors?.length || 0,
+    };
+
+    const row = {
+      id: snapId,
+      created_at: now,
+      description,
+      summary_info: summary,
+      snapshot_data: bundle,
+    };
+
+    const { error } = await client.from('application_snapshots').upsert(row, { onConflict: 'id' });
+    if (error) {
+      if (error.code === '42P01' || error.code === 'PGRST205') {
+        return { success: false, error: 'Table application_snapshots does not exist yet. Please run the SQL schema.' };
+      }
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, snapshotId: snapId };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: msg };
+  }
+}
+
+/**
+ * Fetches all historical recovery snapshots from the `application_snapshots` table.
+ */
+export async function fetchApplicationSnapshotsFromSupabase(
+  client: SupabaseClient
+): Promise<{ success: boolean; snapshots: ApplicationSnapshotRecord[]; error?: string }> {
+  try {
+    const { data, error } = await client
+      .from('application_snapshots')
+      .select('id, created_at, description, summary_info')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      if (error.code === '42P01' || error.code === 'PGRST205') {
+        return { success: true, snapshots: [] };
+      }
+      return { success: false, snapshots: [], error: error.message };
+    }
+
+    const snapshots: ApplicationSnapshotRecord[] = (data || []).map(r => ({
+      id: r.id,
+      createdAt: r.created_at,
+      description: r.description || 'Snapshot',
+      summary: r.summary_info || { productCount: 0, salesCount: 0, customerCount: 0, vendorCount: 0 },
+    }));
+
+    return { success: true, snapshots };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, snapshots: [], error: msg };
+  }
+}
+
+/**
+ * Restores a specific full application state bundle from a snapshot ID in `application_snapshots`.
+ */
+export async function restoreApplicationSnapshotFromSupabase(
+  client: SupabaseClient,
+  snapshotId: string
+): Promise<{ success: boolean; data?: FullSyncDataBundle; error?: string }> {
+  try {
+    const { data, error } = await client
+      .from('application_snapshots')
+      .select('snapshot_data')
+      .eq('id', snapshotId)
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    if (data?.snapshot_data) {
+      return { success: true, data: data.snapshot_data as FullSyncDataBundle };
+    }
+
+    return { success: false, error: 'Snapshot data not found' };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: msg };
+  }
+}
+
 export const SCHEMA_IDEMPOTENT_UPDATE = `-- IDEMPOTENT SUPABASE SCHEMA UPDATE SCRIPT
 -- This script safely adds missing columns to existing tables without throwing errors.
+
+-- Create Application Snapshots Table for Time-Machine Recovery
+CREATE TABLE IF NOT EXISTS application_snapshots (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  description TEXT,
+  summary_info JSONB,
+  snapshot_data JSONB
+);
+ALTER TABLE application_snapshots ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public access application_snapshots" ON application_snapshots;
+CREATE POLICY "Public access application_snapshots" ON application_snapshots FOR ALL TO public USING (true) WITH CHECK (true);
+GRANT ALL ON application_snapshots TO anon, authenticated, service_role;
+
+-- Create Discrepancy Logs Table for Stock Reconciliation
+CREATE TABLE IF NOT EXISTS discrepancy_logs (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  product_id TEXT,
+  product_name TEXT,
+  internal_id TEXT,
+  recorded_stock NUMERIC,
+  calculated_stock NUMERIC,
+  difference NUMERIC,
+  status TEXT DEFAULT 'detected',
+  notes TEXT,
+  reconciled_at TIMESTAMPTZ
+);
+ALTER TABLE discrepancy_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public access discrepancy_logs" ON discrepancy_logs;
+CREATE POLICY "Public access discrepancy_logs" ON discrepancy_logs FOR ALL TO public USING (true) WITH CHECK (true);
+GRANT ALL ON discrepancy_logs TO anon, authenticated, service_role;
 
 -- Sales updates
 DO $$ BEGIN

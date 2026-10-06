@@ -39,7 +39,8 @@ import {
   DemandFilterOptions,
   Expense,
   ExpenseCategory,
-  ExpenseFilterOptions
+  ExpenseFilterOptions,
+  DiscrepancyLog
 } from '../types';
 import { DEFAULT_PRICING_SETTINGS, generateProductSellingPrices } from './pricing';
 import { getEnvSupabaseConfig } from './supabase';
@@ -77,32 +78,73 @@ const EXPENSES_KEY = 'kfh_inventory_expenses_v1';
 
 const CLEAN_STORAGE_VERSION_KEY = 'kfh_inventory_clean_state_v1';
 
+const pendingWrites = new Map<string, { data: any; timer: any }>();
+const DEBOUNCE_DELAY_MS = 250;
+
+function debouncedLocalStorageSet(key: string, data: any): void {
+  const existing = pendingWrites.get(key);
+  if (existing) {
+    clearTimeout(existing.timer);
+  }
+
+  const timer = setTimeout(() => {
+    pendingWrites.delete(key);
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (err) {
+      console.warn(`Debounced storage write failed for ${key}:`, err);
+    }
+  }, DEBOUNCE_DELAY_MS);
+
+  pendingWrites.set(key, { data, timer });
+}
+
+export function flushPendingStorageWrites(): void {
+  for (const [key, { data, timer }] of pendingWrites.entries()) {
+    clearTimeout(timer);
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (err) {
+      console.warn(`Flush write failed for ${key}:`, err);
+    }
+  }
+  pendingWrites.clear();
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', flushPendingStorageWrites);
+  window.addEventListener('pagehide', flushPendingStorageWrites);
+}
+
 export function ensureCleanStorage(): void {
   try {
     if (typeof localStorage === 'undefined') return;
-    const isCleaned = localStorage.getItem(CLEAN_STORAGE_VERSION_KEY);
-    if (!isCleaned) {
-      localStorage.setItem(PRODUCTS_KEY, JSON.stringify([]));
-      localStorage.setItem(CUSTOMERS_KEY, JSON.stringify([]));
-      localStorage.setItem(CUSTOMER_LEDGER_KEY, JSON.stringify([]));
-      localStorage.setItem(SALES_KEY, JSON.stringify([]));
-      localStorage.setItem(VENDORS_KEY, JSON.stringify([]));
-      localStorage.setItem(PURCHASES_KEY, JSON.stringify([]));
-      localStorage.setItem(VENDOR_LEDGER_KEY, JSON.stringify([]));
-      localStorage.setItem(CUSTOMER_RETURNS_KEY, JSON.stringify([]));
-      localStorage.setItem(VENDOR_RETURNS_KEY, JSON.stringify([]));
-      localStorage.setItem(QUOTATIONS_KEY, JSON.stringify([]));
-      localStorage.setItem(PURCHASE_ORDERS_KEY, JSON.stringify([]));
-      localStorage.setItem(DEMANDS_KEY, JSON.stringify([]));
-      localStorage.setItem(EXPENSES_KEY, JSON.stringify([]));
-      localStorage.setItem(STOCK_LOGS_KEY, JSON.stringify([]));
-      localStorage.setItem(BRANDS_KEY, JSON.stringify([]));
-      localStorage.setItem(TYPES_KEY, JSON.stringify([]));
-      localStorage.setItem(LOCATIONS_KEY, JSON.stringify([]));
-      localStorage.setItem(CLEAN_STORAGE_VERSION_KEY, 'true');
+    const defaultInitialMap: Record<string, any> = {
+      [PRODUCTS_KEY]: [],
+      [CUSTOMERS_KEY]: [],
+      [CUSTOMER_LEDGER_KEY]: [],
+      [SALES_KEY]: [],
+      [VENDORS_KEY]: [],
+      [PURCHASES_KEY]: [],
+      [VENDOR_LEDGER_KEY]: [],
+      [CUSTOMER_RETURNS_KEY]: [],
+      [VENDOR_RETURNS_KEY]: [],
+      [QUOTATIONS_KEY]: [],
+      [PURCHASE_ORDERS_KEY]: [],
+      [DEMANDS_KEY]: [],
+      [EXPENSES_KEY]: [],
+      [STOCK_LOGS_KEY]: [],
+      [BRANDS_KEY]: [],
+      [TYPES_KEY]: [],
+      [LOCATIONS_KEY]: []
+    };
+    for (const [key, val] of Object.entries(defaultInitialMap)) {
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, JSON.stringify(val));
+      }
     }
   } catch (err) {
-    console.error('Failed to initialize clean storage', err);
+    console.error('Failed to initialize storage', err);
   }
 }
 
@@ -124,7 +166,11 @@ export const INITIAL_PRODUCTS: Product[] = [];
  */
 export function getActiveFifoCost(prod: { costBatches?: CostBatch[]; costPrice?: number } | undefined | null): number {
   if (!prod) return 0;
-  const batches = prod.costBatches || [];
+  let rawBatches = prod.costBatches;
+  if (typeof rawBatches === 'string') {
+    try { rawBatches = JSON.parse(rawBatches); } catch { rawBatches = []; }
+  }
+  const batches = Array.isArray(rawBatches) ? rawBatches : [];
   if (batches.length === 0) {
     return Number(prod.costPrice) || 0;
   }
@@ -135,7 +181,7 @@ export function getActiveFifoCost(prod: { costBatches?: CostBatch[]; costPrice?:
   );
 
   // Find the first/oldest batch that still has stock remaining
-  const activeBatch = sortedBatches.find(b => (b.remainingQuantity || 0) > 0);
+  const activeBatch = sortedBatches.find(b => (Number(b?.remainingQuantity) || 0) > 0);
   if (activeBatch && activeBatch.unitCost !== undefined && activeBatch.unitCost > 0) {
     return Number(activeBatch.unitCost);
   }
@@ -159,7 +205,11 @@ export function calculateProductStockValue(prod: { stockQuantity?: number; costB
   const stock = Number(prod.stockQuantity) || 0;
   if (stock <= 0) return 0;
 
-  const batches = prod.costBatches || [];
+  let rawBatches = prod.costBatches;
+  if (typeof rawBatches === 'string') {
+    try { rawBatches = JSON.parse(rawBatches); } catch { rawBatches = []; }
+  }
+  const batches = Array.isArray(rawBatches) ? rawBatches : [];
   if (batches.length === 0) {
     return (Number(prod.costPrice) || 0) * stock;
   }
@@ -168,6 +218,7 @@ export function calculateProductStockValue(prod: { stockQuantity?: number; costB
   let batchTotalQty = 0;
 
   batches.forEach(b => {
+    if (!b) return;
     const qty = Number(b.remainingQuantity) || 0;
     const cost = Number(b.unitCost) || 0;
     batchTotalValue += qty * cost;
@@ -194,19 +245,27 @@ export function calculateProductStockValue(prod: { stockQuantity?: number; costB
  * without inappropriately reverting manually set or newly purchased costPrices.
  */
 export function ensureProductBatches(prod: Product): Product {
-  if (prod.costBatches && prod.costBatches.length > 0) {
+  if (!prod) return prod;
+  let rawBatches = prod.costBatches;
+  if (typeof rawBatches === 'string') {
+    try { rawBatches = JSON.parse(rawBatches); } catch { rawBatches = []; }
+  }
+  const batches = Array.isArray(rawBatches) ? rawBatches : [];
+
+  if (batches.length > 0) {
     if (prod.costPrice === undefined || prod.costPrice === null || isNaN(prod.costPrice) || prod.costPrice === 0) {
-      const activeCost = getActiveFifoCost(prod);
+      const activeCost = getActiveFifoCost({ ...prod, costBatches: batches });
       if (activeCost > 0) {
         return {
           ...prod,
           costPrice: activeCost,
+          costBatches: batches,
         };
       }
     }
-    return prod;
+    return { ...prod, costBatches: batches };
   }
-  const stock = prod.stockQuantity || 0;
+  const stock = Number(prod.stockQuantity) || 0;
   const initialBatches: CostBatch[] = stock > 0 ? [
     {
       id: `batch-init-${prod.id}`,
@@ -260,11 +319,7 @@ export function getStoredProducts(): Product[] {
 }
 
 export function saveStoredProducts(products: Product[]): void {
-  try {
-    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-  } catch (err) {
-    console.error('Failed to save products', err);
-  }
+  debouncedLocalStorageSet(PRODUCTS_KEY, products);
 }
 
 export function getStoredBrands(): Brand[] {
@@ -281,11 +336,7 @@ export function getStoredBrands(): Brand[] {
 }
 
 export function saveStoredBrands(brands: Brand[]): void {
-  try {
-    localStorage.setItem(BRANDS_KEY, JSON.stringify(brands));
-  } catch (err) {
-    console.error('Failed to save brands', err);
-  }
+  debouncedLocalStorageSet(BRANDS_KEY, brands);
 }
 
 export function getStoredTypes(): ProductType[] {
@@ -302,11 +353,7 @@ export function getStoredTypes(): ProductType[] {
 }
 
 export function saveStoredTypes(types: ProductType[]): void {
-  try {
-    localStorage.setItem(TYPES_KEY, JSON.stringify(types));
-  } catch (err) {
-    console.error('Failed to save types', err);
-  }
+  debouncedLocalStorageSet(TYPES_KEY, types);
 }
 
 export function getStoredLocations(): LocationItem[] {
@@ -323,11 +370,7 @@ export function getStoredLocations(): LocationItem[] {
 }
 
 export function saveStoredLocations(locations: LocationItem[]): void {
-  try {
-    localStorage.setItem(LOCATIONS_KEY, JSON.stringify(locations));
-  } catch (err) {
-    console.error('Failed to save locations', err);
-  }
+  debouncedLocalStorageSet(LOCATIONS_KEY, locations);
 }
 
 export function getStoredPricingSettings(): GlobalPricingSettings {
@@ -355,11 +398,7 @@ export function getStoredPricingSettings(): GlobalPricingSettings {
 }
 
 export function saveStoredPricingSettings(settings: GlobalPricingSettings): void {
-  try {
-    localStorage.setItem(PRICING_SETTINGS_KEY, JSON.stringify(settings));
-  } catch (err) {
-    console.error('Failed to save pricing settings', err);
-  }
+  debouncedLocalStorageSet(PRICING_SETTINGS_KEY, settings);
 }
 
 export function getStoredSupabaseConfig(): SupabaseConfig {
@@ -392,20 +431,38 @@ export function getStoredSupabaseConfig(): SupabaseConfig {
 }
 
 export function saveStoredSupabaseConfig(config: SupabaseConfig): void {
-  try {
-    const env = getEnvSupabaseConfig();
-    const toSave: SupabaseConfig = {
-      ...config,
-      url: env.url || config.url || '',
-      anonKey: env.anonKey || config.anonKey || '',
-    };
-    localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(toSave));
-  } catch (err) {
-    console.error('Failed to save supabase config', err);
-  }
+  const env = getEnvSupabaseConfig();
+  const toSave: SupabaseConfig = {
+    ...config,
+    url: env.url || config.url || '',
+    anonKey: env.anonKey || config.anonKey || '',
+  };
+  debouncedLocalStorageSet(SUPABASE_CONFIG_KEY, toSave);
 }
 
 export const INITIAL_STOCK_LOGS: StockLog[] = [];
+
+const DISCREPANCY_LOGS_KEY = 'kfh_inventory_discrepancy_logs_v1';
+
+export function getStoredDiscrepancyLogs(): DiscrepancyLog[] {
+  try {
+    ensureCleanStorage();
+    const raw = localStorage.getItem(DISCREPANCY_LOGS_KEY);
+    if (!raw) {
+      saveStoredDiscrepancyLogs([]);
+      return [];
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+export function saveStoredDiscrepancyLogs(logs: DiscrepancyLog[]): void {
+  const trimmed = logs.slice(0, 500);
+  debouncedLocalStorageSet(DISCREPANCY_LOGS_KEY, trimmed);
+}
 
 export function getStoredStockLogs(): StockLog[] {
   try {
@@ -423,24 +480,96 @@ export function getStoredStockLogs(): StockLog[] {
 }
 
 export function saveStoredStockLogs(logs: StockLog[]): void {
-  try {
-    const trimmed = logs.slice(0, 1000);
-    localStorage.setItem(STOCK_LOGS_KEY, JSON.stringify(trimmed));
-  } catch (err) {
-    console.error('Failed to save stock logs', err);
-  }
+  const trimmed = logs.slice(0, 1000);
+  debouncedLocalStorageSet(STOCK_LOGS_KEY, trimmed);
 }
 
 export function saveStockLog(log: StockLog): void {
-  try {
-    const logs = getStoredStockLogs();
-    logs.unshift(log); // newest first
-    // keep maximum 1000 logs locally
-    const trimmed = logs.slice(0, 1000);
-    localStorage.setItem(STOCK_LOGS_KEY, JSON.stringify(trimmed));
-  } catch (err) {
-    console.error('Failed to save stock log', err);
+  const logs = getStoredStockLogs();
+  logs.unshift(log);
+  saveStoredStockLogs(logs);
+}
+
+export function auditAndDetectStockDiscrepancies(
+  products: Product[],
+  stockLogs: StockLog[],
+  existingDiscrepancies: DiscrepancyLog[] = []
+): { updatedDiscrepancies: DiscrepancyLog[]; newDiscrepanciesCount: number } {
+  const discrepancies: DiscrepancyLog[] = [...existingDiscrepancies];
+  let newCount = 0;
+  const now = new Date().toISOString();
+
+  for (const prod of products) {
+    const recordedStock = Number(prod.stockQuantity) || 0;
+    const productLogs = stockLogs.filter(l => l.productId === prod.id);
+    const netSum = productLogs.reduce((acc, l) => acc + (Number(l.change) || 0), 0);
+
+    // If product has logs, expected calculated stock is net sum of log changes.
+    // If no logs, fallback to recordedStock.
+    const calculatedStock = productLogs.length > 0 ? netSum : recordedStock;
+    const diff = roundFinancial(recordedStock - calculatedStock, 2);
+
+    if (Math.abs(diff) > 0.001) {
+      const existingIdx = discrepancies.findIndex(d => d.productId === prod.id && d.status === 'detected');
+      if (existingIdx >= 0) {
+        discrepancies[existingIdx] = {
+          ...discrepancies[existingIdx],
+          recordedStock,
+          calculatedStock,
+          difference: diff,
+          notes: `Discrepancy detected: Recorded stock (${recordedStock}) vs Calculated stock from logs (${calculatedStock})`,
+        };
+      } else {
+        const newDisc: DiscrepancyLog = {
+          id: `disc-${Date.now()}-${prod.id}`,
+          productId: prod.id,
+          productName: prod.name,
+          internalId: prod.internalId,
+          recordedStock,
+          calculatedStock,
+          difference: diff,
+          status: 'detected',
+          createdAt: now,
+          notes: `Discrepancy detected: Recorded stock (${recordedStock}) vs Calculated stock from logs (${calculatedStock})`,
+        };
+        discrepancies.unshift(newDisc);
+        newCount++;
+      }
+    }
   }
+
+  saveStoredDiscrepancyLogs(discrepancies);
+  return { updatedDiscrepancies: discrepancies, newDiscrepanciesCount: newCount };
+}
+
+export function reconcileStockDiscrepancy(
+  discrepancyId: string,
+  discrepancies: DiscrepancyLog[],
+  products: Product[]
+): { updatedDiscrepancies: DiscrepancyLog[]; updatedProducts: Product[] } {
+  const now = new Date().toISOString();
+  const disc = discrepancies.find(d => d.id === discrepancyId);
+  if (!disc) return { updatedDiscrepancies: discrepancies, updatedProducts: products };
+
+  const updatedDiscrepancies = discrepancies.map(d => 
+    d.id === discrepancyId ? { ...d, status: 'reconciled' as const, reconciledAt: now } : d
+  );
+
+  const updatedProducts = products.map(p => {
+    if (p.id === disc.productId) {
+      return {
+        ...p,
+        stockQuantity: disc.calculatedStock,
+        updatedAt: now,
+      };
+    }
+    return p;
+  });
+
+  saveStoredDiscrepancyLogs(updatedDiscrepancies);
+  saveStoredProducts(updatedProducts);
+
+  return { updatedDiscrepancies, updatedProducts };
 }
 
 /**
@@ -486,11 +615,7 @@ export function getStoredCustomers(): Customer[] {
 }
 
 export function saveStoredCustomers(customers: Customer[]): void {
-  try {
-    localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
-  } catch (err) {
-    console.error('Failed to save customers', err);
-  }
+  debouncedLocalStorageSet(CUSTOMERS_KEY, customers);
 }
 
 export function getStoredSales(): Sale[] {
@@ -512,11 +637,7 @@ export function getStoredSales(): Sale[] {
 }
 
 export function saveStoredSales(sales: Sale[]): void {
-  try {
-    localStorage.setItem(SALES_KEY, JSON.stringify(sales));
-  } catch (err) {
-    console.error('Failed to save sales', err);
-  }
+  debouncedLocalStorageSet(SALES_KEY, sales);
 }
 
 /**
@@ -855,11 +976,7 @@ export function getStoredCustomerLedger(): CustomerLedgerEntry[] {
 export const getStoredCustomerLedgerEntries = getStoredCustomerLedger;
 
 export function saveStoredCustomerLedger(entries: CustomerLedgerEntry[]): void {
-  try {
-    localStorage.setItem(CUSTOMER_LEDGER_KEY, JSON.stringify(entries));
-  } catch (err) {
-    console.error('Failed to save customer ledger', err);
-  }
+  debouncedLocalStorageSet(CUSTOMER_LEDGER_KEY, entries);
 }
 
 export const saveStoredCustomerLedgerEntries = saveStoredCustomerLedger;
@@ -1623,11 +1740,7 @@ export function getStoredVendors(): Vendor[] {
 }
 
 export function saveStoredVendors(vendors: Vendor[]): void {
-  try {
-    localStorage.setItem(VENDORS_KEY, JSON.stringify(vendors));
-  } catch (err) {
-    console.error('Failed to save vendors', err);
-  }
+  debouncedLocalStorageSet(VENDORS_KEY, vendors);
 }
 
 export function getStoredPurchases(): Purchase[] {
@@ -1650,11 +1763,7 @@ export function getStoredPurchases(): Purchase[] {
 }
 
 export function saveStoredPurchases(purchases: Purchase[]): void {
-  try {
-    localStorage.setItem(PURCHASES_KEY, JSON.stringify(purchases));
-  } catch (err) {
-    console.error('Failed to save purchases', err);
-  }
+  debouncedLocalStorageSet(PURCHASES_KEY, purchases);
 }
 
 export function getStoredVendorLedger(): VendorLedgerEntry[] {
@@ -1678,11 +1787,7 @@ export function getStoredVendorLedger(): VendorLedgerEntry[] {
 export const getStoredVendorLedgerEntries = getStoredVendorLedger;
 
 export function saveStoredVendorLedger(entries: VendorLedgerEntry[]): void {
-  try {
-    localStorage.setItem(VENDOR_LEDGER_KEY, JSON.stringify(entries));
-  } catch (err) {
-    console.error('Failed to save vendor ledger', err);
-  }
+  debouncedLocalStorageSet(VENDOR_LEDGER_KEY, entries);
 }
 
 export const saveStoredVendorLedgerEntries = saveStoredVendorLedger;
@@ -3167,11 +3272,7 @@ export function getStoredCustomerReturns(): CustomerReturn[] {
 }
 
 export function saveStoredCustomerReturns(returns: CustomerReturn[]): void {
-  try {
-    localStorage.setItem(CUSTOMER_RETURNS_KEY, JSON.stringify(returns));
-  } catch (err) {
-    console.error('Failed to save customer returns', err);
-  }
+  debouncedLocalStorageSet(CUSTOMER_RETURNS_KEY, returns);
 }
 
 export function getStoredVendorReturns(): VendorReturn[] {
@@ -3188,11 +3289,7 @@ export function getStoredVendorReturns(): VendorReturn[] {
 }
 
 export function saveStoredVendorReturns(returns: VendorReturn[]): void {
-  try {
-    localStorage.setItem(VENDOR_RETURNS_KEY, JSON.stringify(returns));
-  } catch (err) {
-    console.error('Failed to save vendor returns', err);
-  }
+  debouncedLocalStorageSet(VENDOR_RETURNS_KEY, returns);
 }
 
 export function getNextCustomerReturnId(returns: CustomerReturn[]): { id: string; returnNumber: string; creditNoteNumber: string } {
@@ -4059,11 +4156,7 @@ export function getStoredQuotations(): Quotation[] {
 }
 
 export function saveStoredQuotations(quotations: Quotation[]): void {
-  try {
-    localStorage.setItem(QUOTATIONS_KEY, JSON.stringify(quotations));
-  } catch (error) {
-    console.error('Error saving quotations to localStorage:', error);
-  }
+  debouncedLocalStorageSet(QUOTATIONS_KEY, quotations);
 }
 
 export function getNextQuotationId(quotations?: Quotation[]): { id: string; quotationNumber: string } {
@@ -4181,11 +4274,7 @@ export function getStoredPurchaseOrders(): PurchaseOrder[] {
 }
 
 export function saveStoredPurchaseOrders(pos: PurchaseOrder[]): void {
-  try {
-    localStorage.setItem(PURCHASE_ORDERS_KEY, JSON.stringify(pos));
-  } catch (error) {
-    console.error('Error saving purchase orders to localStorage:', error);
-  }
+  debouncedLocalStorageSet(PURCHASE_ORDERS_KEY, pos);
 }
 
 export function getNextPurchaseOrderId(pos?: PurchaseOrder[]): { id: string; poNumber: string } {
@@ -4892,11 +4981,7 @@ export function getStoredDemands(): Demand[] {
 }
 
 export function saveStoredDemands(demands: Demand[]): void {
-  try {
-    localStorage.setItem(DEMANDS_KEY, JSON.stringify(demands));
-  } catch (error) {
-    console.error('Error saving demands to localStorage:', error);
-  }
+  debouncedLocalStorageSet(DEMANDS_KEY, demands);
 }
 
 export function getNextDemandId(demands?: Demand[]): { id: string; demandNumber: string } {
@@ -5039,11 +5124,7 @@ export function getStoredExpenses(): Expense[] {
 }
 
 export function saveStoredExpenses(expenses: Expense[]): void {
-  try {
-    localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
-  } catch (error) {
-    console.error('Failed to save expenses to localStorage:', error);
-  }
+  debouncedLocalStorageSet(EXPENSES_KEY, expenses);
 }
 
 export function getNextExpenseNumber(existingExpenses?: Expense[]): string {

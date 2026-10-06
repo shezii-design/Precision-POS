@@ -97,7 +97,9 @@ import {
   saveStoredPurchaseOrders,
   saveStoredDemands,
   saveStoredStockLogs,
-  calculateProductStockValue
+  calculateProductStockValue,
+  auditAndDetectStockDiscrepancies,
+  getStoredDiscrepancyLogs
 } from './services/storage';
 import { 
   getStoredAuthState, 
@@ -1803,70 +1805,102 @@ export default function App() {
   }, [currentEmployee, currentView]);
 
 
-  const handleImportFullBackup = (data: any) => {
+  const mergeArraysById = <T extends { id: string }>(localArr: T[], incomingArr: T[], isCloudPull?: boolean): T[] => {
+    if (!Array.isArray(incomingArr)) return localArr || [];
+    if (!isCloudPull) return incomingArr;
+    if (incomingArr.length === 0) return localArr || [];
+    if (!Array.isArray(localArr) || localArr.length === 0) return incomingArr;
+    const map = new Map<string, T>();
+    for (const item of localArr) {
+      if (item && item.id) map.set(item.id, item);
+    }
+    for (const item of incomingArr) {
+      if (item && item.id) map.set(item.id, item);
+    }
+    return Array.from(map.values());
+  };
+
+  const handleImportFullBackup = (data: any, isCloudPull: boolean = false) => {
+    if (!data) return;
     if (data.products && Array.isArray(data.products)) {
-      saveStoredProducts(data.products);
-      setProducts(data.products);
+      const next = mergeArraysById(getStoredProducts(), data.products, isCloudPull);
+      saveStoredProducts(next);
+      setProducts(next);
     }
     if (data.brands && Array.isArray(data.brands)) {
-      saveStoredBrands(data.brands);
-      setBrands(data.brands);
+      const next = mergeArraysById(getStoredBrands(), data.brands, isCloudPull);
+      saveStoredBrands(next);
+      setBrands(next);
     }
     if (data.types && Array.isArray(data.types)) {
-      saveStoredTypes(data.types);
-      setTypes(data.types);
+      const next = mergeArraysById(getStoredTypes(), data.types, isCloudPull);
+      saveStoredTypes(next);
+      setTypes(next);
     }
     if (data.locations && Array.isArray(data.locations)) {
-      saveStoredLocations(data.locations);
-      setLocations(data.locations);
+      const next = mergeArraysById(getStoredLocations(), data.locations, isCloudPull);
+      saveStoredLocations(next);
+      setLocations(next);
     }
     if (data.customers && Array.isArray(data.customers)) {
-      saveStoredCustomers(data.customers);
-      setCustomers(data.customers);
+      const next = mergeArraysById(getStoredCustomers(), data.customers, isCloudPull);
+      saveStoredCustomers(next);
+      setCustomers(next);
     }
     if (data.customerLedger && Array.isArray(data.customerLedger)) {
-      saveStoredCustomerLedger(data.customerLedger);
-      setCustomerLedger(data.customerLedger);
+      const next = mergeArraysById(getStoredCustomerLedger(), data.customerLedger, isCloudPull);
+      saveStoredCustomerLedger(next);
+      setCustomerLedger(next);
     }
     if (data.sales && Array.isArray(data.sales)) {
-      saveStoredSales(data.sales);
-      setSales(data.sales);
+      const next = mergeArraysById(getStoredSales(), data.sales, isCloudPull);
+      saveStoredSales(next);
+      setSales(next);
     }
     if (data.customerReturns && Array.isArray(data.customerReturns)) {
-      saveStoredCustomerReturns(data.customerReturns);
-      setCustomerReturns(data.customerReturns);
+      const next = mergeArraysById(getStoredCustomerReturns(), data.customerReturns, isCloudPull);
+      saveStoredCustomerReturns(next);
+      setCustomerReturns(next);
     }
     if (data.vendors && Array.isArray(data.vendors)) {
-      saveStoredVendors(data.vendors);
-      setVendors(data.vendors);
+      const next = mergeArraysById(getStoredVendors(), data.vendors, isCloudPull);
+      saveStoredVendors(next);
+      setVendors(next);
     }
     if (data.vendorLedger && Array.isArray(data.vendorLedger)) {
-      saveStoredVendorLedgerEntries(data.vendorLedger);
-      setLedgerEntries(data.vendorLedger);
+      const next = mergeArraysById(getStoredVendorLedgerEntries(), data.vendorLedger, isCloudPull);
+      saveStoredVendorLedgerEntries(next);
+      setLedgerEntries(next);
     }
     if (data.vendorReturns && Array.isArray(data.vendorReturns)) {
-      saveStoredVendorReturns(data.vendorReturns);
-      setVendorReturns(data.vendorReturns);
+      const next = mergeArraysById(getStoredVendorReturns(), data.vendorReturns, isCloudPull);
+      saveStoredVendorReturns(next);
+      setVendorReturns(next);
     }
     if (data.purchases && Array.isArray(data.purchases)) {
-      saveStoredPurchases(data.purchases);
-      setPurchases(data.purchases);
+      const next = mergeArraysById(getStoredPurchases(), data.purchases, isCloudPull);
+      saveStoredPurchases(next);
+      setPurchases(next);
     }
     if (data.purchaseOrders && Array.isArray(data.purchaseOrders)) {
-      saveStoredPurchaseOrders(data.purchaseOrders);
-      setPurchaseOrders(data.purchaseOrders);
+      const next = mergeArraysById(getStoredPurchaseOrders(), data.purchaseOrders, isCloudPull);
+      saveStoredPurchaseOrders(next);
+      setPurchaseOrders(next);
     }
     if (data.quotations && Array.isArray(data.quotations)) {
-      saveStoredQuotations(data.quotations);
-      setQuotations(data.quotations);
+      const next = mergeArraysById(getStoredQuotations(), data.quotations, isCloudPull);
+      saveStoredQuotations(next);
+      setQuotations(next);
     }
     if (data.demands && Array.isArray(data.demands)) {
-      saveStoredDemands(data.demands);
-      setDemands(data.demands);
+      const next = mergeArraysById(getStoredDemands(), data.demands, isCloudPull);
+      saveStoredDemands(next);
+      setDemands(next);
     }
     if (data.expenses && Array.isArray(data.expenses)) {
-      saveStoredExpenses(data.expenses);
-      setExpenses(data.expenses);
+      const next = mergeArraysById(getStoredExpenses(), data.expenses, isCloudPull);
+      saveStoredExpenses(next);
+      setExpenses(next);
     }
     if (data.employees && Array.isArray(data.employees)) {
       const localEmployees = getStoredEmployees();
@@ -1892,8 +1926,9 @@ export default function App() {
       setEmployees(mergedEmployees);
     }
     if (data.stockLogs && Array.isArray(data.stockLogs)) {
-      saveStoredStockLogs(data.stockLogs);
-      setStockLogs(data.stockLogs);
+      const next = mergeArraysById(getStoredStockLogs(), data.stockLogs, isCloudPull);
+      saveStoredStockLogs(next);
+      setStockLogs(next);
     }
     if (data.pricingSettings) {
       saveStoredPricingSettings(data.pricingSettings);
@@ -1902,18 +1937,32 @@ export default function App() {
   };
 
   const hasInitialPulled = useRef(false);
+  const [isInitialPullComplete, setIsInitialPullComplete] = useState(false);
 
   // Initial pull from cloud on mount
   useEffect(() => {
-    if (!hasInitialPulled.current && supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+    if (!supabaseConfig.enabled || !supabaseConfig.url || !supabaseConfig.anonKey) {
+      setIsInitialPullComplete(true);
+      return;
+    }
+    if (!hasInitialPulled.current) {
       hasInitialPulled.current = true;
       const client = getSupabaseClient(supabaseConfig);
       if (client) {
-        fetchAllFromSupabase(client).then(res => {
-          if (res.success && res.data) {
-            handleImportFullBackup(res.data);
-          }
-        });
+        fetchAllFromSupabase(client)
+          .then(res => {
+            if (res.success && res.data) {
+              handleImportFullBackup(res.data, true);
+            }
+          })
+          .catch(err => {
+            console.warn('Initial cloud pull warning:', err);
+          })
+          .finally(() => {
+            setIsInitialPullComplete(true);
+          });
+      } else {
+        setIsInitialPullComplete(true);
       }
     }
   }, [supabaseConfig.enabled, supabaseConfig.url, supabaseConfig.anonKey]);
@@ -1922,7 +1971,7 @@ export default function App() {
   const prevSyncState = useRef<any>({});
 
   useEffect(() => {
-    if (!supabaseConfig.enabled || !supabaseConfig.url || !supabaseConfig.anonKey) {
+    if (!isInitialPullComplete || !supabaseConfig.enabled || !supabaseConfig.url || !supabaseConfig.anonKey) {
       return;
     }
 
@@ -1978,7 +2027,7 @@ export default function App() {
     products, brands, types, locations, customers, customerLedger, sales,
     customerReturns, vendors, ledgerEntries, vendorReturns, purchases, purchaseOrders,
     quotations, demands, expenses, employees, stockLogs, pricingSettings,
-    supabaseConfig.enabled, supabaseConfig.url, supabaseConfig.anonKey
+    supabaseConfig.enabled, supabaseConfig.url, supabaseConfig.anonKey, isInitialPullComplete
   ]);
 
   // Filtered and Sorted Products
@@ -2091,8 +2140,16 @@ export default function App() {
     if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (window.confirm('Are you sure you want to delete this product from inventory?')) {
       setProducts(prev => prev.filter(p => p.id !== id));
+      if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+        const client = getSupabaseClient(supabaseConfig);
+        if (client) {
+          client.from('inventory_products').delete().eq('id', id).then(({ error }) => {
+            if (error) console.warn('Failed to delete single product from Supabase:', error.message);
+          });
+        }
+      }
     }
-  }, [isOnline]);
+  }, [isOnline, supabaseConfig]);
 
   const handleDuplicateProduct = useCallback((prod: Product) => {
     setProducts(prev => {
@@ -2217,7 +2274,7 @@ export default function App() {
 
   const nextInternalId = getNextInternalId(products);
 
-  const handleExportFullBackup = () => {
+  const handleExportFullBackup = useCallback(() => {
     const backupData = {
       products, brands, types, locations, customers, customerLedger, sales,
       customerReturns, vendors, vendorLedger: ledgerEntries, vendorReturns, purchases, purchaseOrders,
@@ -2231,7 +2288,61 @@ export default function App() {
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
     showToast('Backup Exported', 'JSON File Saved');
-  };
+  }, [
+    products, brands, types, locations, customers, customerLedger, sales,
+    customerReturns, vendors, ledgerEntries, vendorReturns, purchases, purchaseOrders,
+    quotations, demands, expenses, employees, stockLogs, pricingSettings
+  ]);
+
+  // Recurring 24-Hours of Active Use Background Backup Timer (Data Loss Prevention)
+  useEffect(() => {
+    const ACTIVE_USE_TARGET_SECONDS = 24 * 60 * 60; // 24 hours of active use
+    const STORAGE_ACTIVE_SEC_KEY = 'kfh_active_use_seconds_v1';
+    const STORAGE_LAST_BACKUP_KEY = 'kfh_last_auto_backup_v1';
+
+    let activeSeconds = Number(localStorage.getItem(STORAGE_ACTIVE_SEC_KEY)) || 0;
+
+    const interval = setInterval(() => {
+      // Only count active use when the app document has focus and is visible
+      if (typeof document !== 'undefined' && !document.hidden) {
+        activeSeconds += 1;
+        localStorage.setItem(STORAGE_ACTIVE_SEC_KEY, String(activeSeconds));
+
+        if (activeSeconds >= ACTIVE_USE_TARGET_SECONDS) {
+          try {
+            handleExportFullBackup();
+            localStorage.setItem(STORAGE_LAST_BACKUP_KEY, new Date().toISOString());
+            localStorage.setItem(STORAGE_ACTIVE_SEC_KEY, '0');
+            activeSeconds = 0;
+            showToast('Data Loss Prevention', 'Automated 24-hour active use JSON backup downloaded successfully.');
+          } catch (err) {
+            console.warn('Automated backup download failed:', err);
+          }
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [handleExportFullBackup]);
+
+  // Recurring background stock discrepancy audit process
+  useEffect(() => {
+    const auditRun = () => {
+      try {
+        const existing = getStoredDiscrepancyLogs();
+        const { newDiscrepanciesCount } = auditAndDetectStockDiscrepancies(products, stockLogs, existing);
+        if (newDiscrepanciesCount > 0) {
+          console.warn(`Detected ${newDiscrepanciesCount} new stock discrepancies. Logged to discrepancy_logs.`);
+        }
+      } catch (err) {
+        console.warn('Stock discrepancy audit failed:', err);
+      }
+    };
+
+    auditRun();
+    const interval = setInterval(auditRun, 30000);
+    return () => clearInterval(interval);
+  }, [products, stockLogs]);
 
   const handleWipeData = async (downloadBackup: boolean) => {
     if (downloadBackup) {

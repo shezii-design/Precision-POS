@@ -44,6 +44,9 @@ import {
   syncPricingSettingsToSupabase,
   syncAllModulesToSupabase,
   fetchAllFromSupabase,
+  fetchApplicationSnapshotsFromSupabase,
+  restoreApplicationSnapshotFromSupabase,
+  ApplicationSnapshotRecord,
   SCHEMA_FULL_DATABASE,
   SCHEMA_STAFF_AUTH_QUICK_FIX,
   resetSupabaseClient
@@ -157,7 +160,55 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
   const [syncFeedback, setSyncFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   // UI Navigation
-  const [activeTab, setActiveTab] = useState<'connection' | 'sync' | 'guide' | 'columns'>('connection');
+  const [activeTab, setActiveTab] = useState<'connection' | 'sync' | 'snapshots' | 'guide' | 'columns'>('connection');
+  const [snapshots, setSnapshots] = useState<ApplicationSnapshotRecord[]>([]);
+  const [isLoadingSnapshots, setIsLoadingSnapshots] = useState<boolean>(false);
+  const [restoringSnapId, setRestoringSnapId] = useState<string | null>(null);
+
+  const loadSnapshots = async () => {
+    const client = getSupabaseClient(config);
+    if (!client) return;
+    setIsLoadingSnapshots(true);
+    try {
+      const res = await fetchApplicationSnapshotsFromSupabase(client);
+      if (res.success) {
+        setSnapshots(res.snapshots);
+      }
+    } catch (err) {
+      console.warn('Failed to load snapshots:', err);
+    } finally {
+      setIsLoadingSnapshots(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'snapshots' && (config.url || envConfig.url)) {
+      loadSnapshots();
+    }
+  }, [activeTab, config.url, config.anonKey]);
+
+  const handleRestoreSnapshot = async (snapId: string) => {
+    if (!window.confirm('Are you sure you want to restore your entire application state from this recovery snapshot? Current local data will be replaced.')) {
+      return;
+    }
+    const client = getSupabaseClient(config);
+    if (!client) return;
+    setRestoringSnapId(snapId);
+    try {
+      const res = await restoreApplicationSnapshotFromSupabase(client, snapId);
+      if (res.success && res.data && onImportFullBackup) {
+        onImportFullBackup(res.data, false);
+        alert('Application state successfully restored from recovery snapshot!');
+        onClose();
+      } else {
+        alert('Failed to restore snapshot: ' + (res.error || 'Unknown error'));
+      }
+    } catch (err: any) {
+      alert('Restore error: ' + (err?.message || String(err)));
+    } finally {
+      setRestoringSnapId(null);
+    }
+  };
   const [copiedSql, setCopiedSql] = useState<boolean>(false);
   const [copiedStaffSql, setCopiedStaffSql] = useState<boolean>(false);
   const [showSqlViewer, setShowSqlViewer] = useState<boolean>(false);
@@ -590,6 +641,19 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Cloud Sync Hub</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('snapshots')}
+            className={`px-3.5 py-2.5 text-xs font-bold rounded-t-xl transition-all border-t border-x shrink-0 flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'snapshots'
+                ? 'bg-white text-red-600 border-slate-200 border-b-white -mb-px shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 border-transparent'
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>Time-Machine Recovery</span>
           </button>
 
           <button

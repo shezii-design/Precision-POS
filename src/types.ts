@@ -294,6 +294,20 @@ export interface StockLog {
   notes?: string;
 }
 
+export interface DiscrepancyLog {
+  id: string;
+  productId: string;
+  productName: string;
+  internalId: string;
+  recordedStock: number;
+  calculatedStock: number;
+  difference: number;
+  status: 'detected' | 'reconciled';
+  createdAt: string;
+  reconciledAt?: string;
+  notes?: string;
+}
+
 export type CustomerType = 'customer' | 'company';
 
 export interface MachineDemandItem {
