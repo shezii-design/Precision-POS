@@ -510,16 +510,57 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     }
   };
 
+  const fallbackCopyTextToClipboard = (text: string, isStaff: boolean = false) => {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      if (successful) {
+        if (isStaff) {
+          setCopiedStaffSql(true);
+          setTimeout(() => setCopiedStaffSql(false), 2500);
+        } else {
+          setCopiedSql(true);
+          setTimeout(() => setCopiedSql(false), 2500);
+        }
+      }
+    } catch (err) {
+      console.warn('Fallback copy failed:', err);
+    }
+  };
+
   const handleCopyMasterSql = () => {
-    navigator.clipboard.writeText(SCHEMA_FULL_DATABASE);
-    setCopiedSql(true);
-    setTimeout(() => setCopiedSql(false), 2500);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(SCHEMA_FULL_DATABASE).then(() => {
+        setCopiedSql(true);
+        setTimeout(() => setCopiedSql(false), 2500);
+      }).catch(() => {
+        fallbackCopyTextToClipboard(SCHEMA_FULL_DATABASE, false);
+      });
+    } else {
+      fallbackCopyTextToClipboard(SCHEMA_FULL_DATABASE, false);
+    }
   };
 
   const handleCopyStaffSql = () => {
-    navigator.clipboard.writeText(SCHEMA_STAFF_AUTH_QUICK_FIX);
-    setCopiedStaffSql(true);
-    setTimeout(() => setCopiedStaffSql(false), 2500);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(SCHEMA_STAFF_AUTH_QUICK_FIX).then(() => {
+        setCopiedStaffSql(true);
+        setTimeout(() => setCopiedStaffSql(false), 2500);
+      }).catch(() => {
+        fallbackCopyTextToClipboard(SCHEMA_STAFF_AUTH_QUICK_FIX, true);
+      });
+    } else {
+      fallbackCopyTextToClipboard(SCHEMA_STAFF_AUTH_QUICK_FIX, true);
+    }
   };
 
   const handleExportFullJson = () => {
