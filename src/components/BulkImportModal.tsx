@@ -131,9 +131,13 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         }
       }
 
-      const existingProduct = importMode === 'overwrite' && row.internalId
-        ? existingProducts.find(p => p.internalId.toLowerCase() === row.internalId.toLowerCase())
-        : undefined;
+      const existingProduct = existingProducts.find(p => 
+        (row.internalId && p.internalId && p.internalId.toLowerCase() === row.internalId.toLowerCase()) ||
+        (row.name && p.name && p.name.toLowerCase() === row.name.toLowerCase())
+      ) || currentWorkingList.find(p => 
+        (row.internalId && p.internalId && p.internalId.toLowerCase() === row.internalId.toLowerCase()) ||
+        (row.name && p.name && p.name.toLowerCase() === row.name.toLowerCase())
+      );
 
       const computedSellingPrices = generateProductSellingPrices(row.costPrice, pricingSettings, existingProduct?.sellingPrices);
       if (row.wholesalePrice && computedSellingPrices[0]) {

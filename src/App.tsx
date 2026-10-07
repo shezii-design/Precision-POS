@@ -121,6 +121,7 @@ import { exportProductsToCSV, exportProductsToExcel } from './services/excel';
 import { 
   getSupabaseClient, 
   syncAllModulesToSupabase, 
+  syncProductsToSupabase,
   syncSalesToSupabase, 
   fetchAllFromSupabase, 
   wipeAllSupabaseData,
@@ -2091,10 +2092,10 @@ export default function App() {
   }, [isOnline]);
 
   const handleSaveProduct = (data: Partial<Product>) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
+    let updatedProducts: Product[];
     if (editingProduct) {
       // Update existing
-      const updated = products.map(p => {
+      updatedProducts = products.map(p => {
         if (p.id === editingProduct.id) {
           return {
             ...p,
@@ -2104,7 +2105,7 @@ export default function App() {
         }
         return p;
       });
-      setProducts(updated);
+      showToast('Product Updated', data.name || editingProduct.name);
     } else {
       // Create new
       const newProduct: Product = {
@@ -2132,24 +2133,37 @@ export default function App() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      setProducts([newProduct, ...products]);
+      updatedProducts = [newProduct, ...products];
+      showToast('Product Added', newProduct.name);
+    }
+    setProducts(updatedProducts);
+    saveStoredProducts(updatedProducts);
+
+    if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+      const client = getSupabaseClient(supabaseConfig);
+      if (client) {
+        syncProductsToSupabase(client, updatedProducts).catch(err => {
+          console.warn('Immediate Supabase product sync failed:', err);
+        });
+      }
     }
   };
 
   const handleDeleteProduct = useCallback((id: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     if (window.confirm('Are you sure you want to delete this product from inventory?')) {
-      setProducts(prev => prev.filter(p => p.id !== id));
+      const updated = products.filter(p => p.id !== id);
+      setProducts(updated);
+      saveStoredProducts(updated);
       if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
         const client = getSupabaseClient(supabaseConfig);
         if (client) {
-          client.from('inventory_products').delete().eq('id', id).then(({ error }) => {
-            if (error) console.warn('Failed to delete single product from Supabase:', error.message);
+          syncProductsToSupabase(client, updated).catch(err => {
+            console.warn('Failed to sync products after deletion:', err);
           });
         }
       }
     }
-  }, [isOnline, supabaseConfig]);
+  }, [products, supabaseConfig]);
 
   const handleDuplicateProduct = useCallback((prod: Product) => {
     setProducts(prev => {
@@ -2162,34 +2176,50 @@ export default function App() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      return [duplicated, ...prev];
+      const updated = [duplicated, ...prev];
+      saveStoredProducts(updated);
+      if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+        const client = getSupabaseClient(supabaseConfig);
+        if (client) {
+          syncProductsToSupabase(client, updated).catch(err => {});
+        }
+      }
+      return updated;
     });
-  }, []);
+  }, [supabaseConfig]);
 
   const handleQuickUpdateCost = useCallback((productId: string, newCost: number) => {
-    setProducts(prev => prev.map(p => {
-      if (p.id === productId) {
-        const nextPrices = generateProductSellingPrices(newCost, pricingSettings, p.sellingPrices);
-        return {
-          ...p,
-          costPrice: newCost,
-          sellingPrices: nextPrices,
-          updatedAt: new Date().toISOString(),
-        };
+    setProducts(prev => {
+      const updated = prev.map(p => {
+        if (p.id === productId) {
+          const nextPrices = generateProductSellingPrices(newCost, pricingSettings, p.sellingPrices);
+          return {
+            ...p,
+            costPrice: newCost,
+            sellingPrices: nextPrices,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return p;
+      });
+      saveStoredProducts(updated);
+      if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+        const client = getSupabaseClient(supabaseConfig);
+        if (client) {
+          syncProductsToSupabase(client, updated).catch(err => {});
+        }
       }
-      return p;
-    }));
-  }, [pricingSettings]);
+      return updated;
+    });
+  }, [pricingSettings, supabaseConfig]);
 
   // Stock Adjustment Handler
   const handleOpenStockAdjust = useCallback((prod: Product) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setProductForStock(prod);
     setShowStockModal(true);
-  }, [isOnline]);
+  }, []);
 
   const handleSaveStock = (productId: string, newStock: number, log: StockLog) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     saveStockLog(log);
     setStockLogs(getStoredStockLogs());
     const updated = products.map(p => {
@@ -2203,6 +2233,16 @@ export default function App() {
       return p;
     });
     setProducts(updated);
+    saveStoredProducts(updated);
+
+    if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+      const client = getSupabaseClient(supabaseConfig);
+      if (client) {
+        syncProductsToSupabase(client, updated).catch(err => {
+          console.warn('Immediate Supabase stock sync failed:', err);
+        });
+      }
+    }
   };
 
   // Label Printing Handler
@@ -2219,7 +2259,6 @@ export default function App() {
 
   // Pricing Formulas Save & Recalculate
   const handleSavePricingSettings = (newSettings: GlobalPricingSettings, recalculateAll: boolean) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
     setPricingSettings(newSettings);
     if (recalculateAll) {
       const updated = products.map(p => ({
@@ -2228,6 +2267,7 @@ export default function App() {
         updatedAt: new Date().toISOString(),
       }));
       setProducts(updated);
+      saveStoredProducts(updated);
     }
   };
 
@@ -2237,15 +2277,31 @@ export default function App() {
     if (newTypes) setTypes(newTypes);
     if (newLocations) setLocations(newLocations);
     
-    if (mode === 'append') {
-      setProducts([...importedProducts, ...products]);
-    } else {
-      // Overwrite matching internal IDs or append new
-      const existingMap = new Map(products.map(p => [p.internalId ? p.internalId.toLowerCase() : p.id, p]));
-      importedProducts.forEach(imp => {
-        existingMap.set(imp.internalId ? imp.internalId.toLowerCase() : imp.id, imp);
-      });
-      setProducts(Array.from(existingMap.values()));
+    let updatedProducts: Product[];
+    const existingMap = new Map<string, Product>(products.map(p => [p.internalId ? p.internalId.toLowerCase() : p.id, p]));
+    
+    importedProducts.forEach(imp => {
+      const key = imp.internalId ? imp.internalId.toLowerCase() : imp.id;
+      if (existingMap.has(key)) {
+        const existing = existingMap.get(key)!;
+        existingMap.set(key, { ...existing, ...imp, id: existing.id, createdAt: existing.createdAt, updatedAt: new Date().toISOString() });
+      } else {
+        existingMap.set(key, imp);
+      }
+    });
+    updatedProducts = Array.from(existingMap.values());
+
+    setProducts(updatedProducts);
+    saveStoredProducts(updatedProducts);
+    showToast('Bulk Import Success', `${importedProducts.length} items imported & synchronized to backend.`);
+
+    if (supabaseConfig.enabled && supabaseConfig.url && supabaseConfig.anonKey) {
+      const client = getSupabaseClient(supabaseConfig);
+      if (client) {
+        syncProductsToSupabase(client, updatedProducts).catch(err => {
+          console.warn('Immediate Supabase bulk import sync failed:', err);
+        });
+      }
     }
   };
 

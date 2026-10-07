@@ -1,3 +1,18 @@
+
+export function getErrorMessage(err: unknown): string {
+  if (!err) return "Unknown error";
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err !== null) {
+    const anyErr = err as any;
+    if (anyErr.message && typeof anyErr.message === "string") return anyErr.message;
+    if (anyErr.error_description && typeof anyErr.error_description === "string") return anyErr.error_description;
+    if (anyErr.details && typeof anyErr.details === "string") return anyErr.details;
+    if (anyErr.hint && typeof anyErr.hint === "string") return anyErr.hint;
+    try { return JSON.stringify(err); } catch { return String(err); }
+  }
+  return String(err);
+}
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 
@@ -94,7 +109,7 @@ export async function fetchAllRows<T = Record<string, any>>(
 
     return { data: allData };
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = getErrorMessage(err);
     return { data: [], error: msg };
   }
 }
@@ -344,7 +359,7 @@ export async function authenticateWithSupabase(
 
     return { success: false, error: 'Authentication failed. Please verify your Supabase credentials.' };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, error: errorMsg };
   }
 }
@@ -394,7 +409,7 @@ export async function authenticateEmployeeViaSupabase(
     const emp = res.employee as EmployeeAccount;
     return { success: true, employee: emp };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, error: errorMsg };
   }
 }
@@ -600,7 +615,7 @@ export async function saveEmployeeSecureToSupabase(
 
     return { success: false, error: lastError };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, error: errorMsg };
   }
 }
@@ -827,7 +842,7 @@ export async function executeSaleTransactionSupabase(
 
     return { success: true, saleId: sale.id };
   } catch (fallbackErr: unknown) {
-    const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+    const errorMsg = getErrorMessage(fallbackErr);
     return { success: false, error: errorMsg };
   }
 }
@@ -997,7 +1012,7 @@ export async function executePurchaseTransactionSupabase(
 
     return { success: true, purchaseId: purchase.id };
   } catch (fallbackErr: unknown) {
-    const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+    const errorMsg = getErrorMessage(fallbackErr);
     return { success: false, error: errorMsg };
   }
 }
@@ -1120,7 +1135,7 @@ export async function executeCustomerReturnTransactionSupabase(
 
     return { success: true, returnId: returnRecord.id };
   } catch (fallbackErr: unknown) {
-    const errorMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+    const errorMsg = getErrorMessage(fallbackErr);
     return { success: false, error: errorMsg };
   }
 }
@@ -1186,7 +1201,7 @@ export async function saveCustomerPaymentToSupabase(
 
     return { success: true };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, error: errorMsg };
   }
 }
@@ -1226,7 +1241,7 @@ export async function deleteCustomerPaymentFromSupabase(
 
     return { success: true };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, error: errorMsg };
   }
 }
@@ -1302,7 +1317,7 @@ export async function saveVendorPaymentToSupabase(
 
     return { success: true };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, error: errorMsg };
   }
 }
@@ -1340,7 +1355,7 @@ export async function deleteVendorPaymentFromSupabase(
 
     return { success: true };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, error: errorMsg };
   }
 }
@@ -1448,7 +1463,7 @@ export async function testSupabaseConnection(
           status: 'ready' 
         };
       } catch (err: unknown) {
-        const errStr = err instanceof Error ? err.message : String(err);
+        const errStr = getErrorMessage(err);
         return { tableName: t.name, label: t.label, exists: false, rowCount: 0, status: 'error', errorMessage: errStr };
       }
     });
@@ -1491,7 +1506,7 @@ export async function testSupabaseConnection(
       };
     }
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { 
       success: false, 
       message: `Failed to connect to Supabase: ${errorMsg}`,
@@ -4478,7 +4493,7 @@ export async function syncProductsToSupabase(
 
     return await exactSyncRows(client, 'inventory_products', rows, 'id');
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
@@ -4499,7 +4514,7 @@ export async function fetchProductsFromSupabase(
     const products: Product[] = (data || []).map(row => supabaseRowToProduct(row));
     return { success: true, products };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, products: [], error: errorMsg };
   }
 }
@@ -4564,7 +4579,7 @@ export async function syncCustomersToSupabase(
 
     return { success: true, customerCount: customers.length, ledgerCount: ledgerEntries.length };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, customerCount: 0, ledgerCount: 0, error: errorMsg };
   }
 }
@@ -4622,7 +4637,7 @@ export async function fetchCustomersFromSupabase(
 
     return { success: true, customers, ledger };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, customers: [], ledger: [], error: errorMsg };
   }
 }
@@ -4721,7 +4736,7 @@ export async function syncVendorsAndPurchasesToSupabase(
       poCount: purchaseOrders.length 
     };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, vendorCount: 0, purchaseCount: 0, poCount: 0, error: errorMsg };
   }
 }
@@ -4765,7 +4780,7 @@ export async function syncQuotationsToSupabase(
 
     return await exactSyncRows(client, 'quotations', rows, 'id');
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
@@ -4800,7 +4815,7 @@ export async function syncDemandsToSupabase(
 
     return await exactSyncRows(client, 'demands', rows, 'id');
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
@@ -4826,7 +4841,7 @@ export async function syncExpensesToSupabase(
 
     return await exactSyncRows(client, 'expenses', rows, 'id');
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
@@ -4875,7 +4890,7 @@ export async function syncStaffAndDevicesToSupabase(
 
     return { success: true, employeeCount: savedEmployeeCount, deviceCount: devices.length };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, employeeCount: 0, deviceCount: 0, error: errorMsg };
   }
 }
@@ -4897,7 +4912,7 @@ export async function syncMasterDataToSupabase(
     await exactSyncRows(client, 'inventory_locations', locRows, 'id');
     return { success: true, count: brands.length + types.length + locations.length };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
@@ -4944,7 +4959,7 @@ export async function syncSalesToSupabase(
 
     return await exactSyncRows(client, 'sales', rows, 'id');
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
@@ -4990,7 +5005,7 @@ export async function fetchSalesFromSupabase(
     }));
     return { success: true, sales };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, sales: [], error: errorMsg };
   }
 }
@@ -5021,7 +5036,7 @@ export async function syncCustomerReturnsToSupabase(
     }));
     return await exactSyncRows(client, 'customer_returns', rows, 'id');
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
@@ -5053,7 +5068,7 @@ export async function fetchCustomerReturnsFromSupabase(
     }));
     return { success: true, returns };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, returns: [], error: errorMsg };
   }
 }
@@ -5096,7 +5111,7 @@ export async function syncVendorLedgerToSupabase(
 
     return { success: true, count: rows.length };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
@@ -5130,7 +5145,7 @@ export async function fetchVendorLedgerFromSupabase(
     }));
     return { success: true, ledger };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, ledger: [], error: errorMsg };
   }
 }
@@ -5158,7 +5173,7 @@ export async function syncVendorReturnsToSupabase(
     }));
     return await exactSyncRows(client, 'vendor_returns', rows, 'id');
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
@@ -5188,7 +5203,7 @@ export async function fetchVendorReturnsFromSupabase(
     }));
     return { success: true, returns };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, returns: [], error: errorMsg };
   }
 }
@@ -5206,7 +5221,7 @@ export async function syncPricingSettingsToSupabase(
     if (error) return { success: false, error: error.message };
     return { success: true };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, error: errorMsg };
   }
 }
@@ -5220,7 +5235,7 @@ export async function fetchPricingSettingsFromSupabase(
     if (data?.settings) return { success: true, settings: data.settings as GlobalPricingSettings };
     return { success: false, error: 'Settings not found' };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, error: errorMsg };
   }
 }
@@ -5255,7 +5270,7 @@ export async function syncStockLogsToSupabase(
     }));
     return await exactSyncRows(client, 'stock_logs', rows, 'id');
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };
   }
 }
@@ -5291,7 +5306,7 @@ export async function fetchStockLogsFromSupabase(
     }));
     return { success: true, logs };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, logs: [], error: errorMsg };
   }
 }
@@ -5380,7 +5395,7 @@ export async function fetchVendorsAndPurchasesFromSupabase(
 
     return { success: true, vendors, purchases, purchaseOrders };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, vendors: [], purchases: [], purchaseOrders: [], error: errorMsg };
   }
 }
@@ -5425,7 +5440,7 @@ export async function fetchQuotationsFromSupabase(
     }));
     return { success: true, quotations };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, quotations: [], error: errorMsg };
   }
 }
@@ -5461,7 +5476,7 @@ export async function fetchDemandsFromSupabase(
     }));
     return { success: true, demands };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, demands: [], error: errorMsg };
   }
 }
@@ -5488,7 +5503,7 @@ export async function fetchExpensesFromSupabase(
     }));
     return { success: true, expenses };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, expenses: [], error: errorMsg };
   }
 }
@@ -5582,7 +5597,7 @@ export async function fetchStaffAndDevicesFromSupabase(
 
     return { success: true, employees, devices };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, employees: [], devices: [], error: errorMsg };
   }
 }
@@ -5603,7 +5618,7 @@ export async function fetchMasterDataFromSupabase(
 
     return { success: true, brands, types, locations };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, brands: [], types: [], locations: [], error: errorMsg };
   }
 }
@@ -5709,7 +5724,7 @@ export async function fetchAllFromSupabase(client: SupabaseClient): Promise<{
       }
     };
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = getErrorMessage(err);
     return { success: false, error: errorMsg };
   }
 }
@@ -6049,7 +6064,7 @@ export async function saveApplicationSnapshotToSupabase(
 
     return { success: true, snapshotId: snapId };
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = getErrorMessage(err);
     return { success: false, error: msg };
   }
 }
@@ -6083,7 +6098,7 @@ export async function fetchApplicationSnapshotsFromSupabase(
 
     return { success: true, snapshots };
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = getErrorMessage(err);
     return { success: false, snapshots: [], error: msg };
   }
 }
@@ -6112,7 +6127,7 @@ export async function restoreApplicationSnapshotFromSupabase(
 
     return { success: false, error: 'Snapshot data not found' };
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = getErrorMessage(err);
     return { success: false, error: msg };
   }
 }
