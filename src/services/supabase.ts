@@ -2227,6 +2227,7 @@ SELECT
 FROM employee_accounts;
 
 -- 10. SECURE RPC: Authenticate Employee Server-Side
+DROP FUNCTION IF EXISTS authenticate_employee(TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION authenticate_employee(
   p_identifier TEXT,
   p_secret TEXT,
@@ -2398,6 +2399,7 @@ END;
 $$;
 
 -- 11. SECURE RPC: Save Employee with Server-Side Hashing
+DROP FUNCTION IF EXISTS save_employee_secure(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, BOOLEAN, JSONB, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION save_employee_secure(
   p_id TEXT,
   p_name TEXT,
@@ -2484,6 +2486,7 @@ END;
 $$;
 
 -- 12. ACID TRANSACTION: Process Sale and Inventory Atomically
+DROP FUNCTION IF EXISTS process_sale_transaction(JSONB, JSONB, JSONB, TEXT);
 CREATE OR REPLACE FUNCTION process_sale_transaction(
   p_sale JSONB,
   p_items JSONB,
@@ -2687,6 +2690,7 @@ END;
 $$;
 
 -- 13. ACID TRANSACTION: Process Purchase and Restock Atomically
+DROP FUNCTION IF EXISTS process_purchase_transaction(JSONB, JSONB, JSONB);
 CREATE OR REPLACE FUNCTION process_purchase_transaction(
   p_purchase JSONB,
   p_items JSONB,
@@ -2874,6 +2878,7 @@ END;
 $$;
 
 -- 14. ACID TRANSACTION: Process Customer Return Atomically
+DROP FUNCTION IF EXISTS process_customer_return_transaction(JSONB, JSONB);
 CREATE OR REPLACE FUNCTION process_customer_return_transaction(
   p_return JSONB,
   p_items JSONB
@@ -3196,6 +3201,7 @@ SELECT
 FROM employee_accounts;
 
 -- 4. Secure RPC Function: Authenticate Employee Server-Side
+DROP FUNCTION IF EXISTS authenticate_employee(TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION authenticate_employee(
   p_identifier TEXT,
   p_secret TEXT,
@@ -3367,6 +3373,7 @@ END;
 $$;
 
 -- 5. Secure RPC Function: Save Employee with Server-Side Hashing
+DROP FUNCTION IF EXISTS save_employee_secure(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, BOOLEAN, JSONB, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION save_employee_secure(
   p_id TEXT,
   p_name TEXT,
@@ -3453,6 +3460,7 @@ END;
 $$;
 
 -- 6. ACID TRANSACTION: Process Sale and Inventory Atomically
+DROP FUNCTION IF EXISTS process_sale_transaction(JSONB, JSONB, JSONB, TEXT);
 CREATE OR REPLACE FUNCTION process_sale_transaction(
   p_sale JSONB,
   p_items JSONB,
@@ -3645,6 +3653,7 @@ END;
 $$;
 
 -- 7. ACID TRANSACTION: Process Purchase and Restock Atomically
+DROP FUNCTION IF EXISTS process_purchase_transaction(JSONB, JSONB, JSONB);
 CREATE OR REPLACE FUNCTION process_purchase_transaction(
   p_purchase JSONB,
   p_items JSONB,
@@ -9962,6 +9971,7 @@ CREATE POLICY "Operational access employee_accounts"
 GRANT ALL ON employee_accounts TO anon, authenticated, service_role;
 
 -- 5. Create or Replace save_employee_secure RPC Function
+DROP FUNCTION IF EXISTS save_employee_secure(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, BOOLEAN, JSONB, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION save_employee_secure(
   p_id TEXT,
   p_name TEXT,
