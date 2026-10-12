@@ -1883,6 +1883,7 @@ export function calculateVendorBalance(
     (vId && (s.vendorId === vId || (s.isVendorSale && s.customerId === vId))) || 
     (vNameLower && s.vendorName && s.vendorName.trim().toLowerCase() === vNameLower)
   );
+  const allCustReturns = getStoredCustomerReturns();
   for (const sale of vendorSales) {
     balance = subtractFinancial(balance, sale.totalAmount || 0);
 
@@ -1894,6 +1895,15 @@ export function calculateVendorBalance(
     const amountReceivedAtCheckout = Math.max(0, subtractFinancial(sale.amountReceived || 0, directCashReceived));
     if (amountReceivedAtCheckout > 0) {
       balance = addFinancial(balance, amountReceivedAtCheckout);
+    }
+
+    // Add back returns on this sale if not already in vendorEntries
+    const returnsForSale = allCustReturns.filter(r => r.saleId === sale.id);
+    for (const ret of returnsForSale) {
+      const hasVLE = vendorEntries.some(e => e.referenceId === ret.id || e.billNumber === ret.returnNumber || e.id === `VLE-CR-${ret.id}`);
+      if (!hasVLE && ret.totalRefundAmount > 0) {
+        balance = addFinancial(balance, ret.totalRefundAmount);
+      }
     }
   }
 
@@ -2134,6 +2144,29 @@ export function getVendorFullLedger(
         paymentMethod: sale.paymentMethod || 'Cash',
         rawObject: sale,
       });
+    }
+  }
+
+  // Also include customer returns on vendor sales if not already in vEntries
+  const allCustReturnsForLedger = getStoredCustomerReturns();
+  for (const sale of vSales) {
+    const returnsForSale = allCustReturnsForLedger.filter(r => r.saleId === sale.id);
+    for (const ret of returnsForSale) {
+      const hasVLE = vEntries.some(e => e.referenceId === ret.id || e.billNumber === ret.returnNumber || e.id === `VLE-CR-${ret.id}`);
+      if (!hasVLE && ret.totalRefundAmount > 0) {
+        rawRows.push({
+          id: `vret-${ret.id}`,
+          sourceType: 'cash_received',
+          date: ret.date || ret.createdAt || new Date().toISOString(),
+          entryCode: ret.creditNoteNumber || 'Credit Note',
+          billNumber: ret.returnNumber,
+          referenceId: ret.id,
+          description: `Sales Return Credit Note #${ret.returnNumber} from Vendor (${ret.items.map(it => `${it.productName} x${it.quantity}`).join(', ')}) [Ref: ${ret.saleId || 'Sale'}]`,
+          debit: 0,
+          credit: ret.totalRefundAmount,
+          rawObject: ret,
+        });
+      }
     }
   }
 
@@ -3745,6 +3778,41 @@ export function recordCustomerReturnAndUpdateInventory(
     }
   }
 
+  // 4.5. Also synchronize Vendor Ledger if the returned sale belongs to a Vendor
+  const salesToSyncForVendorCheck = currentSales.length > 0 ? currentSales : getStoredSales();
+  const targetSaleForVendor = salesToSyncForVendorCheck.find(s => s.id === returnDoc.saleId);
+  const vendorIdForReturn = targetSaleForVendor?.vendorId || (targetSaleForVendor?.isVendorSale ? targetSaleForVendor.customerId : undefined);
+  if (vendorIdForReturn && returnDoc.totalRefundAmount > 0) {
+    const currentVendorLedger = getStoredVendorLedger();
+    const existingVendorEntryIndex = currentVendorLedger.findIndex(e => e.referenceId === returnDoc.id || e.billNumber === returnDoc.returnNumber || e.id === `VLE-CR-${returnDoc.id}`);
+    const vendorLedgerEntry: VendorLedgerEntry = {
+      id: `VLE-CR-${returnDoc.id}`,
+      vendorId: vendorIdForReturn,
+      vendorName: targetSaleForVendor?.vendorName || returnDoc.customerName,
+      date: returnDoc.date || now,
+      type: 'cash_received',
+      entryCode: returnDoc.creditNoteNumber || 'Credit Note',
+      billNumber: returnDoc.returnNumber,
+      referenceId: returnDoc.id,
+      description: `Sales Return Credit Note #${returnDoc.returnNumber} from Vendor (${returnDoc.items.map(it => `${it.productName} x${it.quantity}`).join(', ')})${returnDoc.saleId ? ` [Ref: ${returnDoc.saleId}]` : ''}`,
+      debit: 0,
+      credit: returnDoc.totalRefundAmount,
+      amount: returnDoc.totalRefundAmount,
+      receiptNumber: returnDoc.creditNoteNumber || returnDoc.returnNumber,
+      notes: returnDoc.notes,
+      createdAt: returnDoc.createdAt || now,
+      updatedAt: now,
+    };
+
+    let updatedVendorLedger = [...currentVendorLedger];
+    if (existingVendorEntryIndex >= 0) {
+      updatedVendorLedger[existingVendorEntryIndex] = vendorLedgerEntry;
+    } else {
+      updatedVendorLedger.push(vendorLedgerEntry);
+    }
+    saveStoredVendorLedger(updatedVendorLedger);
+  }
+
   // 5. Synchronize Sales Invoices
   const salesToSync = currentSales.length > 0 ? currentSales : getStoredSales();
   const updatedSales = syncSalesWithReturns(salesToSync, updatedReturns);
@@ -3786,6 +3854,12 @@ export function deleteCustomerReturnAndUpdateAll(
   if (!returnToDelete) {
     const salesToSync = currentSales.length > 0 ? currentSales : getStoredSales();
     const updatedSales = syncSalesWithReturns(salesToSync, currentReturns);
+    
+    // Clean up linked vendor ledger entry if any
+    const currentVendorLedgerForDel = getStoredVendorLedger();
+    const updatedVendorLedgerForDel = currentVendorLedgerForDel.filter(e => e.referenceId !== returnId && e.id !== `VLE-CR-${returnId}`);
+    saveStoredVendorLedger(updatedVendorLedgerForDel);
+
     return {
       updatedProducts: currentProducts,
       updatedReturns: currentReturns,
@@ -3865,6 +3939,11 @@ export function deleteCustomerReturnAndUpdateAll(
   saveStoredCustomers(updatedCustomers);
   saveStoredCustomerLedger(updatedLedger);
   saveStoredSales(updatedSales);
+
+  // Clean up linked vendor ledger entry if any
+  const currentVendorLedgerForDel = getStoredVendorLedger();
+  const updatedVendorLedgerForDel = currentVendorLedgerForDel.filter(e => e.referenceId !== returnId && e.billNumber !== returnToDelete.returnNumber && e.id !== `VLE-CR-${returnId}`);
+  saveStoredVendorLedger(updatedVendorLedgerForDel);
 
   return {
     updatedProducts,
