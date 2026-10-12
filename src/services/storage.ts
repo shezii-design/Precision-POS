@@ -2156,7 +2156,7 @@ export function getVendorFullLedger(
       if (!hasVLE && ret.totalRefundAmount > 0) {
         rawRows.push({
           id: `vret-${ret.id}`,
-          sourceType: 'cash_received',
+          sourceType: 'adjustment',
           date: ret.date || ret.createdAt || new Date().toISOString(),
           entryCode: ret.creditNoteNumber || 'Credit Note',
           billNumber: ret.returnNumber,
@@ -3790,7 +3790,7 @@ export function recordCustomerReturnAndUpdateInventory(
       vendorId: vendorIdForReturn,
       vendorName: targetSaleForVendor?.vendorName || returnDoc.customerName,
       date: returnDoc.date || now,
-      type: 'cash_received',
+      type: 'adjustment',
       entryCode: returnDoc.creditNoteNumber || 'Credit Note',
       billNumber: returnDoc.returnNumber,
       referenceId: returnDoc.id,

@@ -467,6 +467,18 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
       }
     }
 
+    let finalDateIso = new Date().toISOString();
+    if (date) {
+      if (activeExisting && activeExisting.date && date === activeExisting.date.slice(0, 10)) {
+        finalDateIso = activeExisting.date;
+      } else {
+        const [year, month, day] = date.split('-').map(Number);
+        const nowLocal = new Date();
+        const d = new Date(year, month - 1, day, nowLocal.getHours(), nowLocal.getMinutes(), nowLocal.getSeconds());
+        finalDateIso = d.toISOString();
+      }
+    }
+
     const returnPayload: CustomerReturn = {
       id: returnId || `CRTN-${Date.now()}`,
       returnNumber: returnNumber || `CR-${new Date().getFullYear()}-001`,
@@ -475,7 +487,7 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
       customerId: isWalkIn ? undefined : (selectedCustomerId || undefined),
       customerName: finalCustomerName,
       customerPhone: customerPhone.trim() || undefined,
-      date: new Date(date).toISOString(),
+      date: finalDateIso,
       items: items.map(it => ({
         ...it,
         quantity: Number(it.quantity) || 1,

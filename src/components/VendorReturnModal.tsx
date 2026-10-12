@@ -367,6 +367,18 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
       }
     }
 
+    let finalDateIso = new Date().toISOString();
+    if (date) {
+      if (activeExisting && activeExisting.date && date === activeExisting.date.slice(0, 10)) {
+        finalDateIso = activeExisting.date;
+      } else {
+        const [year, month, day] = date.split('-').map(Number);
+        const nowLocal = new Date();
+        const d = new Date(year, month - 1, day, nowLocal.getHours(), nowLocal.getMinutes(), nowLocal.getSeconds());
+        finalDateIso = d.toISOString();
+      }
+    }
+
     const returnPayload: VendorReturn = {
       id: returnId || `VRTN-${Date.now()}`,
       returnNumber: returnNumber || `VR-${new Date().getFullYear()}-001`,
@@ -374,7 +386,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
       purchaseId: purchaseId.trim() || undefined,
       vendorId: selectedVendorId,
       vendorName: finalVendorName,
-      date: new Date(date).toISOString(),
+      date: finalDateIso,
       items: items.map(it => ({
         ...it,
         quantity: Number(it.quantity) || 1,
