@@ -37,6 +37,7 @@ interface VendorReturnModalProps {
   onSaveReturn?: (returnDoc: VendorReturn) => void;
   initialReturn?: VendorReturn | null;
   existingReturn?: VendorReturn | null;
+  initialPurchase?: Purchase | null;
   products: Product[];
   vendors: Vendor[];
   purchases?: Purchase[];
@@ -53,6 +54,7 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
   onSaveReturn,
   initialReturn,
   existingReturn,
+  initialPurchase,
   products = EMPTY_ARRAY,
   vendors = EMPTY_ARRAY,
   purchases = EMPTY_ARRAY,
@@ -368,15 +370,21 @@ export const VendorReturnModal: React.FC<VendorReturnModalProps> = ({
     }
 
     let finalDateIso = new Date().toISOString();
-    if (date) {
-      if (activeExisting && activeExisting.date && date === activeExisting.date.slice(0, 10)) {
-        finalDateIso = activeExisting.date;
-      } else {
-        const [year, month, day] = date.split('-').map(Number);
-        const nowLocal = new Date();
-        const d = new Date(year, month - 1, day, nowLocal.getHours(), nowLocal.getMinutes(), nowLocal.getSeconds());
-        finalDateIso = d.toISOString();
-      }
+    if (activeExisting && activeExisting.date) {
+      finalDateIso = activeExisting.date;
+    } else if (initialPurchase && initialPurchase.date) {
+      const [year, month, day] = date.split('-').map(Number);
+      const purchaseDate = new Date(initialPurchase.date);
+      const hours = !isNaN(purchaseDate.getTime()) ? purchaseDate.getHours() : 12;
+      const minutes = !isNaN(purchaseDate.getTime()) ? purchaseDate.getMinutes() : 0;
+      const seconds = !isNaN(purchaseDate.getTime()) ? purchaseDate.getSeconds() : 0;
+      const d = new Date(year, month - 1, day, hours, minutes, seconds);
+      finalDateIso = d.toISOString();
+    } else if (date) {
+      const [year, month, day] = date.split('-').map(Number);
+      const nowLocal = new Date();
+      const d = new Date(year, month - 1, day, nowLocal.getHours(), nowLocal.getMinutes(), nowLocal.getSeconds());
+      finalDateIso = d.toISOString();
     }
 
     const returnPayload: VendorReturn = {

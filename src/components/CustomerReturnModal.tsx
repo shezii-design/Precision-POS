@@ -468,15 +468,21 @@ export const CustomerReturnModal: React.FC<CustomerReturnModalProps> = ({
     }
 
     let finalDateIso = new Date().toISOString();
-    if (date) {
-      if (activeExisting && activeExisting.date && date === activeExisting.date.slice(0, 10)) {
-        finalDateIso = activeExisting.date;
-      } else {
-        const [year, month, day] = date.split('-').map(Number);
-        const nowLocal = new Date();
-        const d = new Date(year, month - 1, day, nowLocal.getHours(), nowLocal.getMinutes(), nowLocal.getSeconds());
-        finalDateIso = d.toISOString();
-      }
+    if (activeExisting && activeExisting.date) {
+      finalDateIso = activeExisting.date;
+    } else if (initialSale && initialSale.date) {
+      const [year, month, day] = date.split('-').map(Number);
+      const saleDate = new Date(initialSale.date);
+      const hours = !isNaN(saleDate.getTime()) ? saleDate.getHours() : 12;
+      const minutes = !isNaN(saleDate.getTime()) ? saleDate.getMinutes() : 0;
+      const seconds = !isNaN(saleDate.getTime()) ? saleDate.getSeconds() : 0;
+      const d = new Date(year, month - 1, day, hours, minutes, seconds);
+      finalDateIso = d.toISOString();
+    } else if (date) {
+      const [year, month, day] = date.split('-').map(Number);
+      const nowLocal = new Date();
+      const d = new Date(year, month - 1, day, nowLocal.getHours(), nowLocal.getMinutes(), nowLocal.getSeconds());
+      finalDateIso = d.toISOString();
     }
 
     const returnPayload: CustomerReturn = {

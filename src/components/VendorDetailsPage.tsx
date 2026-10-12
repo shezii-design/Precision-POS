@@ -727,13 +727,14 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
                             <td className="px-3 py-3 whitespace-nowrap">
                               <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                                 row.sourceType === 'cash_sent' ? 'bg-amber-100 text-amber-900 border border-amber-300' :
-                                row.sourceType === 'cash_received' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' :
+                                row.sourceType === 'cash_received' ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' :
                                 row.sourceType === 'purchase' ? (
                                   (row.credit === 0 && row.debit === 0) || row.description?.includes('Cost Pending') || row.description?.includes('Pending')
                                     ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold'
                                     : 'bg-purple-100 text-purple-900 border border-purple-300'
                                 ) :
                                 row.sourceType === 'sale' ? 'bg-blue-100 text-blue-900 border border-blue-300' :
+                                row.sourceType === 'adjustment' ? 'bg-rose-100 text-rose-900 border border-rose-300' :
                                 'bg-neutral-100 text-neutral-800'
                               }`}>
                                 {row.sourceType === 'cash_sent' ? 'Cash Sent' :
@@ -743,7 +744,8 @@ export const VendorDetailsPage: React.FC<VendorDetailsPageProps> = ({
                                      ? 'PO (Pending)'
                                      : 'Purchase'
                                  ) :
-                                 row.sourceType === 'sale' ? 'Sale' : 'Opening'}
+                                 row.sourceType === 'sale' ? 'Sale' :
+                                 row.sourceType === 'adjustment' ? 'Sales Return' : 'Opening'}
                               </span>
                             </td>
 
