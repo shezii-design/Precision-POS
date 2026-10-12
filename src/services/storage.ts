@@ -3715,9 +3715,9 @@ export function recordCustomerReturnAndUpdateInventory(
     return cust;
   });
 
-  // 4. Customer Ledger entry for Khata Credit
+  // 4. Customer Ledger entry for Credit Note
   let updatedLedger = [...currentLedger];
-  if (returnDoc.refundMethod === 'khata_credit' && returnDoc.customerId) {
+  if (returnDoc.customerId) {
     const existingEntryIndex = updatedLedger.findIndex(e => e.referenceId === returnDoc.id);
     const ledgerEntry: CustomerLedgerEntry = {
       id: `CLE-CR-${returnDoc.id}`,
@@ -3947,7 +3947,7 @@ export function recordVendorReturnAndUpdateInventory(
 
   // 3. Vendor Ledger Entry for Debit Note
   let updatedLedger = [...currentLedger];
-  if (returnDoc.settlementMethod === 'debit_note' && returnDoc.vendorId) {
+  if (returnDoc.vendorId) {
     const existingEntryIndex = updatedLedger.findIndex(e => e.referenceId === returnDoc.id);
     const ledgerEntry: VendorLedgerEntry = {
       id: `VLE-VR-${returnDoc.id}`,

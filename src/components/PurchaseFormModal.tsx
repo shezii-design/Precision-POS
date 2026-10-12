@@ -196,12 +196,27 @@ export const PurchaseFormModal: React.FC<PurchaseFormModalProps> = ({
       return;
     }
 
+    let finalDateIso = new Date().toISOString();
+    if (date) {
+      if (editingPurchase && editingPurchase.date && date === editingPurchase.date.slice(0, 10)) {
+        finalDateIso = editingPurchase.date;
+      } else {
+        const [year, month, day] = date.split('-').map(Number);
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+        const combinedDate = new Date(year, month - 1, day, hours, minutes, seconds);
+        finalDateIso = isNaN(combinedDate.getTime()) ? new Date().toISOString() : combinedDate.toISOString();
+      }
+    }
+
     const purchaseToSave: Purchase = {
       id: editingPurchase ? editingPurchase.id : `PUR-${Date.now()}`,
       billNumber: billNumber.trim(),
       vendorId,
       vendorName: selectedVendor ? selectedVendor.businessName : 'Vendor',
-      date: new Date(date || Date.now()).toISOString(),
+      date: finalDateIso,
       items,
       subtotal,
       discountAmount: numDiscount,
