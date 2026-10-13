@@ -1346,6 +1346,11 @@ export const NewSaleModal: React.FC<NewSaleModalProps> = ({
                                       #{prod.internalId}
                                     </span>
                                   )}
+                                  {prod.brandName && (
+                                    <span className="px-1.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded text-[10px] font-bold shrink-0">
+                                      {prod.brandName}
+                                    </span>
+                                  )}
                                   {prod.dimensions && (
                                     <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold shrink-0">
                                       {(() => {

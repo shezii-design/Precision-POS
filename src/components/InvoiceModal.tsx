@@ -254,6 +254,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           <td>${idx + 1}</td>
           <td>
             <strong>${edits[`item_name_${idx}`] ?? formatItemInvoiceName(it, sale.invoiceNamingPreference)}</strong>
+            ${it.brandName ? ('<div style="font-size:11px;color:#7e22ce;font-weight:600;margin-top:1px;">Brand: ' + it.brandName + '</div>') : ''}
             
             ${it.showDetailsOnInvoice && it.crossReferences ? `<div style="font-size:11px;color:#64748b;">Cross Ref: ${it.crossReferences.replace(/\n/g, ', ')}</div>` : ''}
             ${it.showDetailsOnInvoice && it.machineNames ? `<div style="font-size:11px;color:#64748b;">Machine: ${it.machineNames.replace(/\n/g, ', ')}</div>` : ''}
@@ -549,6 +550,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                         <div contentEditable={isEditMode} suppressContentEditableWarning onBlur={(e) => handleEditChange(`item_name_${index}`, e.currentTarget.innerText)} className={`font-bold text-slate-900 text-sm outline-none px-1 -mx-1 rounded whitespace-pre-wrap ${isEditMode ? "hover:bg-slate-100 border-b border-dashed border-slate-400 cursor-text min-h-[24px]" : ""}`}>
                           {activeTab === 'original' ? item.productName : (edits[`item_name_${index}`] ?? displayName)}
                         </div>
+                        {item.brandName && (
+                          <div className="text-[11px] text-purple-700 font-semibold mt-0.5">
+                            Brand: <strong>{item.brandName}</strong>
+                          </div>
+                        )}
                         {item.typeName && (
                           <div className="text-[11px] text-slate-500 font-medium">
                             Type: {item.typeName}
