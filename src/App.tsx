@@ -1808,17 +1808,8 @@ export default function App() {
 
   const mergeArraysById = <T extends { id: string }>(localArr: T[], incomingArr: T[], isCloudPull?: boolean): T[] => {
     if (!Array.isArray(incomingArr)) return localArr || [];
-    if (!isCloudPull) return incomingArr;
-    if (incomingArr.length === 0) return localArr || [];
-    if (!Array.isArray(localArr) || localArr.length === 0) return incomingArr;
-    const map = new Map<string, T>();
-    for (const item of localArr) {
-      if (item && item.id) map.set(item.id, item);
-    }
-    for (const item of incomingArr) {
-      if (item && item.id) map.set(item.id, item);
-    }
-    return Array.from(map.values());
+    if (isCloudPull) return incomingArr;
+    return incomingArr;
   };
 
   const handleImportFullBackup = (data: any, isCloudPull: boolean = false) => {
@@ -1954,6 +1945,29 @@ export default function App() {
           .then(res => {
             if (res.success && res.data) {
               handleImportFullBackup(res.data, true);
+              const currentDevices = getStoredRegisteredDevices();
+              prevSyncState.current = {
+                products: getStoredProducts(),
+                brands: getStoredBrands(),
+                types: getStoredTypes(),
+                locations: getStoredLocations(),
+                customers: getStoredCustomers(),
+                customerLedger: getStoredCustomerLedger(),
+                sales: getStoredSales(),
+                customerReturns: getStoredCustomerReturns(),
+                vendors: getStoredVendors(),
+                vendorLedger: getStoredVendorLedgerEntries(),
+                vendorReturns: getStoredVendorReturns(),
+                purchases: getStoredPurchases(),
+                purchaseOrders: getStoredPurchaseOrders(),
+                quotations: getStoredQuotations(),
+                demands: getStoredDemands(),
+                expenses: getStoredExpenses(),
+                employees: getStoredEmployees(),
+                registeredDevices: currentDevices,
+                stockLogs: getStoredStockLogs(),
+                pricingSettings: getStoredPricingSettings(),
+              };
             }
           })
           .catch(err => {

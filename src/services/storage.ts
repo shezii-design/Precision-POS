@@ -2565,9 +2565,12 @@ export function recordCashEntryAndUpdateAll(
   const isSent = entryData.type === 'cash_sent';
   const newId = `CSH-${Date.now()}`;
   const entryDate = entryData.date || new Date().toISOString();
+  const foundVendor = currentVendors.find(v => v.id === entryData.vendorId);
+  const vendorName = entryData.vendorName || foundVendor?.businessName || 'Vendor';
 
   const newEntry: VendorLedgerEntry = {
     ...entryData,
+    vendorName,
     id: newId,
     date: entryDate,
     entryCode: entryData.entryCode || (isSent ? 'Cash' : 'Cash Recv'),
@@ -2607,10 +2610,13 @@ export function updateCashEntryAndUpdateAll(
       updatedVendors: currentVendors,
     };
   }
+  const foundVendor = currentVendors.find(v => v.id === (entryData.vendorId || existing.vendorId));
+  const vendorName = entryData.vendorName || foundVendor?.businessName || existing.vendorName || 'Vendor';
   const isSent = (entryData.type || existing.type) === 'cash_sent';
   const updatedEntry: VendorLedgerEntry = {
     ...existing,
     ...entryData,
+    vendorName,
     id: entryId,
     entryCode: entryData.entryCode || existing.entryCode || (isSent ? 'Cash' : 'Cash Recv'),
     debit: isSent ? Number(entryData.amount ?? existing.amount) : 0,
