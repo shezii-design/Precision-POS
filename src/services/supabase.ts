@@ -985,7 +985,6 @@ export async function executePurchaseTransactionSupabase(
           credit: unpaid,
           debit: 0,
           amount: unpaid,
-          created_at: new Date().toISOString(),
         }, { onConflict: 'id' });
       }
 
@@ -1005,7 +1004,6 @@ export async function executePurchaseTransactionSupabase(
           credit: 0,
           amount: paid,
           payment_method: 'Cash',
-          created_at: new Date().toISOString(),
         }, { onConflict: 'id' });
       }
     }
@@ -1273,8 +1271,6 @@ export async function saveVendorPaymentToSupabase(
       payment_method: entry.paymentMethod || null,
       receipt_number: entry.receiptNumber || null,
       notes: entry.notes || null,
-      created_at: (entry as any).createdAt || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     const { error: ledErr } = await client
@@ -5105,8 +5101,6 @@ export async function syncVendorLedgerToSupabase(
       payment_method: v.paymentMethod || null,
       receipt_number: v.receiptNumber || null,
       notes: v.notes || null,
-      created_at: v.createdAt || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     }));
 
     if (rows.length > 0) {
