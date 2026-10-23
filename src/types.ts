@@ -240,6 +240,11 @@ export interface GlobalPricingSettings {
   activeTierCount: number; // 2 to 5
   tiers: PricingTierConfig[];
   roundToNearest: number; // 0, 1, 5, 10, 50, 100 PKR
+  shopName?: string;
+  shopTagline?: string;
+  shopPhone?: string;
+  shopAddress?: string;
+  shopEmail?: string;
 }
 
 export type AppWorkspaceView = 

@@ -2569,6 +2569,8 @@ export default function App() {
             vendorReturns={vendorReturns}
             products={products}
             expenses={expenses}
+            vendors={vendors}
+            vendorLedger={ledgerEntries}
             onSaveExpense={handleSaveExpense}
             onDeleteExpense={isActionAllowed(currentEmployee, 'canManageExpenses') ? handleDeleteExpense : undefined}
             onGoToView={(view) => setCurrentView(view)}
@@ -3415,6 +3417,7 @@ export default function App() {
         isOpen={showInvoiceModal}
         onClose={() => setShowInvoiceModal(false)}
         sale={activeSaleForInvoice}
+        pricingSettings={pricingSettings}
         onRecordPayment={isActionAllowed(currentEmployee, 'canCreateSales') ? (sale) => {
           if (sale.isVendorSale && sale.vendorId) {
             handleOpenCashModal(sale.vendorId, null, undefined, 'cash_received', sale.id);

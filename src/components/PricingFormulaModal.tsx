@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { GlobalPricingSettings, PricingTierConfig } from '../types';
 import { calculateSellingPrice, formatPKR, getTierTheme } from '../services/pricing';
-import { X, Plus, Trash2, CheckCircle2, Calculator, Sparkles, RefreshCw } from 'lucide-react';
+import { X, Plus, Trash2, CheckCircle2, Calculator, Sparkles, RefreshCw, Building2 } from 'lucide-react';
 
 interface PricingFormulaModalProps {
   isOpen: boolean;
@@ -18,6 +18,11 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
 }) => {
   const [activeTierCount, setActiveTierCount] = useState<number>(settings.activeTierCount || 2);
   const [roundToNearest, setRoundToNearest] = useState<number>(settings.roundToNearest || 5);
+  const [shopName, setShopName] = useState<string>(settings.shopName || 'King Filter House');
+  const [shopTagline, setShopTagline] = useState<string>(settings.shopTagline || 'Your Filtration Solution');
+  const [shopPhone, setShopPhone] = useState<string>(settings.shopPhone || '03226600734, 03222000734');
+  const [shopAddress, setShopAddress] = useState<string>(settings.shopAddress || '125-C Shoaib Bilal Market, Opp General Bus Stand Faisalabad');
+
   const [tiers, setTiers] = useState<PricingTierConfig[]>(() => {
     // Ensure we have 5 tiers available in state
     const current = [...settings.tiers];
@@ -55,6 +60,10 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
         activeTierCount,
         tiers: tiers.slice(0, 5),
         roundToNearest,
+        shopName: shopName.trim() || 'King Filter House',
+        shopTagline: shopTagline.trim(),
+        shopPhone: shopPhone.trim(),
+        shopAddress: shopAddress.trim(),
       },
       recalculateAll
     );
@@ -85,6 +94,56 @@ export const PricingFormulaModal: React.FC<PricingFormulaModalProps> = ({
 
         {/* Content */}
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-h-[75vh] overflow-y-auto">
+          {/* Shop & Business Details */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 sm:p-4 space-y-3">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-red-600" />
+              Shop / Business Details (Reflected on Invoices & Exports)
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Business / Shop Name</label>
+                <input
+                  type="text"
+                  value={shopName}
+                  onChange={(e) => setShopName(e.target.value)}
+                  placeholder="e.g. King Filter House"
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Tagline / Subtitle</label>
+                <input
+                  type="text"
+                  value={shopTagline}
+                  onChange={(e) => setShopTagline(e.target.value)}
+                  placeholder="e.g. Your Filtration Solution"
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Phone Number(s)</label>
+                <input
+                  type="text"
+                  value={shopPhone}
+                  onChange={(e) => setShopPhone(e.target.value)}
+                  placeholder="e.g. 03226600734, 03222000734"
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Business Address</label>
+                <input
+                  type="text"
+                  value={shopAddress}
+                  onChange={(e) => setShopAddress(e.target.value)}
+                  placeholder="e.g. 125-C Shoaib Bilal Market, Faisalabad"
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Active Tiers Count Selector */}
           <div className="bg-red-50/70 border border-red-100 rounded-xl p-3 sm:p-4">
             <label className="block text-xs sm:text-sm font-semibold text-red-950 mb-2">

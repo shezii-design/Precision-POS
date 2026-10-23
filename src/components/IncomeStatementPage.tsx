@@ -8,7 +8,9 @@ import {
   Expense, 
   ExpenseCategory, 
   IncomeStatementPeriod, 
-  AppWorkspaceView 
+  AppWorkspaceView,
+  Vendor,
+  VendorLedgerEntry
 } from '../types';
 import { 
   TrendingUp, 
@@ -41,8 +43,9 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { calculateSaleCogs } from '../services/sales';
-import { addFinancial, roundCurrency } from '../services/financialMath';
-import { calculateUnifiedMetrics, UNIFIED_EXPENSE_CATEGORIES } from '../services/unifiedFinancialMetrics';
+import { addFinancial, roundCurrency, safeFinancialNumber } from '../services/financialMath';
+import { calculateUnifiedMetrics, UNIFIED_EXPENSE_CATEGORIES, buildProductLookupMap } from '../services/unifiedFinancialMetrics';
+import { calculateVendorBalance } from '../services/storage';
 
 interface IncomeStatementPageProps {
   sales: Sale[];
@@ -51,6 +54,8 @@ interface IncomeStatementPageProps {
   vendorReturns: VendorReturn[];
   products: Product[];
   expenses: Expense[];
+  vendors?: Vendor[];
+  vendorLedger?: VendorLedgerEntry[];
   onSaveExpense: (expense: Partial<Expense>) => void;
   onDeleteExpense?: (expenseId: string) => void;
   onGoToView: (view: AppWorkspaceView) => void;
@@ -94,6 +99,8 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
   vendorReturns,
   products,
   expenses,
+  vendors = [],
+  vendorLedger = [],
   onSaveExpense,
   onDeleteExpense,
   onGoToView,
@@ -309,6 +316,8 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
       expensesCount: metrics.expensesCount,
       purchasesCount: metrics.purchasesCount,
       purchasesTotal: metrics.purchasesSpend,
+      totalCashReceived: metrics.totalCashReceived,
+      totalCreditOutstanding: metrics.totalCreditOutstanding,
     };
   };
 
@@ -321,6 +330,78 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
   const priorStatement = useMemo(() => {
     return calculateStatementForDates(dateBoundaries.prevStart, dateBoundaries.prevEnd);
   }, [dateBoundaries, sales, purchases, customerReturns, vendorReturns, expenses, products]);
+
+  // Advanced Financial & Supplier Distribution Breakdown
+  const advancedBreakdown = useMemo(() => {
+    const targetSales = sales.filter(s => {
+      const d = new Date(s.date || s.createdAt);
+      return d >= dateBoundaries.start && d <= dateBoundaries.end;
+    });
+
+    const prodMap = buildProductLookupMap(products);
+    const vendorMap = new Map<string, { id: string; name: string; revenueGenerated: number; itemsSold: number; currentPayable: number }>();
+
+    for (const v of vendors) {
+      vendorMap.set(v.id, {
+        id: v.id,
+        name: v.businessName || 'Supplier',
+        revenueGenerated: 0,
+        itemsSold: 0,
+        currentPayable: calculateVendorBalance(v.id, vendors, purchases, sales, vendorLedger, v.businessName),
+      });
+    }
+
+    const unassigned = { id: 'unassigned', name: 'Unassigned / Direct', revenueGenerated: 0, itemsSold: 0, currentPayable: 0 };
+
+    for (const s of targetSales) {
+      if (s.items) {
+        for (const item of s.items) {
+          const prod = prodMap.get(item.productId) || prodMap.get(item.internalId);
+          const lineVal = safeFinancialNumber(item.netLineTotal ?? (item.quantity * item.unitPrice), 0);
+          const qty = item.netQuantity !== undefined ? item.netQuantity : item.quantity;
+
+          let matchedVendorId: string | null = null;
+          if (prod && prod.vendorId && vendorMap.has(prod.vendorId)) {
+            matchedVendorId = prod.vendorId;
+          } else {
+            for (const v of vendors) {
+              if (v.linkedProductIds && v.linkedProductIds.includes(item.productId)) {
+                matchedVendorId = v.id;
+                break;
+              }
+            }
+          }
+
+          if (matchedVendorId && vendorMap.has(matchedVendorId)) {
+            const vObj = vendorMap.get(matchedVendorId)!;
+            vObj.revenueGenerated += lineVal;
+            vObj.itemsSold += qty;
+          } else {
+            unassigned.revenueGenerated += lineVal;
+            unassigned.itemsSold += qty;
+          }
+        }
+      }
+    }
+
+    const supplierList = Array.from(vendorMap.values()).filter(v => v.revenueGenerated > 0 || v.currentPayable !== 0);
+    if (unassigned.revenueGenerated > 0) supplierList.push(unassigned);
+
+    const cashInHand = statement.totalCashReceived || 0;
+    const cashReceivables = statement.totalCreditOutstanding || 0;
+    const netRev = statement.netSales || 1;
+    const realizedRatio = Math.min(1, Math.max(0, cashInHand / netRev));
+    const profitInHand = statement.netIncome * realizedRatio;
+    const profitInReceivables = statement.netIncome - profitInHand;
+
+    return {
+      cashInHand,
+      cashReceivables,
+      profitInHand,
+      profitInReceivables,
+      supplierList,
+    };
+  }, [sales, purchases, vendorLedger, vendorReturns, products, vendors, dateBoundaries, statement]);
 
   // Handle Expense Modal Actions
   const handleOpenAddExpense = () => {
@@ -1018,6 +1099,140 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
 
               </tbody>
             </table>
+          </div>
+
+          {/* Advanced Financial Breakdown: Cash vs Receivables, Realized Profit & Supplier Payables Distribution */}
+          <div className="mt-8 bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-3xl p-5 sm:p-8 shadow-2xl border border-slate-800 space-y-6 print:hidden">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-red-600/20 text-red-400 flex items-center justify-center font-bold text-lg border border-red-500/30">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black tracking-tight text-white">
+                    Advanced Cash Flow, Realized Profit & Supplier Payables Distribution
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Breakdown of revenue & profit into cash vs receivables, matched against supplier payables (Post-COGS & OPEX)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Card 1: Revenue Breakdown (Cash in Hand vs Receivables) */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" /> 1. Revenue Breakdown (Cash vs Receivables)
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <span className="text-xs text-slate-400 block font-semibold">Cash in Hand (Realized Collections)</span>
+                      <span className="text-sm font-mono font-bold text-emerald-400">{formatPKR(advancedBreakdown.cashInHand)}</span>
+                    </div>
+                    <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-black">
+                      {statement.netSales > 0 ? ((advancedBreakdown.cashInHand / statement.netSales) * 100).toFixed(1) : '0'}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <span className="text-xs text-slate-400 block font-semibold">Cash Receivables (Outstanding Balance Due)</span>
+                      <span className="text-sm font-mono font-bold text-amber-400">{formatPKR(advancedBreakdown.cashReceivables)}</span>
+                    </div>
+                    <span className="px-2.5 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-xs font-black">
+                      {statement.netSales > 0 ? ((advancedBreakdown.cashReceivables / statement.netSales) * 100).toFixed(1) : '0'}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Profit Breakdown (Profit in Hand vs Receivables) */}
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" /> 2. Profit Breakdown (Realized vs Unrealized)
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <span className="text-xs text-slate-400 block font-semibold">Profit in Hand (Realized from Collections)</span>
+                      <span className="text-sm font-mono font-bold text-emerald-400">{formatPKR(advancedBreakdown.profitInHand)}</span>
+                    </div>
+                    <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-black">
+                      {statement.netIncome !== 0 ? ((advancedBreakdown.profitInHand / statement.netIncome) * 100).toFixed(1) : '0'}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                    <div>
+                      <span className="text-xs text-slate-400 block font-semibold">Profit in Receivables (Locked in Credit)</span>
+                      <span className="text-sm font-mono font-bold text-blue-400">{formatPKR(advancedBreakdown.profitInReceivables)}</span>
+                    </div>
+                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-xs font-black">
+                      {statement.netIncome !== 0 ? ((advancedBreakdown.profitInReceivables / statement.netIncome) * 100).toFixed(1) : '0'}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Supplier Payables & Revenue Distribution */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                  <Building2 className="w-4 h-4" /> 3. Supplier Payables & Revenue Distribution (Item Sales vs Dues)
+                </h4>
+                <span className="text-[11px] text-slate-400">Shows revenue generated by each supplier's items alongside current supplier payables</span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
+                      <th className="py-2.5 px-3">Supplier / Vendor Name</th>
+                      <th className="py-2.5 px-3 text-center">Items Sold (Units)</th>
+                      <th className="py-2.5 px-3 text-right">Revenue Generated</th>
+                      <th className="py-2.5 px-3 text-right">Current Payable (Owed)</th>
+                      <th className="py-2.5 px-3 text-right">Recommended Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/80 font-mono">
+                    {advancedBreakdown.supplierList.map((sup) => (
+                      <tr key={sup.id} className="hover:bg-slate-800/40 text-slate-200">
+                        <td className="py-3 px-3 font-sans font-bold text-white flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+                          {sup.name}
+                        </td>
+                        <td className="py-3 px-3 text-center text-slate-300">{sup.itemsSold}</td>
+                        <td className="py-3 px-3 text-right text-emerald-400 font-bold">{formatPKR(sup.revenueGenerated)}</td>
+                        <td className="py-3 px-3 text-right text-amber-400 font-bold">{formatPKR(sup.currentPayable)}</td>
+                        <td className="py-3 px-3 text-right font-sans">
+                          {sup.currentPayable > 0 ? (
+                            <span className="inline-block px-2.5 py-1 bg-amber-500/20 text-amber-300 rounded-lg text-[10px] font-black">
+                              Payable: {formatPKR(sup.currentPayable)}
+                            </span>
+                          ) : sup.currentPayable < 0 ? (
+                            <span className="inline-block px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg text-[10px] font-black">
+                              Advance / Credit
+                            </span>
+                          ) : (
+                            <span className="inline-block px-2.5 py-1 bg-slate-800 text-slate-400 rounded-lg text-[10px] font-black">
+                              Settled
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {advancedBreakdown.supplierList.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-center text-slate-500 font-sans">
+                          No supplier sales or payable distributions recorded in this period.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           {/* Formal Statement Signatures & Verification Block (Visible in Print & Screen) */}

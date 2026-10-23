@@ -4,6 +4,11 @@ import { roundFinancial, roundCurrency, safeFinancialNumber, multiplyFinancial }
 export const DEFAULT_PRICING_SETTINGS: GlobalPricingSettings = {
   activeTierCount: 3,
   roundToNearest: 5,
+  shopName: 'King Filter House',
+  shopTagline: 'Your Filtration Solution',
+  shopPhone: '03226600734, 03222000734',
+  shopAddress: '125-C Shoaib Bilal Market, Opp General Bus Stand Faisalabad',
+  shopEmail: '',
   tiers: [
     { id: 'tier-wholesale', name: 'Wholesale', markupPercent: 10, isDefault: true },
     { id: 'tier-retail', name: 'Retail', markupPercent: 25, isDefault: true },

@@ -1,8 +1,8 @@
 import React, { useRef, useMemo } from 'react';
-import { CustomerReturn, Sale, SaleItem } from '../types';
+import { CustomerReturn, GlobalPricingSettings, Sale, SaleItem } from '../types';
 import { formatPKR } from '../services/pricing';
 import { formatItemInvoiceName } from '../services/sales';
-import { isMatchingSaleId, isMatchingReturnItem } from '../services/storage';
+import { getStoredPricingSettings, isMatchingSaleId, isMatchingReturnItem } from '../services/storage';
 import { 
   Printer, 
   Download, 
@@ -27,6 +27,7 @@ interface InvoiceModalProps {
   onClose: () => void;
   sale: Sale | null;
   customerReturns?: CustomerReturn[];
+  pricingSettings?: GlobalPricingSettings;
   onSavePdfEdits?: (saleId: string, edits: Record<string, string>) => void;
   onRecordPayment?: (sale: Sale) => void;
 }
@@ -36,9 +37,16 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   onClose,
   sale,
   customerReturns = [],
+  pricingSettings,
   onSavePdfEdits,
   onRecordPayment,
 }) => {
+  const settings = pricingSettings || getStoredPricingSettings();
+  const shopName = settings.shopName || 'King Filter House';
+  const shopTagline = settings.shopTagline || 'Your Filtration Solution';
+  const shopPhone = settings.shopPhone || '03226600734, 03222000734';
+  const shopAddress = settings.shopAddress || '125-C Shoaib Bilal Market, Opp General Bus Stand Faisalabad';
+
   const printContainerRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = React.useState('original');
   const [isEditMode, setIsEditMode] = React.useState(false);
@@ -210,9 +218,8 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 <body>
   <div class="header">
     <div>
-      <h1 class="company">King Filter House
-                </h1>
-      <div class="sub">Your Filteration Solution<br>03226600734, 03222000734<br>125-C Shoaib Bilal Market, Opp General Bus Stand Faisalabad</div>
+      <h1 class="company">${shopName}</h1>
+      <div class="sub">${shopTagline ? `${shopTagline}<br>` : ''}${shopPhone ? `${shopPhone}<br>` : ''}${shopAddress}</div>
     </div>
     <div class="meta">
       <h2 class="inv-title">INVOICE: ${sale.id}</h2>
@@ -300,7 +307,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   </div>
 
   <div class="footer">
-    Thank you for your business! | King Filter House
+    Thank you for your business! | ${shopName}
   </div>
 </body>
 </html>`;
@@ -410,10 +417,10 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-red-600 inline-block"></span>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                  King Filter House
+                  {shopName}
                 </h1>
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5 leading-relaxed" dangerouslySetInnerHTML={{ __html: 'Your Filteration Solution<br />03226600734, 03222000734<br />125-C Shoaib Bilal Market, Opp General Bus Stand Faisalabad' }} />
+              <p className="text-xs text-slate-500 font-medium mt-0.5 leading-relaxed" dangerouslySetInnerHTML={{ __html: `${shopTagline ? `${shopTagline}<br />` : ''}${shopPhone ? `${shopPhone}<br />` : ''}${shopAddress}` }} />
               <p className="text-[11px] text-slate-400 mt-0.5">
                 Pakistan • PKR Currency Official Sales Receipt
               </p>
