@@ -36,9 +36,35 @@
       left: 0;
       top: 0;
       width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
       margin: 0;
-      padding: 16px;
+      padding: 12px;
       box-shadow: none !important;
+      overflow: visible !important;
+      max-height: none !important;
+      word-break: break-word;
+    }
+    #printable-po table {
+      width: 100% !important;
+      min-width: 0 !important;
+      table-layout: auto !important;
+      border-collapse: collapse !important;
+    }
+    #printable-po tr {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    #printable-po thead {
+      display: table-header-group !important;
+    }
+    #printable-po tbody {
+      page-break-inside: auto !important;
+      break-inside: auto !important;
+    }
+    .page-break-before {
+      page-break-before: always !important;
+      break-before: always !important;
     }
     .no-print {
       display: none !important;

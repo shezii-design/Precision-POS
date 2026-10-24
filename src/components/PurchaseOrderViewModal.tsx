@@ -119,7 +119,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
-        className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden"
+        className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden print:overflow-visible print:max-h-none print:shadow-none print:border-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Actions Bar */}
@@ -297,7 +297,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
 
           {/* Items Table */}
           <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            <table className="w-full min-w-[700px] text-left border-collapse text-xs">
+            <table className="w-full table-auto text-left border-collapse text-xs">
               <thead>
                 {viewMode === 'vendor' ? (
                   <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200 text-[11px]">
