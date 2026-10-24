@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { PurchaseOrder, Vendor } from '../types';
+import { exportPurchaseOrderToExcel } from '../services/excel';
 import { 
   X, 
   Printer, 
@@ -15,7 +16,8 @@ import {
   FileText,
   Scale,
   ExternalLink,
-  Edit3
+  Edit3,
+  Download
 } from 'lucide-react';
 
 interface PurchaseOrderViewModalProps {
@@ -76,8 +78,108 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
     }
   };
 
+  const handleExportExcel = () => {
+    exportPurchaseOrderToExcel(po, viewMode === 'vendor');
+  };
+
   const handlePrint = () => {
-    window.print();
+    const printArea = printAreaRef.current;
+    if (!printArea) {
+      window.print();
+      return;
+    }
+
+    // Create an isolated hidden iframe to prevent parent layout from creating blank pages
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.setAttribute('title', 'PO Print Frame');
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      window.print();
+      return;
+    }
+
+    const clone = printArea.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.print\\:hidden').forEach(el => el.remove());
+
+    // Gather existing stylesheets to retain fonts, Tailwind CSS styles, and badges
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(tag => tag.outerHTML)
+      .join('\n');
+
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${po.poNumber} - ${viewMode === 'vendor' ? 'Purchase Order (Supplier Copy)' : 'Purchase Order & Goods Note'}</title>
+          ${styles}
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 12mm 10mm;
+            }
+            html, body {
+              background: #ffffff !important;
+              color: #0f172a !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            #printable-po {
+              position: static !important;
+              max-height: none !important;
+              overflow: visible !important;
+              padding: 0 !important;
+              width: 100% !important;
+            }
+            table {
+              width: 100% !important;
+              border-collapse: collapse !important;
+              page-break-inside: auto !important;
+            }
+            tr {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            thead {
+              display: table-header-group !important;
+            }
+            tbody {
+              page-break-inside: auto !important;
+            }
+            .print\\:hidden {
+              display: none !important;
+            }
+          </style>
+        </head>
+        <body>
+          <div style="width: 100%; padding: 8px;">
+            ${clone.innerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 2000);
+    }, 250);
   };
 
   const getStatusBadge = () => {
@@ -119,7 +221,7 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
-        className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden print:overflow-visible print:max-h-none print:shadow-none print:border-none"
+        className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Actions Bar */}
@@ -152,6 +254,16 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
             >
               <FileText className="w-4 h-4" />
               <span>{viewMode === 'vendor' ? 'Internal PO View' : 'Vendor Export View'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Download as Excel Spreadsheet (.xlsx)"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export Excel</span>
             </button>
 
             <button
@@ -503,6 +615,16 @@ export const PurchaseOrderViewModal: React.FC<PurchaseOrderViewModalProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Download as Excel Spreadsheet (.xlsx)"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export Excel</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setViewMode(viewMode === 'internal' ? 'vendor' : 'internal')}

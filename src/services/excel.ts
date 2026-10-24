@@ -1,8 +1,7 @@
 import * as XLSX from 'xlsx';
-import { Product, ProductSellingPrice, StockLog } from '../types';
+import { Product, ProductSellingPrice, StockLog, Sale, PurchaseOrder } from '../types';
 import { getNextInternalId } from './storage';
 import { calculateSmartROP, buildProductSalesMap } from './analytics';
-import { Sale } from '../types';
 
 /**
  * Sanitizes string cell values against CSV / Excel Formula Injection (CWE-1236).
@@ -581,3 +580,73 @@ export function exportCustomerLedgerToExcel(customerName: string, ledgerRows: an
 
   XLSX.writeFile(workbook, finalFileName);
 }
+
+export function exportPurchaseOrderToExcel(po: PurchaseOrder, isVendorCopy: boolean = false): void {
+  const sanitizedPoNumber = (po.poNumber || po.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const fileName = isVendorCopy 
+    ? `PO_${sanitizedPoNumber}_Vendor_Order.xlsx`
+    : `PO_${sanitizedPoNumber}_Internal_Goods_Note.xlsx`;
+
+  let rows: any[] = [];
+  if (isVendorCopy) {
+    rows = (po.items || []).map((item, idx) => ({
+      '#': idx + 1,
+      'Item Code / Internal ID': sanitizeFormulaCell(item.internalId || ''),
+      'Product / Part Name': sanitizeFormulaCell(item.productName || ''),
+      'Brand': sanitizeFormulaCell(item.brandName || ''),
+      'Type / Category': sanitizeFormulaCell(item.typeName || ''),
+      'Order Quantity': item.orderedQuantity || 0,
+      'Unit': sanitizeFormulaCell(item.unit || 'Pcs'),
+    }));
+  } else {
+    rows = (po.items || []).map((item, idx) => ({
+      '#': idx + 1,
+      'Item Code / Internal ID': sanitizeFormulaCell(item.internalId || ''),
+      'Product / Part Name': sanitizeFormulaCell(item.productName || ''),
+      'Brand': sanitizeFormulaCell(item.brandName || ''),
+      'Type / Category': sanitizeFormulaCell(item.typeName || ''),
+      'Ordered Qty': item.orderedQuantity || 0,
+      'Received Qty': item.receivedQuantity || 0,
+      'Unit': sanitizeFormulaCell(item.unit || 'Pcs'),
+      'Base Unit Rate (PKR)': item.actualUnitPrice || item.estimatedUnitPrice || 0,
+      'Allocated Cargo/pc (PKR)': item.allocatedCargoCost || 0,
+      'Landed Unit Cost (PKR)': item.landedUnitCost || 0,
+      'Line Total (PKR)': item.totalLineCost || 0,
+    }));
+  }
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  const sheetName = isVendorCopy ? 'Purchase Order' : 'Goods Received Note';
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+  if (isVendorCopy) {
+    worksheet['!cols'] = [
+      { wch: 6 },  // #
+      { wch: 18 }, // Internal ID
+      { wch: 32 }, // Product Name
+      { wch: 18 }, // Brand
+      { wch: 18 }, // Type
+      { wch: 16 }, // Order Quantity
+      { wch: 10 }, // Unit
+    ];
+  } else {
+    worksheet['!cols'] = [
+      { wch: 6 },  // #
+      { wch: 18 }, // Internal ID
+      { wch: 32 }, // Product Name
+      { wch: 18 }, // Brand
+      { wch: 18 }, // Type
+      { wch: 14 }, // Ordered Qty
+      { wch: 14 }, // Received Qty
+      { wch: 10 }, // Unit
+      { wch: 20 }, // Base Unit Rate
+      { wch: 22 }, // Allocated Cargo
+      { wch: 22 }, // Landed Unit Cost
+      { wch: 18 }, // Line Total
+    ];
+  }
+
+  XLSX.writeFile(workbook, fileName);
+}
+

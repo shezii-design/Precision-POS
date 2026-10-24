@@ -12,20 +12,8 @@
 
 @layer utilities {
   @media print {
-    @page { margin: 1.5cm; }
-    body { margin: 0; background: white !important; height: auto !important; }
-
-    /* Completely reset modal wrappers, flex containers, and overflow boxes during print */
-    div, section, main {
-      display: block !important;
-      position: static !important;
-      overflow: visible !important;
-      max-height: none !important;
-      height: auto !important;
-      transform: none !important;
-      box-shadow: none !important;
-      background: transparent !important;
-    }
+    @page { margin: 1cm; size: A4 portrait; }
+    body { margin: 0; background: white !important; }
 
     body * {
       visibility: hidden;
@@ -56,7 +44,6 @@
       box-shadow: none !important;
       overflow: visible !important;
       max-height: none !important;
-      height: auto !important;
       word-break: break-word;
     }
     #printable-po table {
