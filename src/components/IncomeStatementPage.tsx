@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { calculateSaleCogs } from '../services/sales';
-import { addFinancial, roundCurrency, safeFinancialNumber } from '../services/financialMath';
+import { addFinancial, subtractFinancial, roundCurrency, safeFinancialNumber } from '../services/financialMath';
 import { calculateUnifiedMetrics, UNIFIED_EXPENSE_CATEGORIES, buildProductLookupMap } from '../services/unifiedFinancialMetrics';
 import { calculateVendorBalance } from '../services/storage';
 
@@ -387,7 +387,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
     const supplierList = Array.from(vendorMap.values()).filter(v => v.revenueGenerated > 0 || v.currentPayable !== 0);
     if (unassigned.revenueGenerated > 0) supplierList.push(unassigned);
 
-    const cashInHand = statement.totalCashReceived || 0;
+    const cashInHand = Math.max(0, subtractFinancial(statement.totalCashReceived || 0, statement.totalOperatingExpenses || 0));
     const cashReceivables = statement.totalCreditOutstanding || 0;
     const netRev = statement.netSales || 1;
     const realizedRatio = Math.min(1, Math.max(0, cashInHand / netRev));
@@ -1128,7 +1128,7 @@ export const IncomeStatementPage: React.FC<IncomeStatementPageProps> = ({
                 <div className="space-y-3">
                   <div className="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
                     <div>
-                      <span className="text-xs text-slate-400 block font-semibold">Cash in Hand (Realized Collections)</span>
+                      <span className="text-xs text-slate-400 block font-semibold">Cash in Hand (Net after Expenses)</span>
                       <span className="text-sm font-mono font-bold text-emerald-400">{formatPKR(advancedBreakdown.cashInHand)}</span>
                     </div>
                     <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-black">

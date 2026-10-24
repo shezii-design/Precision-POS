@@ -34,6 +34,7 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
   const [city, setCity] = useState<string>('');
   const [address, setAddress] = useState<string>('');
   const [openingBalance, setOpeningBalance] = useState<number | string>(0);
+  const [balanceType, setBalanceType] = useState<'we_owe' | 'vendor_owes'>('we_owe');
   const [openingBalanceDate, setOpeningBalanceDate] = useState<string>('');
   const [openingBalanceTime, setOpeningBalanceTime] = useState<string>('00:00');
   const [notes, setNotes] = useState<string>('');
@@ -49,7 +50,14 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
         setEmail(editingVendor.email || '');
         setCity(editingVendor.city || '');
         setAddress(editingVendor.address || '');
-        setOpeningBalance(editingVendor.openingBalance || 0);
+        const rawOb = editingVendor.openingBalance || 0;
+        if (rawOb < 0) {
+          setBalanceType('vendor_owes');
+          setOpeningBalance(Math.abs(rawOb));
+        } else {
+          setBalanceType('we_owe');
+          setOpeningBalance(rawOb);
+        }
 
         const rawDate = editingVendor.openingBalanceDate || editingVendor.createdAt;
         if (rawDate) {
@@ -76,6 +84,7 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
         setCity('');
         setAddress('');
         setOpeningBalance(0);
+        setBalanceType('we_owe');
         const now = new Date();
         setOpeningBalanceDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
         setOpeningBalanceTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
@@ -103,6 +112,7 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
     }
 
     const numBalance = Number(openingBalance) || 0;
+    const finalBalance = balanceType === 'vendor_owes' ? -Math.abs(numBalance) : Math.abs(numBalance);
 
     let finalOpenDate = '';
     if (openingBalanceDate) {
@@ -129,7 +139,7 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
       email: email.trim() || undefined,
       city: city.trim() || undefined,
       address: address.trim() || undefined,
-      openingBalance: numBalance,
+      openingBalance: finalBalance,
       openingBalanceDate: finalOpenDate,
       linkedProductIds: editingVendor ? (editingVendor.linkedProductIds || []) : [],
       notes: notes.trim() || undefined,
@@ -309,11 +319,25 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
             </div>
           </div>
 
-          {/* Opening Balance, Date and Time */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Opening Balance Type, Amount, Date and Time */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
-                Opening Balance (PKR)
+                Balance Type
+              </label>
+              <select
+                value={balanceType}
+                onChange={e => setBalanceType(e.target.value as 'we_owe' | 'vendor_owes')}
+                className="w-full px-3 py-2.5 bg-neutral-50 border border-neutral-300 rounded-xl text-xs font-bold text-neutral-900 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none"
+              >
+                <option value="we_owe">We Owe Vendor</option>
+                <option value="vendor_owes">Vendor Owes Us</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
+                Opening Balance (₨)
               </label>
               <div className="relative">
                 <input
@@ -328,9 +352,6 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({
                 />
                 <span className="absolute left-3 top-2.5 text-neutral-500 font-semibold text-sm">₨</span>
               </div>
-              <p className="mt-1 text-[11px] text-neutral-400">
-                Amount previously owed
-              </p>
             </div>
 
             <div>

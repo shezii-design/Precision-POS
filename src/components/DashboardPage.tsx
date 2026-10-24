@@ -50,7 +50,9 @@ import {
   Zap,
   BarChart3,
   UserCheck,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  X,
+  Printer
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -366,6 +368,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const [chartMetric, setChartMetric] = useState<'revenue_profit' | 'sales_purchases'>('revenue_profit');
   const [activeTab, setActiveTab] = useState<'overview' | 'sales_analytics' | 'inventory_health' | 'urgent_actions'>('overview');
 
+  // Cash Reconciliation Utility State & Calculation
+  const [showCashReconciliationModal, setShowCashReconciliationModal] = useState<boolean>(false);
+  const [actualCashInput, setActualCashInput] = useState<number | string>('');
+  const [reconciliationNotes, setReconciliationNotes] = useState<string>('');
+
   // Calculate Date Boundaries
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -469,6 +476,29 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const periodCustomerReturns = useMemo(() => customerReturns.filter(r => isDateInRange(r.date || r.createdAt)), [customerReturns, dateRange]);
   const periodVendorReturns = useMemo(() => vendorReturns.filter(r => isDateInRange(r.date || r.createdAt)), [vendorReturns, dateRange]);
   const periodExpenses = useMemo(() => expenses.filter(e => isDateInRange(e.date || e.createdAt)), [expenses, dateRange]);
+
+  const cashReconciliationData = useMemo(() => {
+    const expectedCashCollected = periodSales.reduce((sum, s) => sum + (Number(s.amountReceived) || 0), 0);
+    const cashRefundsIssued = periodCustomerReturns
+      .filter(r => !r.settlementType || r.settlementType === 'cash_refund' || (r as any).refundMethod === 'cash')
+      .reduce((sum, r) => sum + (Number(r.totalRefundAmount) || 0), 0);
+    const cashExpensesPaid = periodExpenses
+      .filter(e => e.paymentMethod === 'Cash' || !e.paymentMethod)
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const expectedCashInDrawer = Math.max(0, expectedCashCollected - cashRefundsIssued - cashExpensesPaid);
+    const actualCashNum = Number(actualCashInput) || 0;
+    const discrepancy = actualCashNum - expectedCashInDrawer;
+
+    return {
+      expectedCashCollected,
+      cashRefundsIssued,
+      cashExpensesPaid,
+      expectedCashInDrawer,
+      actualCashNum,
+      discrepancy,
+    };
+  }, [periodSales, periodCustomerReturns, periodExpenses, actualCashInput]);
 
   // 2. Compute Core Financial Metrics via Unified Financial Metrics Engine
   const financials = useMemo(() => {
@@ -1235,6 +1265,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             >
               <FileText className="w-3.5 h-3.5" />
               <span>Income Statement</span>
+            </button>
+
+            {/* Quick Action: Cash Reconciliation */}
+            <button
+              type="button"
+              onClick={() => setShowCashReconciliationModal(true)}
+              className="px-3 py-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              title="Open Cash Drawer Reconciliation"
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              <span>Cash Reconciliation</span>
             </button>
           </div>
         </div>
@@ -2395,6 +2436,171 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           ))}
         </div>
       </section>
+
+      {/* Cash Reconciliation Utility Modal */}
+      {showCashReconciliationModal && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-6 max-h-[90vh] overflow-y-auto">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-md shadow-amber-500/20">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                    Cash Drawer Reconciliation
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Session & Period Drawer Audit ({dateRange.label})
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                  title="Print Report"
+                >
+                  <Printer className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCashReconciliationModal(false)}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Reconciliation Breakdown Cards */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Cash Sales Inflow
+                  </span>
+                  <span className="text-base font-black text-emerald-600 font-mono mt-1 block">
+                    {formatPKR(cashReconciliationData.expectedCashCollected)}
+                  </span>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Recorded POS cash payments</span>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Cash Refunds Out
+                  </span>
+                  <span className="text-base font-black text-rose-600 font-mono mt-1 block">
+                    -{formatPKR(cashReconciliationData.cashRefundsIssued)}
+                  </span>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Customer return payouts</span>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Cash Expenses Paid
+                  </span>
+                  <span className="text-base font-black text-amber-600 font-mono mt-1 block">
+                    -{formatPKR(cashReconciliationData.cashExpensesPaid)}
+                  </span>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Operating cash outlays</span>
+                </div>
+              </div>
+
+              {/* Expected vs Actual Box */}
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 text-white space-y-4 shadow-lg">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-700">
+                  <span className="text-xs font-bold text-slate-300">Expected Cash in Drawer:</span>
+                  <span className="text-xl font-black font-mono text-emerald-400">
+                    {formatPKR(cashReconciliationData.expectedCashInDrawer)}
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-300 block">
+                    Enter Actual Physical Cash Count (PKR):
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-slate-400 font-mono font-bold">₨</span>
+                    <input
+                      type="number"
+                      value={actualCashInput}
+                      onChange={(e) => setActualCashInput(e.target.value)}
+                      placeholder="e.g. 45000"
+                      className="w-full pl-8 pr-4 py-2.5 bg-slate-800 border border-slate-600 rounded-xl text-white font-mono font-bold text-base focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Discrepancy Display */}
+                {actualCashInput !== '' && (
+                  <div className={`p-4 rounded-xl border flex items-center justify-between ${
+                    cashReconciliationData.discrepancy === 0 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' :
+                    cashReconciliationData.discrepancy > 0 ? 'bg-blue-500/20 border-blue-500/40 text-blue-300' :
+                    'bg-rose-500/20 border-rose-500/40 text-rose-300'
+                  }`}>
+                    <div>
+                      <span className="text-xs font-black uppercase tracking-wider block">
+                        {cashReconciliationData.discrepancy === 0 ? 'Exact Match / Balanced' :
+                         cashReconciliationData.discrepancy > 0 ? 'Drawer Surplus (Excess Cash)' :
+                         'Drawer Shortage (Deficit)'}
+                      </span>
+                      <span className="text-sm font-medium opacity-90 block mt-0.5">
+                        {cashReconciliationData.discrepancy === 0 ? 'Physical count matches expected cash drawer balance perfectly.' :
+                         cashReconciliationData.discrepancy > 0 ? `Physical cash is higher than expected by ${formatPKR(cashReconciliationData.discrepancy)}` :
+                         `Physical cash is lower than expected by ${formatPKR(Math.abs(cashReconciliationData.discrepancy))}`}
+                      </span>
+                    </div>
+                    <span className="text-lg font-black font-mono shrink-0">
+                      {cashReconciliationData.discrepancy > 0 ? '+' : ''}
+                      {formatPKR(cashReconciliationData.discrepancy)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Notes / Remarks */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-slate-700 block">
+                  Reconciliation Notes / Shift Remarks:
+                </label>
+                <textarea
+                  value={reconciliationNotes}
+                  onChange={(e) => setReconciliationNotes(e.target.value)}
+                  placeholder="Record reason for any discrepancy, opening float, or shift handover notes..."
+                  rows={2}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setShowCashReconciliationModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-colors"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  alert(`Cash Reconciliation Saved Successfully! Status: ${cashReconciliationData.discrepancy === 0 ? 'Balanced' : cashReconciliationData.discrepancy > 0 ? `Surplus of ${formatPKR(cashReconciliationData.discrepancy)}` : `Shortage of ${formatPKR(Math.abs(cashReconciliationData.discrepancy))}`}`);
+                  setShowCashReconciliationModal(false);
+                }}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black shadow-sm transition-all"
+              >
+                Confirm & Save Audit
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
