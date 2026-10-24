@@ -18,7 +18,7 @@
     body * {
       visibility: hidden;
     }
-    #printable-label, #printable-label * {
+    #printable-label, #printable-label *, #printable-po, #printable-po * {
       visibility: visible;
     }
     #printable-label {
@@ -29,6 +29,15 @@
       margin: 0;
       padding: 24px;
       border: 2px solid black !important;
+      box-shadow: none !important;
+    }
+    #printable-po {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      margin: 0;
+      padding: 16px;
       box-shadow: none !important;
     }
     .no-print {
