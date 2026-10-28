@@ -135,6 +135,13 @@ async function exactSyncRows(
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
     if (!rows || rows.length === 0) {
+      if (allowDeletions) {
+        try {
+          await client.from(tableName).delete().neq(idCol, '___placeholder_never_match___');
+        } catch {
+          // ignore if table not initialized
+        }
+      }
       return { success: true, count: 0 };
     }
 
@@ -1352,6 +1359,35 @@ export async function deleteVendorPaymentFromSupabase(
     return { success: true };
   } catch (err: unknown) {
     const errorMsg = getErrorMessage(err);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Deletes an Expense record from Supabase backend.
+ */
+export async function deleteExpenseFromSupabase(
+  client: SupabaseClient,
+  expenseId: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!client || !expenseId) {
+    return { success: false, error: 'Missing Supabase client or expense ID' };
+  }
+  try {
+    const { error } = await client
+      .from('expenses')
+      .delete()
+      .eq('id', expenseId);
+
+    if (error) {
+      console.warn('Error deleting expense entry from Supabase:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: unknown) {
+    const errorMsg = getErrorMessage(err);
+    console.warn('Exception deleting expense from Supabase:', errorMsg);
     return { success: false, error: errorMsg };
   }
 }
@@ -4827,7 +4863,8 @@ export async function syncDemandsToSupabase(
 
 export async function syncExpensesToSupabase(
   client: SupabaseClient,
-  expenses: Expense[]
+  expenses: Expense[],
+  allowDeletions: boolean = true
 ): Promise<{ success: boolean; count: number; error?: string }> {
   try {
     const rows = expenses.map(e => ({
@@ -4844,7 +4881,7 @@ export async function syncExpensesToSupabase(
       updated_at: new Date().toISOString(),
     }));
 
-    return await exactSyncRows(client, 'expenses', rows, 'id');
+    return await exactSyncRows(client, 'expenses', rows, 'id', allowDeletions);
   } catch (err: unknown) {
     const errorMsg = getErrorMessage(err);
     return { success: false, count: 0, error: errorMsg };

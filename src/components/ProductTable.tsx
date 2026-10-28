@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DimensionUnit, GlobalPricingSettings, Product } from '../types';
+import { DimensionUnit, GlobalPricingSettings, Product, ProductVelocityMetrics } from '../types';
 import { formatDimension } from '../services/dimensions';
 import { formatPKR, getTierTheme } from '../services/pricing';
 import { TableVirtuoso } from 'react-virtuoso';
@@ -13,12 +13,19 @@ import {
   ArrowRightLeft,
   Check,
   Tag,
-  History
+  History,
+  Flame,
+  Zap,
+  Clock,
+  PackageX,
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 
 interface ProductTableProps {
   products: Product[];
   pricingSettings: GlobalPricingSettings;
+  velocityMap?: Map<string, ProductVelocityMetrics>;
   onEdit?: (product: Product) => void;
   onDelete?: (id: string) => void;
   onDuplicate?: (product: Product) => void;
@@ -52,6 +59,7 @@ const getOldCostTiers = (product: Product) => {
 export const ProductTable: React.FC<ProductTableProps> = React.memo(({
   products,
   pricingSettings,
+  velocityMap,
   onEdit,
   onDelete,
   onDuplicate,
@@ -60,6 +68,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
   onQuickUpdateCost,
   onViewHistory,
 }) => {
+
   const [tableUnit, setTableUnit] = useState<DimensionUnit>('inch');
   const [editingCostId, setEditingCostId] = useState<string | null>(null);
   const [tempCostValue, setTempCostValue] = useState<string>('');
@@ -127,6 +136,7 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
               <th className="py-3.5 px-3 bg-slate-200/95">Brand / Type</th>
               <th className="py-3.5 px-3 bg-slate-200/95">Location & Cabin</th>
               <th className="py-3.5 px-3 bg-slate-200/95">Stock</th>
+              <th className="py-3.5 px-3 bg-slate-200/95">Sales Velocity</th>
               <th className="py-3.5 px-3 text-red-700 font-black bg-slate-200/95">Cost (PKR)</th>
               <th className="py-3.5 px-3 text-amber-700 font-black bg-slate-200/95">Wholesale (PKR)</th>
               <th className="py-3.5 px-3 text-emerald-800 font-black bg-slate-200/95">Retail (PKR)</th>
@@ -207,6 +217,61 @@ export const ProductTable: React.FC<ProductTableProps> = React.memo(({
                       <span>{p.stockQuantity} {p.unit}</span>
                     </div>
                   </td>
+
+                  {/* Sales Velocity */}
+                  <td className="py-3.5 px-3">
+                    {(() => {
+                      const velocity = velocityMap?.get(p.id);
+                      if (!velocity) {
+                        return <span className="text-xs text-slate-400 font-medium">—</span>;
+                      }
+
+                      return (
+                        <div className="flex flex-col gap-1 items-start min-w-[140px]" title={velocity.recommendation}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-black border ${velocity.tierBadgeColor}`}>
+                            {velocity.velocityTier === 'fast' && <Flame className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600 shrink-0" />}
+                            {velocity.velocityTier === 'moderate' && <Zap className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                            {velocity.velocityTier === 'slow' && <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                            {velocity.velocityTier === 'dead' && <PackageX className="w-3.5 h-3.5 text-purple-600 shrink-0" />}
+                            {velocity.velocityTier === 'new_unsold' && <Sparkles className="w-3.5 h-3.5 text-cyan-600 shrink-0" />}
+                            <span>{velocity.tierLabel}</span>
+                          </span>
+
+                          {velocity.velocityTier === 'fast' && (
+                            <span className="text-[11px] text-slate-600 font-bold">
+                              {velocity.unitsLast30Days} sold/30d • {velocity.stockDaysOfCover < 1000 ? `${Math.round(velocity.stockDaysOfCover)}d cover` : 'Good'}
+                            </span>
+                          )}
+
+                          {velocity.velocityTier === 'dead' && (
+                            <span className="text-[11px] text-purple-700 font-black font-mono">
+                              Idle: ₨ {formatPKR(velocity.tiedUpCapital)}
+                            </span>
+                          )}
+
+                          {velocity.velocityTier === 'slow' && (
+                            <span className="text-[11px] text-amber-800 font-semibold">
+                              {velocity.daysSinceLastSale ? `Last: ${velocity.daysSinceLastSale}d ago` : 'Rare'} • {velocity.stockDaysOfCover < 1000 ? `${Math.round(velocity.stockDaysOfCover)}d` : ''}
+                            </span>
+                          )}
+
+                          {velocity.velocityTier === 'moderate' && (
+                            <span className="text-[11px] text-slate-600 font-semibold">
+                              {velocity.unitsLast30Days} sold/mo • ~{Math.round(velocity.stockDaysOfCover)}d
+                            </span>
+                          )}
+
+                          {velocity.isStockoutRisk && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                              <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+                              Stockout Risk!
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </td>
+
 
                   {/* Cost Price - RED */}
                   <td className="py-3.5 px-3">

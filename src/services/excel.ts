@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { Product, ProductSellingPrice, StockLog, Sale, PurchaseOrder } from '../types';
+import { Product, ProductSellingPrice, StockLog, Sale, PurchaseOrder, ProductVelocityMetrics } from '../types';
 import { getNextInternalId } from './storage';
 import { calculateSmartROP, buildProductSalesMap } from './analytics';
 
@@ -650,3 +650,114 @@ export function exportPurchaseOrderToExcel(po: PurchaseOrder, isVendorCopy: bool
   XLSX.writeFile(workbook, fileName);
 }
 
+export function exportInventoryVelocityToExcel(
+  products: Product[],
+  velocityMap: Map<string, ProductVelocityMetrics>,
+  fileName: string = 'inventory_sales_velocity_and_dead_stock.xlsx'
+): void {
+  // 1. All Items Velocity Sheet
+  const allRows = products.map((p, idx) => {
+    const v = velocityMap.get(p.id);
+    return {
+      '#': idx + 1,
+      'Internal ID': sanitizeFormulaCell(p.internalId),
+      'Product Name': sanitizeFormulaCell(p.name),
+      'Brand': sanitizeFormulaCell(p.brandName),
+      'Type / Category': sanitizeFormulaCell(p.typeName),
+      'Location': sanitizeFormulaCell(p.locationName),
+      'Cabin': sanitizeFormulaCell(p.cabinNumber || ''),
+      'Current Stock': p.stockQuantity || 0,
+      'Unit': sanitizeFormulaCell(p.unit),
+      'Cost Price (PKR)': p.costPrice || 0,
+      'Tied-up Capital (PKR)': v ? v.tiedUpCapital : (p.stockQuantity || 0) * (p.costPrice || 0),
+      'Velocity Tier': sanitizeFormulaCell(v ? v.tierLabel.replace(/[🔥⚡🐢💀🆕🚨]/g, '').trim() : 'Unknown'),
+      '30-Day Sales (Units)': v ? v.unitsLast30Days : 0,
+      '30-Day Revenue (PKR)': v ? v.revenueLast30Days : 0,
+      '60-Day Sales (Units)': v ? v.unitsLast60Days : 0,
+      '90-Day Sales (Units)': v ? v.unitsLast90Days : 0,
+      'Total Units Sold': v ? v.totalUnitsSold : 0,
+      'Daily Sales Run Rate (ADS)': v ? v.dailySalesRate : 0,
+      'Days Since Last Sale': v && v.daysSinceLastSale !== null ? v.daysSinceLastSale : 'Never Sold',
+      'Stock Days of Cover': v && v.stockDaysOfCover < 1000 ? Math.round(v.stockDaysOfCover) : 'N/A (Zero Sales)',
+      'Stockout Risk': v && v.isStockoutRisk ? 'CRITICAL RISK' : 'Normal',
+      'Business Action / Recommendation': sanitizeFormulaCell(v?.recommendation || ''),
+    };
+  });
+
+  // 2. Dead Stock Liquidation Sheet (Zero sales in 60+ days, sorted by tied-up capital descending)
+  const deadStockItems = products
+    .filter(p => {
+      const v = velocityMap.get(p.id);
+      return v && v.velocityTier === 'dead' && (p.stockQuantity || 0) > 0;
+    })
+    .sort((a, b) => {
+      const cA = velocityMap.get(a.id)?.tiedUpCapital || 0;
+      const cB = velocityMap.get(b.id)?.tiedUpCapital || 0;
+      return cB - cA;
+    });
+
+  const deadStockRows = deadStockItems.map((p, idx) => {
+    const v = velocityMap.get(p.id);
+    const capital = v ? v.tiedUpCapital : (p.stockQuantity || 0) * (p.costPrice || 0);
+    return {
+      '#': idx + 1,
+      'Internal ID': sanitizeFormulaCell(p.internalId),
+      'Product Name': sanitizeFormulaCell(p.name),
+      'Brand': sanitizeFormulaCell(p.brandName),
+      'Type': sanitizeFormulaCell(p.typeName),
+      'Location': sanitizeFormulaCell(p.locationName),
+      'Cabin': sanitizeFormulaCell(p.cabinNumber || ''),
+      'Dead Stock Qty': p.stockQuantity || 0,
+      'Cost Rate (PKR)': p.costPrice || 0,
+      'Tied-up Idle Capital (PKR)': capital,
+      'Days Without Sale': v && v.daysSinceLastSale !== null ? v.daysSinceLastSale : 'Never Sold',
+      'Recommended Action': sanitizeFormulaCell(v?.recommendation || 'Clearance discount 20-30% or return to vendor debit note'),
+    };
+  });
+
+  // 3. Fast Selling Champions Sheet
+  const fastItems = products
+    .filter(p => {
+      const v = velocityMap.get(p.id);
+      return v && (v.velocityTier === 'fast' || v.isStockoutRisk);
+    })
+    .sort((a, b) => {
+      const uA = velocityMap.get(a.id)?.unitsLast30Days || 0;
+      const uB = velocityMap.get(b.id)?.unitsLast30Days || 0;
+      return uB - uA;
+    });
+
+  const fastRows = fastItems.map((p, idx) => {
+    const v = velocityMap.get(p.id);
+    return {
+      '#': idx + 1,
+      'Internal ID': sanitizeFormulaCell(p.internalId),
+      'Product Name': sanitizeFormulaCell(p.name),
+      'Brand': sanitizeFormulaCell(p.brandName),
+      'Type': sanitizeFormulaCell(p.typeName),
+      'Current Stock': p.stockQuantity || 0,
+      '30-Day Units Sold': v ? v.unitsLast30Days : 0,
+      '30-Day Revenue (PKR)': v ? v.revenueLast30Days : 0,
+      'Days of Cover Remaining': v && v.stockDaysOfCover < 1000 ? Math.round(v.stockDaysOfCover) : 'Stockout',
+      'Stockout Alert': v?.isStockoutRisk ? 'REORDER URGENT' : 'Healthy',
+      'Recommended Action': sanitizeFormulaCell(v?.recommendation || ''),
+    };
+  });
+
+  const workbook = XLSX.utils.book_new();
+
+  const wsAll = XLSX.utils.json_to_sheet(allRows);
+  XLSX.utils.book_append_sheet(workbook, wsAll, 'Velocity Overview');
+
+  if (deadStockRows.length > 0) {
+    const wsDead = XLSX.utils.json_to_sheet(deadStockRows);
+    XLSX.utils.book_append_sheet(workbook, wsDead, 'Dead Stock Audit');
+  }
+
+  if (fastRows.length > 0) {
+    const wsFast = XLSX.utils.json_to_sheet(fastRows);
+    XLSX.utils.book_append_sheet(workbook, wsFast, 'Fast Movers Priority');
+  }
+
+  XLSX.writeFile(workbook, fileName);
+}

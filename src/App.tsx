@@ -114,10 +114,16 @@ import {
 } from './services/auth';
 import { detectDeviceInfo, getStoredRegisteredDevices } from './services/device';
 import { filterAndSortProducts, normalizeSearchTerm } from './services/search';
-import { autoUpdateProductsROP, calculateSmartROP, buildProductSalesMap } from './services/analytics';
+import { 
+  autoUpdateProductsROP, 
+  calculateSmartROP, 
+  buildProductSalesMap, 
+  calculateAllInventoryVelocity, 
+  calculateInventoryVelocitySummary 
+} from './services/analytics';
 import { ParsedDimensionQuery } from './services/dimensions';
 import { formatPKR, formatPKRShort, generateProductSellingPrices, getDefaultRetailPrice } from './services/pricing';
-import { exportProductsToCSV, exportProductsToExcel } from './services/excel';
+import { exportProductsToCSV, exportProductsToExcel, exportInventoryVelocityToExcel } from './services/excel';
 import { 
   getSupabaseClient, 
   syncAllModulesToSupabase, 
@@ -132,7 +138,9 @@ import {
   syncCustomerPaymentToSupabase,
   syncVendorPaymentToSupabase,
   deleteCustomerPaymentFromSupabase,
-  deleteVendorPaymentFromSupabase
+  deleteVendorPaymentFromSupabase,
+  deleteExpenseFromSupabase,
+  syncExpensesToSupabase
 } from './services/supabase';
 import { SectionErrorBoundary } from './components/ErrorBoundary';
 
@@ -208,7 +216,13 @@ import {
   Ruler,
   Receipt,
   ShoppingCart,
-  Building2
+  Building2,
+  Flame,
+  Zap,
+  Clock,
+  PackageX,
+  Sparkles,
+  Download
 } from 'lucide-react';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 
@@ -349,7 +363,8 @@ export default function App() {
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [cabinFilter, setCabinFilter] = useState<string>('all');
   const [stockStatusFilter, setStockStatusFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
-  const [sortBy, setSortBy] = useState<'recent' | 'name_asc' | 'id_asc' | 'price_low' | 'price_high' | 'stock_low' | 'stock_high'>('recent');
+  const [velocityFilter, setVelocityFilter] = useState<'all' | 'fast' | 'moderate' | 'slow' | 'dead' | 'stockout_risk'>('all');
+  const [sortBy, setSortBy] = useState<'recent' | 'name_asc' | 'id_asc' | 'price_low' | 'price_high' | 'stock_low' | 'stock_high' | 'velocity_desc' | 'velocity_asc' | 'dead_capital_desc' | 'days_no_sale_desc'>('recent');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
 
@@ -557,20 +572,74 @@ export default function App() {
   };
 
   const handleSaveExpense = (expenseData: Partial<Expense>) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
+    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.'); return; }
     const res = saveExpense(expenseData, expenses);
     setExpenses(res.updatedExpenses);
+    saveStoredExpenses(res.updatedExpenses);
     showToast(`Expense Saved: PKR ${res.savedExpense.amount.toLocaleString()}`, res.savedExpense.title);
+
+    const client = getSupabaseClient(supabaseConfig);
+    if (client) {
+      syncExpensesToSupabase(client, res.updatedExpenses).catch(err => {
+        console.warn('Immediate expense sync error:', err);
+      });
+    }
   };
 
-  const handleDeleteExpense = (expenseId: string) => {
-    if (!isOnline) { showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.', ); return; }
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (!isOnline) { 
+      showToast('Offline Mode (Read-Only)', 'Cannot perform write/edit actions while offline.'); 
+      return; 
+    }
     const expense = expenses.find(e => e.id === expenseId);
     if (!expense) return;
     if (!window.confirm(`Delete expense record "${expense.title}" for PKR ${expense.amount.toLocaleString()}?`)) return;
+
+    // 1. Delete locally and update local storage immediately
     const res = deleteExpense(expenseId, expenses);
     setExpenses(res.updatedExpenses);
+    saveStoredExpenses(res.updatedExpenses);
     showToast('Expense Deleted', expense.title);
+
+    // 2. Synchronize deletion with Supabase backend
+    const client = getSupabaseClient(supabaseConfig);
+    if (client) {
+      try {
+        const deleteRes = await deleteExpenseFromSupabase(client, expenseId);
+        if (deleteRes.success) {
+          console.info('Expense deleted successfully from backend:', expenseId);
+          // Keep sync cache in sync so background debounce doesn't cause anomalies
+          if (prevSyncState.current) {
+            prevSyncState.current.expenses = res.updatedExpenses;
+          }
+        } else {
+          console.warn('Failed to delete expense from backend directly, attempting fallback sync:', deleteRes.error);
+          // Fallback: sync the whole updated expenses list with allowDeletions = true to guarantee consistency
+          const fallbackRes = await syncExpensesToSupabase(client, res.updatedExpenses, true);
+          if (fallbackRes.success) {
+            console.info('Expense reconciled on backend via syncExpensesToSupabase');
+            if (prevSyncState.current) {
+              prevSyncState.current.expenses = res.updatedExpenses;
+            }
+          } else {
+            console.warn('Fallback expense reconciliation failed:', fallbackRes.error);
+            showToast('Backend Sync Warning', 'Deleted locally; backend sync error.');
+          }
+        }
+      } catch (err) {
+        console.warn('Network error while deleting expense from backend:', err);
+        // Attempt fallback synchronization to ensure consistent state
+        try {
+          const fallbackRes = await syncExpensesToSupabase(client, res.updatedExpenses, true);
+          if (fallbackRes.success && prevSyncState.current) {
+            prevSyncState.current.expenses = res.updatedExpenses;
+          }
+        } catch (syncErr) {
+          console.warn('Network failure fallback sync failed:', syncErr);
+          showToast('Offline / Network Issue', 'Expense deleted locally; cloud sync queued.');
+        }
+      }
+    }
   };
 
   const handleOpenCreateQuotation = () => {
@@ -2045,8 +2114,16 @@ export default function App() {
     supabaseConfig.enabled, supabaseConfig.url, supabaseConfig.anonKey, isInitialPullComplete
   ]);
 
+  // Precompute inventory sales velocity metrics & executive summary
+  const velocityMap = useMemo(() => {
+    return calculateAllInventoryVelocity(products, sales);
+  }, [products, sales]);
+
+  const velocitySummary = useMemo(() => {
+    return calculateInventoryVelocitySummary(products, velocityMap);
+  }, [products, velocityMap]);
+
   // Filtered and Sorted Products
-  
   const filteredProducts = useMemo(() => {
     return filterAndSortProducts(products, {
       primarySearch,
@@ -2056,9 +2133,10 @@ export default function App() {
       locationFilter,
       cabinFilter,
       stockStatus: stockStatusFilter,
+      velocityFilter,
       sortBy,
-    });
-  }, [products, primarySearch, dimensionQuery, brandFilter, typeFilter, locationFilter, cabinFilter, stockStatusFilter, sortBy]);
+    }, velocityMap);
+  }, [products, primarySearch, dimensionQuery, brandFilter, typeFilter, locationFilter, cabinFilter, stockStatusFilter, velocityFilter, sortBy, velocityMap]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 24;
@@ -2072,7 +2150,7 @@ export default function App() {
   // Reset pagination when search/filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [primarySearch, dimensionQuery, brandFilter, typeFilter, locationFilter, cabinFilter, stockStatusFilter, sortBy]);
+  }, [primarySearch, dimensionQuery, brandFilter, typeFilter, locationFilter, cabinFilter, stockStatusFilter, velocityFilter, sortBy]);
 
 
   // Statistics calculation
@@ -2553,6 +2631,8 @@ export default function App() {
             products={products}
             sales={sales}
             purchases={purchases}
+            velocityMap={velocityMap}
+            velocitySummary={velocitySummary}
             onOpenProductHistory={(product) => {
               handleOpenProductHistory(product);
             }}
@@ -2571,6 +2651,8 @@ export default function App() {
             expenses={expenses}
             vendors={vendors}
             vendorLedger={ledgerEntries}
+            customerLedger={customerLedger}
+            customers={customers}
             onSaveExpense={handleSaveExpense}
             onDeleteExpense={isActionAllowed(currentEmployee, 'canManageExpenses') ? handleDeleteExpense : undefined}
             onGoToView={(view) => setCurrentView(view)}
@@ -2850,6 +2932,189 @@ export default function App() {
           </div>
         </section>
 
+        {/* SALES VELOCITY & DEAD STOCK EXECUTIVE STRIP */}
+        <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-4 sm:p-5 text-white shadow-md border border-slate-700/60 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3.5 border-b border-slate-700/70">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
+                  SALES MOVEMENT & VELOCITY INTELLIGENCE
+                </span>
+                <span className="text-xs text-slate-400 font-medium">
+                  Continuous classification based on real customer sales invoices
+                </span>
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-white mt-1 flex items-center gap-2">
+                <span>Fast-Moving Revenue Drivers & Dormant Dead Stock Audit</span>
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setVelocityFilter('dead');
+                  setSortBy('dead_capital_desc');
+                  inventorySectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  velocityFilter === 'dead'
+                    ? 'bg-purple-500 text-white shadow-sm ring-2 ring-purple-300'
+                    : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40'
+                }`}
+                title="Filter to all dead stock items sorted by highest tied-up idle capital"
+              >
+                <PackageX className="w-3.5 h-3.5 text-purple-300" />
+                <span>Audit Dead Stock ({velocitySummary.deadStockCount})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => exportInventoryVelocityToExcel(products, velocityMap)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all shadow-sm cursor-pointer"
+                title="Export complete Velocity & Dead Stock report to Excel"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export Velocity Excel</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 4 Interactive Velocity Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* 1. Fast Movers */}
+            <div
+              onClick={() => setVelocityFilter(velocityFilter === 'fast' ? 'all' : 'fast')}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                velocityFilter === 'fast'
+                  ? 'bg-emerald-950/70 border-emerald-400 ring-2 ring-emerald-500/40'
+                  : 'bg-slate-800/80 border-slate-700 hover:border-emerald-500/50 hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black text-emerald-400 uppercase tracking-wide flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5 fill-emerald-400" /> Fast Selling
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-black">
+                  {velocitySummary.fastMoversCount} items
+                </span>
+              </div>
+              <div className="mt-2.5">
+                <div className="text-xl sm:text-2xl font-black text-white">
+                  {velocitySummary.fastMoversUnits30d} <span className="text-xs font-semibold text-slate-400">pcs/30d</span>
+                </div>
+                <div className="text-xs text-emerald-300/90 font-bold truncate mt-0.5">
+                  ₨ {formatPKR(velocitySummary.fastMoversRevenue30d)} (30d rev)
+                </div>
+                {velocitySummary.stockoutRiskCount > 0 ? (
+                  <div className="mt-1.5 text-[10px] font-black text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded border border-rose-500/30 truncate flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
+                    {velocitySummary.stockoutRiskCount} at Stockout Risk!
+                  </div>
+                ) : (
+                  <div className="mt-1.5 text-[10px] font-semibold text-slate-400 truncate">
+                    Healthy run rate buffer
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 2. Steady Movers */}
+            <div
+              onClick={() => setVelocityFilter(velocityFilter === 'moderate' ? 'all' : 'moderate')}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                velocityFilter === 'moderate'
+                  ? 'bg-blue-950/70 border-blue-400 ring-2 ring-blue-500/40'
+                  : 'bg-slate-800/80 border-slate-700 hover:border-blue-500/50 hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black text-blue-400 uppercase tracking-wide flex items-center gap-1">
+                  <Zap className="w-3.5 h-3.5" /> Steady Stock
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-mono font-black">
+                  {velocitySummary.moderateCount} items
+                </span>
+              </div>
+              <div className="mt-2.5">
+                <div className="text-xl sm:text-2xl font-black text-white">
+                  Steady Turnover
+                </div>
+                <div className="text-xs text-slate-400 font-semibold truncate mt-0.5">
+                  Balanced stock days of supply
+                </div>
+                <div className="mt-1.5 text-[10px] font-semibold text-blue-300 bg-blue-500/15 px-1.5 py-0.5 rounded border border-blue-500/25 truncate">
+                  Predictable demand cycle
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Slow Moving */}
+            <div
+              onClick={() => setVelocityFilter(velocityFilter === 'slow' ? 'all' : 'slow')}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                velocityFilter === 'slow'
+                  ? 'bg-amber-950/70 border-amber-400 ring-2 ring-amber-500/40'
+                  : 'bg-slate-800/80 border-slate-700 hover:border-amber-500/50 hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black text-amber-400 uppercase tracking-wide flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" /> Slow Moving
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono font-black">
+                  {velocitySummary.slowMoversCount} items
+                </span>
+              </div>
+              <div className="mt-2.5">
+                <div className="text-xl sm:text-2xl font-black text-amber-200 font-mono truncate">
+                  ₨ {formatPKRShort(velocitySummary.slowMoversTiedUpCapital)}
+                </div>
+                <div className="text-xs text-slate-400 font-semibold truncate mt-0.5">
+                  Overstocked / sluggish sales
+                </div>
+                <div className="mt-1.5 text-[10px] font-semibold text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/25 truncate">
+                  High days of cover &gt; 90d
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Dead Stock */}
+            <div
+              onClick={() => {
+                setVelocityFilter(velocityFilter === 'dead' ? 'all' : 'dead');
+                if (velocityFilter !== 'dead') setSortBy('dead_capital_desc');
+              }}
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                velocityFilter === 'dead'
+                  ? 'bg-purple-950/80 border-purple-400 ring-2 ring-purple-500/50'
+                  : 'bg-slate-800/80 border-purple-500/40 hover:border-purple-400 hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black text-purple-300 uppercase tracking-wide flex items-center gap-1">
+                  <PackageX className="w-3.5 h-3.5 text-purple-400" /> Dead Stock (60d+)
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 font-mono font-black">
+                  {velocitySummary.deadStockCount} items
+                </span>
+              </div>
+              <div className="mt-2.5">
+                <div className="text-xl sm:text-2xl font-black text-rose-300 font-mono truncate">
+                  ₨ {formatPKRShort(velocitySummary.deadStockTiedUpCapital)}
+                </div>
+                <div className="text-xs text-purple-300 font-bold truncate mt-0.5">
+                  Tied-up Idle Capital
+                </div>
+                <div className="mt-1.5 text-[10px] font-black text-purple-200 bg-purple-500/20 px-1.5 py-0.5 rounded border border-purple-500/30 truncate">
+                  Click to inspect idle capital
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* SEARCH & FILTERS CONTAINER */}
         <section className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-xs space-y-3.5 sm:space-y-4">
           {/* PRIMARY SEARCH BAR (Ctrl + F) */}
@@ -3032,6 +3297,79 @@ export default function App() {
               </button>
             </div>
 
+            {/* Sales Velocity Quick Filter Chips */}
+            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-bold overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setVelocityFilter('all')}
+                className={`px-3 py-1.5 rounded-lg transition-all text-center cursor-pointer shrink-0 ${
+                  velocityFilter === 'all' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All Movers
+              </button>
+              <button
+                type="button"
+                onClick={() => setVelocityFilter('fast')}
+                className={`px-2.5 py-1.5 rounded-lg transition-all text-center cursor-pointer shrink-0 flex items-center gap-1 ${
+                  velocityFilter === 'fast' ? 'bg-emerald-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Fast Selling items (high monthly volume)"
+              >
+                <Flame className="w-3.5 h-3.5" />
+                <span>Fast ({velocitySummary.fastMoversCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVelocityFilter('moderate')}
+                className={`px-2.5 py-1.5 rounded-lg transition-all text-center cursor-pointer shrink-0 flex items-center gap-1 ${
+                  velocityFilter === 'moderate' ? 'bg-blue-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Steady Movers with balanced stock cover"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>Steady ({velocitySummary.moderateCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVelocityFilter('slow')}
+                className={`px-2.5 py-1.5 rounded-lg transition-all text-center cursor-pointer shrink-0 flex items-center gap-1 ${
+                  velocityFilter === 'slow' ? 'bg-amber-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Slow moving items with high days of cover"
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Slow ({velocitySummary.slowMoversCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setVelocityFilter('dead');
+                  setSortBy('dead_capital_desc');
+                }}
+                className={`px-2.5 py-1.5 rounded-lg transition-all text-center cursor-pointer shrink-0 flex items-center gap-1 ${
+                  velocityFilter === 'dead' ? 'bg-purple-600 text-white shadow-xs font-black' : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Dead Stock items (no sales in 60+ days)"
+              >
+                <PackageX className="w-3.5 h-3.5" />
+                <span>Dead ({velocitySummary.deadStockCount})</span>
+              </button>
+              {velocitySummary.stockoutRiskCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setVelocityFilter('stockout_risk')}
+                  className={`px-2.5 py-1.5 rounded-lg transition-all text-center cursor-pointer shrink-0 flex items-center gap-1 ${
+                    velocityFilter === 'stockout_risk' ? 'bg-rose-600 text-white shadow-xs font-black' : 'text-rose-700 hover:text-rose-900 bg-rose-50'
+                  }`}
+                  title="Items with high sales velocity but stockout risk in <14 days"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Stockout Risk ({velocitySummary.stockoutRiskCount})</span>
+                </button>
+              )}
+            </div>
+
             {/* Sort By & View Mode Toggle */}
             <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-1 sm:pt-0">
               <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 flex-1 sm:flex-initial">
@@ -3042,6 +3380,10 @@ export default function App() {
                   className="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-800 cursor-pointer"
                 >
                   <option value="recent">Recently Added</option>
+                  <option value="velocity_desc">🔥 Fastest Selling First (Top Velocity)</option>
+                  <option value="velocity_asc">🐢 Slowest / Non-Moving First</option>
+                  <option value="dead_capital_desc">💀 Dead Stock: Highest Idle Capital (₨)</option>
+                  <option value="days_no_sale_desc">Longest Time Without Sale</option>
                   <option value="name_asc">Name (A to Z)</option>
                   <option value="id_asc">ID (KFH-2501)</option>
                   <option value="price_low">Cost: Low to High</option>
@@ -3096,13 +3438,13 @@ export default function App() {
               <span className="text-xs sm:text-sm">
                 Showing <strong className="text-slate-950 font-black">{filteredProducts.length}</strong> of{' '}
                 <strong className="text-slate-950 font-black">{products.length}</strong> products
-                {(primarySearch || dimensionQuery || brandFilter !== 'all' || typeFilter !== 'all' || stockStatusFilter !== 'all') && (
+                {(primarySearch || dimensionQuery || brandFilter !== 'all' || typeFilter !== 'all' || stockStatusFilter !== 'all' || velocityFilter !== 'all') && (
                   <span className="text-red-600 ml-1.5 font-bold">(Filtered)</span>
                 )}
               </span>
             </div>
 
-            {(primarySearch || dimensionQuery || brandFilter !== 'all' || typeFilter !== 'all' || locationFilter !== 'all' || stockStatusFilter !== 'all') && (
+            {(primarySearch || dimensionQuery || brandFilter !== 'all' || typeFilter !== 'all' || locationFilter !== 'all' || stockStatusFilter !== 'all' || velocityFilter !== 'all') && (
               <button
                 type="button"
                 onClick={() => {
@@ -3113,6 +3455,7 @@ export default function App() {
                   setLocationFilter('all');
                   setCabinFilter('all');
                   setStockStatusFilter('all');
+                  setVelocityFilter('all');
                 }}
                 className="text-xs sm:text-sm font-bold text-red-600 hover:text-red-700 underline cursor-pointer"
               >
@@ -3130,7 +3473,7 @@ export default function App() {
               <div className="max-w-md mx-auto">
                 <h3 className="text-lg font-bold text-slate-900">No matching products found</h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Try searching for a different part number, clearing your dimension size query, or adding a new product.
+                  Try searching for a different part number, clearing your dimension size query, or adjusting sales velocity filters.
                 </p>
               </div>
               <div className="flex items-center justify-center gap-3 pt-2">
@@ -3141,7 +3484,10 @@ export default function App() {
                     setDimensionQuery(null);
                     setBrandFilter('all');
                     setTypeFilter('all');
+                    setLocationFilter('all');
+                    setCabinFilter('all');
                     setStockStatusFilter('all');
+                    setVelocityFilter('all');
                   }}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors"
                 >
@@ -3164,6 +3510,7 @@ export default function App() {
                     key={product.id}
                     product={product}
                     pricingSettings={pricingSettings}
+                    velocityMap={velocityMap}
                     onEdit={isActionAllowed(currentEmployee, 'canEditProducts') ? handleEditProduct : undefined}
                     onDelete={isActionAllowed(currentEmployee, 'canDeleteProducts') ? handleDeleteProduct : undefined}
                     onDuplicate={isActionAllowed(currentEmployee, 'canAddProducts') ? handleDuplicateProduct : undefined}
@@ -3192,6 +3539,7 @@ export default function App() {
               <ProductTable
                 products={paginatedProducts}
                 pricingSettings={pricingSettings}
+                velocityMap={velocityMap}
                 onEdit={isActionAllowed(currentEmployee, 'canEditProducts') ? handleEditProduct : undefined}
                 onDelete={isActionAllowed(currentEmployee, 'canDeleteProducts') ? handleDeleteProduct : undefined}
                 onDuplicate={isActionAllowed(currentEmployee, 'canAddProducts') ? handleDuplicateProduct : undefined}

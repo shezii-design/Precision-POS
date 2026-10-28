@@ -1,4 +1,4 @@
-import { Product } from '../types';
+import { Product, ProductVelocityMetrics } from '../types';
 import { matchesDimensionQuery, ParsedDimensionQuery } from './dimensions';
 
 export function normalizeSearchTerm(str: string | undefined | null): string {
@@ -66,10 +66,15 @@ export interface FilterOptions {
   locationFilter: string;
   cabinFilter: string;
   stockStatus: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
-  sortBy: 'name_asc' | 'id_asc' | 'price_low' | 'price_high' | 'stock_low' | 'stock_high' | 'recent';
+  velocityFilter?: 'all' | 'fast' | 'moderate' | 'slow' | 'dead' | 'new_unsold' | 'stockout_risk';
+  sortBy: 'name_asc' | 'id_asc' | 'price_low' | 'price_high' | 'stock_low' | 'stock_high' | 'recent' | 'velocity_desc' | 'velocity_asc' | 'dead_capital_desc' | 'days_no_sale_desc';
 }
 
-export function filterAndSortProducts(products: Product[], options: FilterOptions): Product[] {
+export function filterAndSortProducts(
+  products: Product[],
+  options: FilterOptions,
+  velocityMap?: Map<string, ProductVelocityMetrics>
+): Product[] {
   const filtered = products.filter(product => {
     // 1. Primary Text Search (Name, Cross Refs, Machines, Thread, ID, etc.)
     if (!matchesPrimarySearch(product, options.primarySearch)) {
@@ -117,12 +122,46 @@ export function filterAndSortProducts(products: Product[], options: FilterOption
     if (options.stockStatus === 'low_stock' && stock > minAlert) return false;
     if (options.stockStatus === 'in_stock' && stock <= 0) return false;
 
+    // 8. Sales Velocity Filter
+    if (options.velocityFilter && options.velocityFilter !== 'all' && velocityMap) {
+      const v = velocityMap.get(product.id);
+      if (!v) return false;
+      if (options.velocityFilter === 'stockout_risk') {
+        if (!v.isStockoutRisk) return false;
+      } else if (v.velocityTier !== options.velocityFilter) {
+        return false;
+      }
+    }
+
     return true;
   });
 
   // Sort
   return filtered.sort((a, b) => {
     switch (options.sortBy) {
+      case 'velocity_desc': {
+        const vA = velocityMap?.get(a.id)?.unitsLast30Days || 0;
+        const vB = velocityMap?.get(b.id)?.unitsLast30Days || 0;
+        if (vB !== vA) return vB - vA;
+        return (velocityMap?.get(b.id)?.velocityScore || 0) - (velocityMap?.get(a.id)?.velocityScore || 0);
+      }
+      case 'velocity_asc': {
+        const vA = velocityMap?.get(a.id)?.unitsLast30Days || 0;
+        const vB = velocityMap?.get(b.id)?.unitsLast30Days || 0;
+        if (vA !== vB) return vA - vB;
+        return (velocityMap?.get(a.id)?.velocityScore || 0) - (velocityMap?.get(b.id)?.velocityScore || 0);
+      }
+      case 'dead_capital_desc': {
+        const cA = velocityMap?.get(a.id)?.tiedUpCapital || 0;
+        const cB = velocityMap?.get(b.id)?.tiedUpCapital || 0;
+        if (cB !== cA) return cB - cA;
+        return (b.stockQuantity || 0) - (a.stockQuantity || 0);
+      }
+      case 'days_no_sale_desc': {
+        const dA = velocityMap?.get(a.id)?.daysSinceLastSale ?? 9999;
+        const dB = velocityMap?.get(b.id)?.daysSinceLastSale ?? 9999;
+        return dB - dA;
+      }
       case 'name_asc':
         return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
       case 'id_asc':
@@ -141,3 +180,4 @@ export function filterAndSortProducts(products: Product[], options: FilterOption
     }
   });
 }
+

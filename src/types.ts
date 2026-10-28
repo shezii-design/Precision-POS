@@ -1057,7 +1057,70 @@ export interface IncomeStatementData {
   vendorPayablesOutstanding: number;
 }
 
+// ----------------------------------------------------------------------------
+// INVENTORY VELOCITY & SALES MOVEMENT INTELLIGENCE
+// ----------------------------------------------------------------------------
 
+export type InventoryVelocityTier = 
+  | 'fast'         // 🔥 High turnover, selling fast, frequent invoices
+  | 'moderate'     // ⚡ Healthy, steady regular sales
+  | 'slow'         // 🐢 Low sales frequency, excessive days of stock coverage
+  | 'dead'         // 💀 No sales in last 60/90+ days while holding stock (tied-up capital)
+  | 'new_unsold'   // 🆕 New stock (<30 days in system, 0 sales yet)
+  | 'out_of_stock';// ⚠️ 0 stock (if historically fast, high stockout risk)
 
+export interface ProductVelocityMetrics {
+  productId: string;
+  internalId: string;
+  productName: string;
+  brandName?: string;
+  typeName?: string;
+  locationName?: string;
+  cabinNumber?: string;
+  currentStock: number;
+  unit: QuantityUnit;
+  costPrice: number;
+  tiedUpCapital: number; // currentStock * costPrice (in PKR)
+  
+  // Historical & recent sales performance
+  totalUnitsSold: number;
+  totalSalesCount: number; // distinct invoices
+  totalRevenue: number; // in PKR
+  unitsLast30Days: number;
+  revenueLast30Days: number;
+  unitsLast60Days: number;
+  unitsLast90Days: number;
+  
+  // Velocity indicators
+  dailySalesRate: number; // ADS: units sold per day (weighted last 30/60 days)
+  lastSaleDate: string | null;
+  daysSinceLastSale: number | null; // null if never sold
+  stockDaysOfCover: number; // days before stockout (Infinity / 999999 if zero sales)
+  monthlyTurnoverRatio: number; // units sold / current stock
+  
+  // Classification & recommendations
+  velocityTier: InventoryVelocityTier;
+  velocityScore: number; // 0 to 100
+  tierLabel: string;
+  tierBadgeColor: string;
+  recommendation: string;
+  isStockoutRisk: boolean; // fast seller with <= 14 days of cover
+  isOverstocked: boolean; // holding > 120 days of cover
+}
 
-
+export interface InventoryVelocitySummary {
+  totalProducts: number;
+  fastMoversCount: number;
+  moderateCount: number;
+  slowMoversCount: number;
+  deadStockCount: number;
+  newUnsoldCount: number;
+  outOfStockCount: number;
+  
+  totalInventoryValuationCost: number; // in PKR
+  deadStockTiedUpCapital: number; // in PKR
+  slowMoversTiedUpCapital: number; // in PKR
+  fastMoversRevenue30d: number; // in PKR
+  fastMoversUnits30d: number;
+  stockoutRiskCount: number; // fast movers with <= 14 days of cover
+}

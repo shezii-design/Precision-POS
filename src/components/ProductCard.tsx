@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DimensionUnit, GlobalPricingSettings, Product } from '../types';
+import { DimensionUnit, GlobalPricingSettings, Product, ProductVelocityMetrics } from '../types';
 import { formatDimension, inchToMm } from '../services/dimensions';
 import { formatPKR, generateProductSellingPrices, getTierTheme } from '../services/pricing';
 import { 
@@ -23,12 +23,19 @@ import {
   MoreVertical,
   Plus,
   Minus,
-  History
+  History,
+  Flame,
+  Zap,
+  Clock,
+  PackageX,
+  Sparkles
 } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
   pricingSettings: GlobalPricingSettings;
+  velocity?: ProductVelocityMetrics;
+  velocityMap?: Map<string, ProductVelocityMetrics>;
   onEdit?: (product: Product) => void;
   onDelete?: (id: string) => void;
   onDuplicate?: (product: Product) => void;
@@ -66,6 +73,8 @@ const getOldCostTiers = (product: Product) => {
 export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   product,
   pricingSettings,
+  velocity: propVelocity,
+  velocityMap,
   onEdit,
   onDelete,
   onDuplicate,
@@ -74,6 +83,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   onQuickUpdateCost,
   onViewHistory,
 }) => {
+  const velocity = propVelocity || velocityMap?.get(product.id);
   // Local card dimension unit toggle (inch vs mm)
   const [displayUnit, setDisplayUnit] = useState<DimensionUnit>(product.dimensions?.inputUnit || 'inch');
   const [isEditingCost, setIsEditingCost] = useState<boolean>(false);
@@ -139,7 +149,23 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           <span className="px-2 py-0.5 sm:py-1 bg-red-100 text-red-900 text-xs sm:text-sm font-bold rounded-md truncate max-w-[130px] border border-red-200">
             {product.typeName}
           </span>
+
+          {/* Sales Velocity Badge */}
+          {velocity && (
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-black border ${velocity.tierBadgeColor}`}
+              title={velocity.recommendation}
+            >
+              {velocity.velocityTier === 'fast' && <Flame className="w-3 h-3 text-emerald-600 fill-emerald-600 shrink-0" />}
+              {velocity.velocityTier === 'moderate' && <Zap className="w-3 h-3 text-blue-600 shrink-0" />}
+              {velocity.velocityTier === 'slow' && <Clock className="w-3 h-3 text-amber-600 shrink-0" />}
+              {velocity.velocityTier === 'dead' && <PackageX className="w-3 h-3 text-purple-600 shrink-0" />}
+              {velocity.velocityTier === 'new_unsold' && <Sparkles className="w-3 h-3 text-cyan-600 shrink-0" />}
+              <span>{velocity.tierLabel}</span>
+            </span>
+          )}
         </div>
+
 
         {/* Action Menu dropdown trigger */}
         <div className="relative shrink-0">
@@ -283,8 +309,40 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 Adjust (+/-)
               </button> : null}
             </div>
+
+            {/* Velocity Quick Metrics Strip */}
+            {velocity && (
+              <div className="flex flex-wrap items-center gap-1.5 mt-2 text-xs">
+                {velocity.velocityTier === 'fast' && (
+                  <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    🔥 {velocity.unitsLast30Days} sold/30d {velocity.stockDaysOfCover < 1000 ? `• ~${Math.round(velocity.stockDaysOfCover)}d cover` : ''}
+                  </span>
+                )}
+                {velocity.velocityTier === 'dead' && (
+                  <span className="font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                    💀 Idle Capital: ₨ {formatPKR(velocity.tiedUpCapital)}
+                  </span>
+                )}
+                {velocity.velocityTier === 'slow' && (
+                  <span className="font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                    🐢 Slow • {velocity.daysSinceLastSale ? `${velocity.daysSinceLastSale}d since sale` : 'Rare'}
+                  </span>
+                )}
+                {velocity.velocityTier === 'moderate' && (
+                  <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                    ⚡ Steady • {velocity.unitsLast30Days} sold/mo
+                  </span>
+                )}
+                {velocity.isStockoutRisk && (
+                  <span className="font-black text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md border border-rose-300">
+                    🚨 Stockout Danger
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
+
 
         {/* DIMENSIONS & SIZES SECTION (With In-Card Unit Switcher) */}
         {hasDimensions && (
